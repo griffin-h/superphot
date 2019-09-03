@@ -11,11 +11,6 @@
 # LAST MODIFIED: 08/27/19
 # CHECK COMPLETED
 
-# PURPOSE:
-
-# In[1]:
-
-
 # IMPORTS
 # OS IS USED FOR MANIPULATING PATH NAMES
 # SYS USES THE FILE NAME ON THE TERMINAL COMMAND LINE TO RUN THE SCRIPT
@@ -28,19 +23,13 @@
 
 import os
 import sys
-
 import numpy as np
 import pymc3 as pm
 import theano.tensor as T
-
 from util import light_curve_event_data
 
-lst_filter = ['g', 'r', 'i', 'z']
 varname = ['Log(Amplitude)', 'Arctan(Plateau Slope)', 'Log(Plateau Duration)',
            'Start Time', 'Log(Rise Time)', 'Log(Fall Time)']
-
-
-# In[2]:
 
 
 def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
@@ -80,9 +69,6 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
     return flux_model
 
 
-# In[3]:
-
-
 def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
     """
     Run a Metropolis Hastings MCMC for a file in a single filter with a certain number iterations, burn in (tuning),
@@ -92,14 +78,14 @@ def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
     ----------
     file : path (.snana.dat file)
         File extention containing the light curve data.
-    fltr: string
-        One of the elements from lst_filter (g, r, i, z).
-    iterations : float
+    fltr: int
+        Integer 0-3, corresponding to the filters g, r, i, z.
+    iterations : int
         The number of iterations after tuning.
-    tuning : float
+    tuning : int
         The number of iterations used for tuning.
-    walkers : float
-        The nnumber of cores and walkers used.
+    walkers : int
+        The number of cores and walkers used.
 
     Returns
     -------
@@ -132,7 +118,6 @@ def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
     return trace
 
 
-# In[4]:
 # CREATE A DICTIONARY CONTAINING THE TRACE OF A LIGHT CURVE, WITH 10000 ITERATIONS PER WALKER AND 25 WALKERS PER
 # PARAMETER
 
@@ -140,12 +125,10 @@ file = sys.argv[1]
 dict_trace = {}
 for var in varname:
     dict_trace[var] = []
-for fltr in lst_filter:
+for fltr in range(4):
     trace = SNe_LC_MCMC(file, fltr, 10000, 25000, 25)
     for var in varname:
         dict_trace[var].append(np.array(trace.get_values(var, combine=False)))
 
 np.savez_compressed('/n/home01/fdauphin/NPZ_Files_BIG/' + os.path.basename(file).replace('.snana.dat', '.npz'),
                     **dict_trace)
-# CHANGE THE PATH TO SAVE TO A DIFFERENT DIRECTORY
-# END

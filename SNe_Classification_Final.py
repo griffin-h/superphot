@@ -11,11 +11,6 @@
 # CHECK IF FUNCTIONS WORK, ADD TRAIN VARIABLE TO ABSOLUTE MAGNITUDE TO CHOOSE Z, COMMENT LOOPS, DOCUMENT CLASSIFICATION
 # FUNCTION
 
-# PURPOSE:
-
-# In[1]:
-
-
 # IMPORTS
 # SYS USES THE FILE NAME ON THE TERMINAL COMMAND LINE TO RUN THE SCRIPT
 # NUMPY CONTAINS MATHEMATICAL FUNCTIONS, INCLUDING MATRIX MANIPULATION FUNCTIONS
@@ -36,31 +31,24 @@
 
 
 import warnings
-
 import extinction
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn import decomposition
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold
-
-# BELOW IS TAKEN FROM VILLAR ET AL. 2019, WHICH PLOTS A CONFUSION MATRIX. FOR FURTHER DETAILS, REFER TO HER GITHUB.
-
+from sklearn.model_selection import KFold, train_test_split
 from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
-from sklearn.model_selection import train_test_split
-
 import itertools
-
 from util import s2c, filter_func, cut_outliers, peak_event
 
 warnings.filterwarnings('ignore')
 
-lst_filter = ['g', 'r', 'i', 'z']
 varname = ['Log(Amplitude)', 'Tan(Plateau Angle)', 'Log(Plateau Duration)',
            'Start Time', 'Log(Rise Time)', 'Log(Fall Time)']
-dict_sne = {'SLSNe': 0, 'SNII': 1, 'SNIIn': 2, 'SNIa': 3, 'SNIbc': 4}
+classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
+effective_wavelengths = [4866., 6215., 7545., 9633.]  # g, r, i, z
 
 
 def plot_confusion_matrix(cm, classes,
@@ -94,59 +82,6 @@ def plot_confusion_matrix(cm, classes,
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-
-
-def fltr_2_lmbd(fltr):
-    """
-    Convert the name of a filter to its wavelength in angstroms.
-
-    Parameters
-    ----------
-    fltr: string
-        One of the elements from lst_filter (g, r, i, z).
-
-    Returns
-    -------
-    wavelength : numpy array
-        The wavelength of the filter in angstroms.
-
-    """
-    if fltr == 'g':
-        x = 4866.
-    elif fltr == 'r':
-        x = 6215.
-    elif fltr == 'i':
-        x = 7545.
-    elif fltr == 'z':
-        x = 9633.
-    wavelength = np.array([x])
-    return wavelength
-
-
-def three_places(x):
-    """
-    Makes a number x have three decimal places as a string.
-
-    Parameters
-    ----------
-    x: string
-        A number up to three decimal places.
-
-    Returns
-    -------
-    three_decimals : string
-        A number with three decimal places.
-
-    """
-    for i in range(len(x)):
-        if x[i] == '.':
-            index = i
-    part_1 = x[:index]
-    part_2 = x[index:]
-    while len(part_2) != 4:
-        part_2 += '0'
-    three_decimals = part_1 + part_2
-    return three_decimals
 
 
 def Func(t, A, B, gamma, t_0, tau_rise, tau_fall):
@@ -249,12 +184,12 @@ def produce_lc(file, file_npz, rand_num):
     lst = np.transpose(lst, axes=[2, 1, 3, 0])
     lst = np.concatenate(lst, axis=1)
     lst_rand_lc = []
-    for i in range(len(lst)):
+    for params, wl_eff in zip(lst, effective_wavelengths):
         lst_rand_filter = []
         for j in range(rand_num):
-            A = extinction.ccm89(fltr_2_lmbd(lst_filter[i]), A_v, 3.1)[0]
-            index = np.random.randint(len(lst[i]))
-            lc = Func(time, *transform(lst[i][index]))
+            A = extinction.ccm89(wl_eff, A_v, 3.1)[0]
+            index = np.random.randint(len(params))
+            lc = Func(time, *transform(params[index]))
             lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
                       cosmo_P.luminosity_distance(z).value ** 2)
             lst_rand_filter.append(lum_lc)
@@ -292,12 +227,12 @@ def mean_lc(file, file_npz, rand_num):
     lst = np.transpose(lst, axes=[2, 1, 3, 0])
     lst = np.concatenate(lst, axis=1)
     lst_mean_lc = []
-    for i in range(len(lst)):
+    for params, wl_eff in zip(lst, effective_wavelengths):
         lc_sum = 0
         for j in range(rand_num):
-            A = extinction.ccm89(fltr_2_lmbd(lst_filter[i]), A_v, 3.1)[0]
-            index = np.random.randint(len(lst[i]))
-            lc = Func(time, *transform(lst[i][index]))
+            A = extinction.ccm89(wl_eff, A_v, 3.1)[0]
+            index = np.random.randint(len(params))
+            lc = Func(time, *transform(params[index]))
             lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
                       cosmo_P.luminosity_distance(z) ** 2)
             lc_sum += lum_lc
@@ -314,8 +249,8 @@ def absolute_magnitude(file, fltr, norm=True):
     ----------
     file : path (.snana.dat file)
         File extention containing the light curve data.
-    fltr: string
-        One of the elements from lst_filter (g, r, i, z).
+    fltr: int
+        Integer 0-3, corresponding to the filters g, r, i, z.
     norm : boolean
         If True, it will randomly choose an absolute magnitude with the mean and standard deviation equal to the
         absolute magnitude and apparent magnitude standard deviation. This randomness is used for producing copies of
@@ -334,16 +269,12 @@ def absolute_magnitude(file, fltr, norm=True):
     z = new_ps1z[z_index][1]
     # z = float(data[6][1])
     A_v = float(data[5][1]) * 3.1
-    table = np.transpose(filter_func
-                         (cut_outliers
-                          (peak_event
-                           (data[17:-1], 180, peak_time), 20), fltr))
+    table = np.transpose(filter_func(cut_outliers(peak_event(data[17:-1], 180, peak_time), 20), fltr))
     lst_flux = table[4]
-    max_flux = max(lst_flux.astype(float))
-    index = np.where(lst_flux == three_places(str(max_flux)))[0][0]
+    index = np.argmax(lst_flux.astype(float))
     min_m = float(table[6][index])
     m_std = float(table[7][index])
-    A = extinction.ccm89(fltr_2_lmbd(fltr), A_v, 3.1)[0]
+    A = extinction.ccm89(effective_wavelengths[fltr], A_v, 3.1)[0]
     mu = cosmo_P.distmod(z).value
     k = 2.5 * np.log10(1 + z)
     M = min_m - mu - A + 32.5 + k
@@ -351,9 +282,6 @@ def absolute_magnitude(file, fltr, norm=True):
         M_norm = np.mean(np.random.normal(M, m_std, 100))
         return M_norm
     return M
-
-
-# In[3]:
 
 
 # EVERYTHING FOR THE THIRD CELL WAS PICK AND CHOOSE WHICH TRANSIENTS I WANTED TO USE IN MY SAMPLE. IF YOU HAVE ALL OF
@@ -394,11 +322,11 @@ for i in conf:
     lst_conf.append(i.split())
 
 lst_coswo = []
-for i in dict_sne:
+for classid in range(5):
     lst_ij = []
     for j in lst_conf:
         if i == j[1]:
-            lst_ij.append([j[0][3:], dict_sne[i]])
+            lst_ij.append([j[0][3:], classid])
     lst_coswo.append(lst_ij)
 
 lst_exists = []
@@ -416,7 +344,7 @@ lst_not_exists = np.array(lst_not_exists)
 lst_class_final = []
 lst_nan = []
 for i in lst_exists:
-    M = absolute_magnitude(i, 'z', norm=False)
+    M = absolute_magnitude(i, 3, norm=False)
     if str(M) != 'nan':
         lst_class_final.append(i)
     else:
@@ -431,8 +359,8 @@ for i in lst_err:
     lst_index_err.append(np.where(np.array(lst_class) == i)[0][0])
 
 train_class = []
-for i in lst_conf:
-    train_class.append(dict_sne[i[1]])
+for _, classname in lst_conf:
+    train_class.append(classes.index(classname))
 train_class = np.array(train_class)
 
 lst_class_id = []
@@ -440,9 +368,6 @@ for i in range(len(lst_class)):
     if i not in lst_index_err:
         lst_class_id.append(train_class[i])
 lst_class_id = np.array(lst_class_id)
-
-# In[4]:
-
 
 # CREATING COPIES OF THE CLASSIFICATION NUMBERS IN INDEX ORDER. PRINTING OUT THE SHAPES HELPS TO MAKE SURE EVERYTHING IS
 # LOOPING CORRECTLY.
@@ -456,9 +381,6 @@ for i in lst_class_id:
 lst_class_id_super = np.array(lst_class_id_super)
 lst_class_id_super = np.concatenate(lst_class_id_super, axis=0)
 
-# In[5]:
-
-
 # CREATING COPIES OF THE PATH NAMES IN INDEX ORDER
 # ['000000', '000001'] --> ['000000', '000000', '000000', '000000', '000001', '000001', '000001', '000001']
 
@@ -468,45 +390,36 @@ for i in lst_class_final:
 lst_class_final_super = np.array(lst_class_final_super)
 lst_class_final_super = np.concatenate(lst_class_final_super, axis=0)
 
-# In[6]:
-
-
 # CREATING COPIES OF THE LIGHT CURVES IN INDEX ORDER. I DID NOT EXPLICITLY USE THE NPZ_FILE VARIABLE BECAUSE I JUST
 # LOOPED USING IT'S ID NUMBER. YOU WILL NEED TO MAKE A "LST_NPZ" LIST WITH ALL THE NPZ FILES IN INDEX ORDER.
 
 lst_class_lc_super = []
-for i in range(len(lst_class_final)):
-    lst_class_lc_super.append(produce_lc(lst_class_final[i], lst_npz_classified[i], copies))
+for filename in lst_class_final:
+    lst_class_lc_super.append(produce_lc(filename, lst_npz_classified[i], copies))
 lst_class_lc_super = np.array(lst_class_lc_super)
 lst_class_lc_super = np.concatenate(lst_class_lc_super, axis=1)
-
-# In[7]:
-
 
 # CONVERTING LIGHT CURVES INTO WHITEN PRINCIPAL COMPONENTS IN EACH FILTER.
 
 lst_pca_smart = []
 lst_M = []
 pca = decomposition.PCA(n_components=5, whiten=True)
-for i in range(len(lst_class_lc_super)):
-    PCA = pca.fit(lst_class_lc_super[i])
-    lst_clc_trans = pca.transform(lst_class_lc_super[i])
+for model_lc in lst_class_lc_super:
+    PCA = pca.fit(model_lc)
+    lst_clc_trans = pca.transform(model_lc)
     lst_pca_smart.append(lst_clc_trans)
 lst_pca_smart = np.array(lst_pca_smart)
-
-# In[8]:
-
 
 # FOR EACH LIGHT CURVE, CONCATENATE ALL THE PRINCIPAL COMPONENTS FOR EACH FILTER INTO ONE ARRAY AND APPEND THE ABSOLUTE
 # VALUES FROM EACH FILTER.
 
 lst_M = []
-for i in lst_filter:
+for fltr in range(4):
     lst_M_ij = []
     for j in lst_class_final:
         lst_ij = []
         for k in range(copies):
-            M = [absolute_magnitude(j, i)]
+            M = [absolute_magnitude(j, fltr)]
             lst_ij.append(M)
         lst_M_ij.append(lst_ij)
     lst_M.append(lst_M_ij)
@@ -518,9 +431,6 @@ lst_pca = np.append(lst_M_smart, lst_pca_smart, axis=2)
 lst_pca = np.concatenate(lst_pca, axis=1)
 
 print(lst_M_smart.shape, lst_pca.shape)
-
-# In[9]:
-
 
 folds = int(len(lst_class_id_super) / copies)
 kf = KFold(folds)
@@ -585,15 +495,9 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, depth=None, max_feat=
     return clf
 
 
-# In[10]:
-
-
 # MAKE RANDOM FOREST WITH SIZE .33 AND N_EST 100
 
 clf = pca_smote_rf(lst_pca, lst_class_id_super, 0.33, 100)
-
-# In[11]:
-
 
 # MAKE A LIST OF UNCLASSIFIED TRANSIENTS WITH COMPLETED MCMC RUNS
 
@@ -606,32 +510,24 @@ for i in lst_PS1:
         except FileNotFoundError as e:
             print(i, 'not found')
 
-# In[12]:
-
-
 # RECREATE LIGHT CURVES FOR THE UNCLASSIFIED TRANSIENTS USING THEIR MCMC PARAMETERS. WILL NEED TO MAKE A LIST OF PATHS
 # FOR THE NPZ FILES OF UNCLASSIFIED TRANSIENTS TO LOOP THROUGH CORRECTLY.
 
 lst_photo_lc = []
-for i in range(len(lst_PS1_final)):
-    lst_photo_lc.append(mean_lc(lst_PS1_final[i], lst_npz_unclassified[i], 100))
+for filename in lst_PS1_final:
+    lst_photo_lc.append(mean_lc(filename, lst_npz_unclassified[i], 100))
 lst_photo_lc = np.array(lst_photo_lc)
 
 lst_photo_lc = np.concatenate(lst_photo_lc, axis=1)
-
-# In[13]:
-
 
 # CONVERT THE LIGHT CURVES OF INCLASSIFIED TRANSIENTS TO PRINCIPAL COMPONENTS AND CLASSIFY THEM.
 
 lst_pca_unclassified = []
 pca = decomposition.PCA(n_components=5, whiten=True)
-for i in range(len(lst_photo_lc)):
-    PCA = pca.fit(lst_photo_lc[i])
-    lst_plc_trans = pca.transform(lst_photo_lc[i])
+for filename in lst_photo_lc:
+    PCA = pca.fit(filename)
+    lst_plc_trans = pca.transform(filename)
     lst_pca_unclassified.append(lst_plc_trans)
 lst_pca_unclassified = np.array(lst_pca_unclassified)
 
 clf.predict(lst_pca_unclassified)
-
-# DONE

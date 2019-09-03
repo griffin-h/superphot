@@ -32,8 +32,8 @@ def filter_func(lst, fltr):
     ----------
     lst : list
         2-D list containing the light curve data.
-    fltr: string
-        One of the elements from lst_filter (g, r, i, z).
+    fltr: int
+        Integer 0-3, corresponding to the filters g, r, i, z.
 
     Returns
     -------
@@ -43,7 +43,7 @@ def filter_func(lst, fltr):
     """
     lst_fltr = []
     for row in lst:
-        if row[2] == fltr:
+        if row[2] == 'griz'[fltr]:
             lst_fltr.append(row)
     return lst_fltr
 
@@ -89,8 +89,8 @@ def light_curve_event_data(file, period, multiplier, fltr):
         Half the length of time from which you want to observe.
     multiplier: float
         Determines at what value (multiplier * mad_std) to cut outlier data points.
-    fltr: string
-        One of the elements from lst_filter (g, r, i, z).
+    fltr: int
+        Integer 0-3, corresponding to the filters g, r, i, z.
 
     Returns
     -------
@@ -101,9 +101,7 @@ def light_curve_event_data(file, period, multiplier, fltr):
     data = s2c(file)
     peak_time = float(data[7][1])
     event = peak_event(data[17:-1], period, peak_time)
-    table = np.transpose(filter_func
-                         (cut_outliers
-                          (event, multiplier), fltr))
+    table = np.transpose(filter_func(cut_outliers(event, multiplier), fltr))
     if len(table) > 0:
         time = table[1].astype(float) - peak_time
         flux = table[4].astype(float)
