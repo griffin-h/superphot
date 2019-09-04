@@ -148,6 +148,17 @@ def transform(lst):
     return trans
 
 
+def load_npz_file(file_npz):
+    file_load = np.load(file_npz)
+    lst = []
+    for i in varname:
+        lst.append(file_load[i])
+    lst = np.array(lst)
+    lst = np.transpose(lst, axes=[2, 1, 3, 0])
+    lst = np.concatenate(lst, axis=1)
+    return lst
+
+
 def produce_lc(file, file_npz, rand_num):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
@@ -169,17 +180,11 @@ def produce_lc(file, file_npz, rand_num):
 
     """
     time = np.arange(-50, 150)
-    file_load = np.load(file_npz)
     z_index = np.where(np.transpose(new_ps1z)[0] == file)[0][0]
     z = new_ps1z[z_index][1]
     t = read_snana(file)
     A_v = t.meta['A_V']
-    lst = []
-    for i in varname:
-        lst.append(file_load[i])
-    lst = np.array(lst)
-    lst = np.transpose(lst, axes=[2, 1, 3, 0])
-    lst = np.concatenate(lst, axis=1)
+    lst = load_npz_file(file_npz)
     lst_rand_lc = []
     for params, wl_eff in zip(lst, effective_wavelengths):
         lst_rand_filter = []
@@ -214,16 +219,10 @@ def mean_lc(file, file_npz, rand_num):
 
     """
     time = np.arange(-50, 150)
-    file_load = np.load(file_npz)
     t = read_snana(file)
     z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
-    lst = []
-    for i in varname:
-        lst.append(file_load[i])
-    lst = np.array(lst)
-    lst = np.transpose(lst, axes=[2, 1, 3, 0])
-    lst = np.concatenate(lst, axis=1)
+    lst = load_npz_file(file_npz)
     lst_mean_lc = []
     for params, wl_eff in zip(lst, effective_wavelengths):
         lc_sum = 0
@@ -394,16 +393,20 @@ for filename in lst_class_final:
 lst_class_lc_super = np.array(lst_class_lc_super)
 lst_class_lc_super = np.concatenate(lst_class_lc_super, axis=1)
 
-# CONVERTING LIGHT CURVES INTO WHITEN PRINCIPAL COMPONENTS IN EACH FILTER.
 
-lst_pca_smart = []
-lst_M = []
-pca = PCA(n_components=5, whiten=True)
-for model_lc in lst_class_lc_super:
-    PCA = pca.fit(model_lc)
-    lst_clc_trans = pca.transform(model_lc)
-    lst_pca_smart.append(lst_clc_trans)
-lst_pca_smart = np.array(lst_pca_smart)
+# CONVERTING LIGHT CURVES INTO WHITEN PRINCIPAL COMPONENTS IN EACH FILTER.
+def get_principal_components(light_curves):
+    principal_components = []
+    pca = PCA(n_components=5, whiten=True)
+    for model_lc in light_curves:
+        pca.fit(model_lc)
+        lst_clc_trans = pca.transform(model_lc)
+        principal_components.append(lst_clc_trans)
+    principal_components = np.array(principal_components)
+    return principal_components
+
+
+get_principal_components(lst_class_lc_super)
 
 # FOR EACH LIGHT CURVE, CONCATENATE ALL THE PRINCIPAL COMPONENTS FOR EACH FILTER INTO ONE ARRAY AND APPEND THE ABSOLUTE
 # VALUES FROM EACH FILTER.
@@ -516,13 +519,5 @@ lst_photo_lc = np.array(lst_photo_lc)
 lst_photo_lc = np.concatenate(lst_photo_lc, axis=1)
 
 # CONVERT THE LIGHT CURVES OF INCLASSIFIED TRANSIENTS TO PRINCIPAL COMPONENTS AND CLASSIFY THEM.
-
-lst_pca_unclassified = []
-pca = PCA(n_components=5, whiten=True)
-for filename in lst_photo_lc:
-    PCA = pca.fit(filename)
-    lst_plc_trans = pca.transform(filename)
-    lst_pca_unclassified.append(lst_plc_trans)
-lst_pca_unclassified = np.array(lst_pca_unclassified)
-
+lst_pca_unclassified = get_principal_components(lst_photo_lc)
 clf.predict(lst_pca_unclassified)

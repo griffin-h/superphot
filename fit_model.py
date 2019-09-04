@@ -122,9 +122,7 @@ def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
 # PARAMETER
 
 file = sys.argv[1]
-dict_trace = {}
-for var in varname:
-    dict_trace[var] = []
+dict_trace = {var: [] for var in varname}
 for fltr in range(4):
     trace = SNe_LC_MCMC(file, fltr, 10000, 25000, 25)
     for var in varname:
