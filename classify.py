@@ -33,6 +33,8 @@
 import extinction
 import numpy as np
 import matplotlib.pyplot as plt
+import pymc3 as pm
+import os
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -41,6 +43,7 @@ from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
 import itertools
 from util import read_snana, light_curve_event_data
+from fit_model import setup_model
 
 varname = ['Log(Amplitude)', 'Tan(Plateau Angle)', 'Log(Plateau Duration)',
            'Start Time', 'Log(Rise Time)', 'Log(Fall Time)']
@@ -148,18 +151,32 @@ def transform(lst):
     return trans
 
 
-def load_npz_file(file_npz):
-    file_load = np.load(file_npz)
+def load_trace(file):
+    """
+    Read the stored PyMC3 traces into a 3-D array with shape (nfilters, nsteps, nparams).
+
+    Parameters
+    ----------
+    file : str
+        Filename of the original SNANA data file.
+
+    Returns
+    -------
+    lst : numpy.array
+        PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
+    """
+    tracefile = os.path.basename(file).replace('.snana.dat', '_F{:d}')
     lst = []
-    for i in varname:
-        lst.append(file_load[i])
+    for fltr in range(4):
+        model = setup_model(file, fltr)
+        trace = pm.load_trace(tracefile.format(fltr), model)
+        trace_values = np.transpose([trace.get_values(var) for var in varname])
+        lst.append(trace_values)
     lst = np.array(lst)
-    lst = np.transpose(lst, axes=[2, 1, 3, 0])
-    lst = np.concatenate(lst, axis=1)
     return lst
 
 
-def produce_lc(file, file_npz, rand_num):
+def produce_lc(file, rand_num):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
     (number of filters, rand_num).
@@ -168,8 +185,6 @@ def produce_lc(file, file_npz, rand_num):
     ----------
     file : path (.snana.dat file)
         File extention containing the light curve data.
-    file_npz : path (.npz file)
-        File extention containing the MCMC run for the light curve.
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
 
@@ -184,7 +199,7 @@ def produce_lc(file, file_npz, rand_num):
     z = new_ps1z[z_index][1]
     t = read_snana(file)
     A_v = t.meta['A_V']
-    lst = load_npz_file(file_npz)
+    lst = load_trace(file)
     lst_rand_lc = []
     for params, wl_eff in zip(lst, effective_wavelengths):
         lst_rand_filter = []
@@ -199,7 +214,7 @@ def produce_lc(file, file_npz, rand_num):
     return lst_rand_lc
 
 
-def mean_lc(file, file_npz, rand_num):
+def mean_lc(file, rand_num):
     """
     Make a 2-D list containing the mean light curves of each filter created using the parameters from the npz file.
 
@@ -207,8 +222,6 @@ def mean_lc(file, file_npz, rand_num):
     ----------
     file : path (.snana.dat file)
         File extention containing the light curve data.
-    file_npz : path (.npz file)
-        File extention containing the MCMC run for the light curve.
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
 
@@ -222,7 +235,7 @@ def mean_lc(file, file_npz, rand_num):
     t = read_snana(file)
     z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
-    lst = load_npz_file(file_npz)
+    lst = load_trace(file)
     lst_mean_lc = []
     for params, wl_eff in zip(lst, effective_wavelengths):
         lc_sum = 0
@@ -389,7 +402,7 @@ lst_class_final_super = np.concatenate(lst_class_final_super, axis=0)
 
 lst_class_lc_super = []
 for filename in lst_class_final:
-    lst_class_lc_super.append(produce_lc(filename, lst_npz_classified[i], copies))
+    lst_class_lc_super.append(produce_lc(filename, copies))
 lst_class_lc_super = np.array(lst_class_lc_super)
 lst_class_lc_super = np.concatenate(lst_class_lc_super, axis=1)
 
@@ -513,7 +526,7 @@ for i in lst_PS1:
 
 lst_photo_lc = []
 for filename in lst_PS1_final:
-    lst_photo_lc.append(mean_lc(filename, lst_npz_unclassified[i], 100))
+    lst_photo_lc.append(mean_lc(filename, 100))
 lst_photo_lc = np.array(lst_photo_lc)
 
 lst_photo_lc = np.concatenate(lst_photo_lc, axis=1)

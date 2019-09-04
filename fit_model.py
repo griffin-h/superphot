@@ -23,6 +23,7 @@
 
 import os
 import sys
+import argparse
 import numpy as np
 import pymc3 as pm
 from theano.tensor import switch
@@ -69,37 +70,29 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
     return flux_model
 
 
-def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
+def setup_model(file, fltr):
     """
     Run a Metropolis Hastings MCMC for a file in a single filter with a certain number iterations, burn in (tuning),
     and walkers. The period and multiplier are 180 and 20, respectively.
 
     Parameters
     ----------
-    file : path (.snana.dat file)
-        File extention containing the light curve data.
+    file : str
+        Name of .snana.dat file containing the light curve data.
     fltr: int
         Integer 0-3, corresponding to the filters g, r, i, z.
-    iterations : int
-        The number of iterations after tuning.
-    tuning : int
-        The number of iterations used for tuning.
-    walkers : int
-        The number of cores and walkers used.
 
     Returns
     -------
-    trace : MultiTrace
-        The trace has a shape (len(varnames), walkers, iterations) and contains every iteration for each walker for all
-        parameters.
-
+    model : pymc3.Model
+        PyMC3 model object for the input data. Use this to run the MCMC.
     """
     obs = light_curve_event_data(file, fltr)
 
-    with pm.Model():
-        obs_time = obs['MJD']
-        obs_flux = obs['FLUXCAL']
-        obs_unc = obs['FLUXCALERR']
+    with pm.Model() as model:
+        obs_time = obs['MJD'].filled().data
+        obs_flux = obs['FLUXCAL'].filled().data
+        obs_unc = obs['FLUXCALERR'].filled().data
 
         A = 10 ** pm.Uniform('Log(Amplitude)', lower=0, upper=6)
         B = np.tan(pm.Uniform('Arctan(Plateau Slope)', lower=-1.56, upper=0))
@@ -113,20 +106,48 @@ def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
         exp_flux = flux_model(obs_time, *parameters)
 
         pm.Normal('Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
-        trace = pm.sample(iterations, tune=tuning, cores=walkers, chains=walkers, step=pm.Metropolis())
 
+    return model
+
+
+def run_mcmc(model, iterations, tuning, walkers):
+    """
+    Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.
+
+    Parameters
+    ----------
+    model : pymc3.Model
+        PyMC3 model object for the input data from `setup_model`.
+    iterations : int
+        The number of iterations after tuning.
+    tuning : int
+        The number of iterations used for tuning.
+    walkers : int
+        The number of cores and walkers used.
+
+    Returns
+    -------
+    trace : MultiTrace
+        The trace has a shape (len(varnames), walkers, iterations) and contains every iteration for each walker for all
+        parameters.
+    """
+    with model:
+        trace = pm.sample(iterations, tune=tuning, cores=walkers, chains=walkers, step=pm.Metropolis())
     return trace
 
 
-# CREATE A DICTIONARY CONTAINING THE TRACE OF A LIGHT CURVE, WITH 10000 ITERATIONS PER WALKER AND 25 WALKERS PER
-# PARAMETER
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', help='Input SNANA file')
+    parser.add_argument('--filters', nargs='+', type=int, default=[0, 1, 2, 3],
+                        help='Filters to fit (g=0, r=1, i=2, z=3)')
+    parser.add_argument('--iterations', type=int, default=10000, help='Number of steps after burn-in')
+    parser.add_argument('--tuning', type=int, default=25000, help='Number of burn-in steps')
+    parser.add_argument('--walkers', type=int, default=25, help='Number of walkers')
+    args = parser.parse_args()
 
-file = sys.argv[1]
-dict_trace = {var: [] for var in varname}
-for fltr in range(4):
-    trace = SNe_LC_MCMC(file, fltr, 10000, 25000, 25)
-    for var in varname:
-        dict_trace[var].append(np.array(trace.get_values(var, combine=False)))
-
-np.savez_compressed('/n/home01/fdauphin/NPZ_Files_BIG/' + os.path.basename(file).replace('.snana.dat', '.npz'),
-                    **dict_trace)
+    outfile = os.path.basename(args.filename).replace('.snana.dat', '_F{:d}')
+    for fltr in args.filters:
+        model = setup_model(args.filename, fltr)
+        trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
+        pm.save_trace(trace, outfile.format(fltr), overwrite=True)
