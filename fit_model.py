@@ -138,7 +138,7 @@ def run_mcmc(model, iterations, tuning, walkers):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', help='Input SNANA file')
+    parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
     parser.add_argument('--filters', nargs='+', type=int, default=[0, 1, 2, 3],
                         help='Filters to fit (g=0, r=1, i=2, z=3)')
     parser.add_argument('--iterations', type=int, default=10000, help='Number of steps after burn-in')
@@ -146,8 +146,9 @@ if __name__ == '__main__':
     parser.add_argument('--walkers', type=int, default=25, help='Number of walkers')
     args = parser.parse_args()
 
-    outfile = os.path.basename(args.filename).replace('.snana.dat', '_F{:d}')
-    for fltr in args.filters:
-        model = setup_model(args.filename, fltr)
-        trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
-        pm.save_trace(trace, outfile.format(fltr), overwrite=True)
+    for filename in args.filenames:
+        outfile = os.path.basename(filename).replace('.snana.dat', '_F{:d}')
+        for fltr in args.filters:
+            model = setup_model(filename, fltr)
+            trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
+            pm.save_trace(trace, outfile.format(fltr), overwrite=True)
