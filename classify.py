@@ -30,20 +30,17 @@
 # DICT_SNE IS A DICTIONARY OF SNE TYPES ASSOCIATED WITH AN ARBITRARY CLASSIFICATION NUMBER, WHICH SCIKIT USES
 
 
-import warnings
 import extinction
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.cosmology import Planck15 as cosmo_P
-from sklearn import decomposition
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
 import itertools
-from util import s2c, filter_func, cut_outliers, peak_event
-
-warnings.filterwarnings('ignore')
+from util import read_snana, light_curve_event_data
 
 varname = ['Log(Amplitude)', 'Tan(Plateau Angle)', 'Log(Plateau Duration)',
            'Start Time', 'Log(Rise Time)', 'Log(Fall Time)']
@@ -175,8 +172,8 @@ def produce_lc(file, file_npz, rand_num):
     file_load = np.load(file_npz)
     z_index = np.where(np.transpose(new_ps1z)[0] == file)[0][0]
     z = new_ps1z[z_index][1]
-    # z = float(s2c(file)[6][1])
-    A_v = float(s2c(file)[5][1]) * 3.1
+    t = read_snana(file)
+    A_v = t.meta['A_V']
     lst = []
     for i in varname:
         lst.append(file_load[i])
@@ -218,8 +215,9 @@ def mean_lc(file, file_npz, rand_num):
     """
     time = np.arange(-50, 150)
     file_load = np.load(file_npz)
-    z = float(s2c(file)[6][1])
-    A_v = float(s2c(file)[5][1]) * 3.1
+    t = read_snana(file)
+    z = t.meta['REDSHIFT']
+    A_v = t.meta['A_V']
     lst = []
     for i in varname:
         lst.append(file_load[i])
@@ -263,17 +261,14 @@ def absolute_magnitude(file, fltr, norm=True):
         The absolute magnitude of the light curve.
 
     """
-    data = s2c(file)
-    peak_time = float(data[7][1])
+    t = light_curve_event_data(file, fltr)
     z_index = np.where(np.transpose(new_ps1z)[0] == file)[0][0]
     z = new_ps1z[z_index][1]
-    # z = float(data[6][1])
-    A_v = float(data[5][1]) * 3.1
-    table = np.transpose(filter_func(cut_outliers(peak_event(data[17:-1], 180, peak_time), 20), fltr))
-    lst_flux = table[4]
-    index = np.argmax(lst_flux.astype(float))
-    min_m = float(table[6][index])
-    m_std = float(table[7][index])
+    # z = t.meta['REDSHIFT']
+    A_v = t.meta['A_V']
+    index = np.argmax(t['FLUXCAL'])
+    min_m = t['MAG'][index]
+    m_std = t['MAGERR'][index]
     A = extinction.ccm89(effective_wavelengths[fltr], A_v, 3.1)[0]
     mu = cosmo_P.distmod(z).value
     k = 2.5 * np.log10(1 + z)
@@ -403,7 +398,7 @@ lst_class_lc_super = np.concatenate(lst_class_lc_super, axis=1)
 
 lst_pca_smart = []
 lst_M = []
-pca = decomposition.PCA(n_components=5, whiten=True)
+pca = PCA(n_components=5, whiten=True)
 for model_lc in lst_class_lc_super:
     PCA = pca.fit(model_lc)
     lst_clc_trans = pca.transform(model_lc)
@@ -523,7 +518,7 @@ lst_photo_lc = np.concatenate(lst_photo_lc, axis=1)
 # CONVERT THE LIGHT CURVES OF INCLASSIFIED TRANSIENTS TO PRINCIPAL COMPONENTS AND CLASSIFY THEM.
 
 lst_pca_unclassified = []
-pca = decomposition.PCA(n_components=5, whiten=True)
+pca = PCA(n_components=5, whiten=True)
 for filename in lst_photo_lc:
     PCA = pca.fit(filename)
     lst_plc_trans = pca.transform(filename)

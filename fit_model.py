@@ -25,7 +25,7 @@ import os
 import sys
 import numpy as np
 import pymc3 as pm
-import theano.tensor as T
+from theano.tensor import switch
 from util import light_curve_event_data
 
 varname = ['Log(Amplitude)', 'Arctan(Plateau Slope)', 'Log(Plateau Duration)',
@@ -61,11 +61,11 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
 
     """
     t_1 = t_0 + gamma
-    flux_model = T.switch((t < t_1),
-                          ((A + B * (t - t_0)) /
-                           (1. + np.exp((t - t_0) / -tau_rise))),
-                          ((A + B * gamma) * np.exp((t - gamma - t_0) / -tau_fall) /
-                           (1. + np.exp((t - t_0) / -tau_rise))))
+    flux_model = switch((t < t_1),
+                        ((A + B * (t - t_0)) /
+                         (1. + np.exp((t - t_0) / -tau_rise))),
+                        ((A + B * gamma) * np.exp((t - gamma - t_0) / -tau_fall) /
+                         (1. + np.exp((t - t_0) / -tau_rise))))
     return flux_model
 
 
@@ -94,12 +94,12 @@ def SNe_LC_MCMC(file, fltr, iterations, tuning, walkers):
         parameters.
 
     """
-    obs = light_curve_event_data(file, 180, 20, fltr)
+    obs = light_curve_event_data(file, fltr)
 
     with pm.Model():
-        obs_time = obs[0]
-        obs_flux = obs[1]
-        obs_unc = obs[2]
+        obs_time = obs['MJD']
+        obs_flux = obs['FLUXCAL']
+        obs_unc = obs['FLUXCALERR']
 
         A = 10 ** pm.Uniform('Log(Amplitude)', lower=0, upper=6)
         B = np.tan(pm.Uniform('Arctan(Plateau Slope)', lower=-1.56, upper=0))

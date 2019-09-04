@@ -1,139 +1,111 @@
 import numpy as np
 from astropy.stats import mad_std
+from astropy.table import Table
 
 
-def s2c(file):
+def read_snana(filename):
     """
-    Make a PS1_PS1MD_PSc file into a 2-D list.
+    Read light curve data from a SNANA file as an Astropy table.
 
     Parameters
     ----------
-    file : path (.snana.dat file)
-        File extention containing the light curve data.
+    filename : str
+        Path to SNANA file.
 
     Returns
     -------
-    lst : list
-        2-D list containing the light curve data.
-
+    t : astropy.table.Table
+        Table of light curve data, with columns MJD, FLT, FIELD, FLUXCAL, FLUXCALERR, MAG, MAGERR, and FLTID.  The
+        `.meta` attribute contains SURVEY, SNID, IAUC, RA, DECL, MWEBV, REDSHIFT_FINAL, SEARCH_PEAKMJD, FILTERS, NOBS,
+        and NVAR, all stored as strings, as well as REDSHIFT and A_V converted to floats.
     """
-    with open(file) as infile:
-        lst = []
-        for line in infile:
-            lst.append(line.split())
-    return lst
+    meta = {}
+    header_start = 14
+    with open(filename) as f:
+        for _ in range(15):
+            line = f.readline()
+            if ':' in line:
+                key, val = line.split(':')
+                meta[key] = val.strip()
+    data_end = int(meta['NOBS']) + header_start + 1
+    t = Table.read(filename, format='ascii', header_start=header_start, data_end=data_end, guess=False, comment=None,
+                   exclude_names=['VARLIST:'], fill_values=[('NULL', '0'), ('nan', '0')])
+    t.meta = meta
+    t['FLTID'] = ['griz'.index(flt) for flt in t['FLT']]
+    t.meta['REDSHIFT'] = float(t.meta['REDSHIFT_FINAL'].split()[0])
+    t.meta['A_V'] = float(t.meta['MWEBV'].split()[0]) * 3.1
+    t.meta['PEAKMJD'] = float(t.meta['SEARCH_PEAKMJD'])
+    return t
 
 
-def filter_func(lst, fltr):
+def filter_func(t, fltr):
     """
-    Make a 2-D list containing data only from one filter.
+    Make an Astropy table containing data only from one filter.
 
     Parameters
     ----------
-    lst : list
-        2-D list containing the light curve data.
+    t : astropy.table.Table
+        Astropy table containing the light curve data.
     fltr: int
         Integer 0-3, corresponding to the filters g, r, i, z.
 
     Returns
     -------
-    lst_new : list
-        2-D list containing data from only one filter.
-
+    t_filt : astropy.table.Table
+        Astropy table containing data from only one filter.
     """
-    lst_fltr = []
-    for row in lst:
-        if row[2] == 'griz'[fltr]:
-            lst_fltr.append(row)
-    return lst_fltr
+    t_filt = t[t['FLTID'] == fltr]
+    return t_filt
 
 
-def cut_outliers(lst, multiplier):
+def cut_outliers(t, nsigma):
     """
-    Make a 2-D list containing only data that is below the cut off threshold.
+    Make an Astropy table containing only data that is below the cut off threshold.
 
     Parameters
     ----------
-    lst : list
-        2-D list containing the light curve data.
-    multiplier: float
-        Determines at what value (multiplier * mad_std) to cut outlier data points.
+    t : astropy.table.Table
+        Astropy table containing the light curve data.
+    nsigma: float
+        Determines at what value (flux < nsigma * mad_std) to cut outlier data points.
 
     Returns
     -------
-    lst_cut : list
-        2-D list containing only data that is below the cut off threshold.
+    t_cut : astropy.table.Table
+        Astropy table containing only data that is below the cut off threshold.
 
     """
-    lst_cut = []
-    table = np.transpose(lst)
-    if len(table) > 0:
-        flux = table[4].astype(float)
-        madstd = mad_std(flux)
-        for row in lst:
-            if float(row[4]) < multiplier * madstd:
-                lst_cut.append(row)
-    return lst_cut
+    madstd = mad_std(t['FLUXCAL'])
+    t_cut = t[t['FLUXCAL'] < nsigma * madstd]
+    return t_cut
 
 
-def light_curve_event_data(file, period, multiplier, fltr):
+def light_curve_event_data(file, fltr, period=180., nsigma=20.):
     """
     Make a 2-D array containing the time, flux, and flux uncertainties data only from the period containing the peak
     flux, with outliers cut, and in a single filter .
 
     Parameters
     ----------
-    file : path (.snana.dat file)
-        File extention containing the light curve data.
+    file : str
+        Path to .snana.dat file containing the light curve data.
     period: float
-        Half the length of time from which you want to observe.
-    multiplier: float
-        Determines at what value (multiplier * mad_std) to cut outlier data points.
+        Include only points within `period` of SEARCH_PEAKMJD.
+    nsigma: float
+        Determines at what value (flux < nsigma * mad_std) to cut outlier data points.
     fltr: int
         Integer 0-3, corresponding to the filters g, r, i, z.
 
     Returns
     -------
-    lc_event_data : 2-D array
-        2-D array containing the reduced light curve data which will be used to extract parameters for our model.
+    t_event : astropy.table.Table
+        Astropy table containing the reduced light curve data which will be used to extract parameters for our model.
 
     """
-    data = s2c(file)
-    peak_time = float(data[7][1])
-    event = peak_event(data[17:-1], period, peak_time)
-    table = np.transpose(filter_func(cut_outliers(event, multiplier), fltr))
-    if len(table) > 0:
-        time = table[1].astype(float) - peak_time
-        flux = table[4].astype(float)
-        flux_unc = table[5].astype(float)
-        lc_event_data = np.array([time, flux, flux_unc])
-        return lc_event_data
-
-
-def peak_event(lst, period, peak_time):
-    """
-    Make a 2-D list containing only data from the observational period with the peak flux.
-
-    Parameters
-    ----------
-    lst : list
-        2-D list containing the light curve data.
-    period: float
-        Half the length of time from which you want to observe.
-    peak_time: float
-        The estimated light curve peak time (which is also the discovery time).
-
-    Returns
-    -------
-    lst_peak : list
-        2-D list containing data from only the observational period with the peak flux.
-
-    """
-    lst_peak = []
-    for row in lst:
-        time_ij = float(row[1])
-        if peak_time + period > time_ij > peak_time - period:
-            lst_peak.append(row)
-    return lst_peak
-
-
+    t = read_snana(file)
+    peak_time = float(t.meta['PEAKMJD'])
+    t['PHASE'] = t['MJD'] - peak_time
+    t_event = t[np.abs(t['PHASE']) < period]
+    t_cut = cut_outliers(t_event, nsigma)
+    t_filt = filter_func(t_cut, fltr)
+    return t_filt
