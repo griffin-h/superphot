@@ -45,8 +45,6 @@ import itertools
 from util import read_snana, light_curve_event_data
 from fit_model import setup_model
 
-varname = ['Log(Amplitude)', 'Tan(Plateau Angle)', 'Log(Plateau Duration)',
-           'Start Time', 'Log(Rise Time)', 'Log(Fall Time)']
 classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
 effective_wavelengths = [4866., 6215., 7545., 9633.]  # g, r, i, z
 
@@ -168,9 +166,9 @@ def load_trace(file):
     tracefile = os.path.basename(file).replace('.snana.dat', '_F{:d}')
     lst = []
     for fltr in range(4):
-        model = setup_model(file, fltr)
+        model, varnames = setup_model(file, fltr)
         trace = pm.load_trace(tracefile.format(fltr), model)
-        trace_values = np.transpose([trace.get_values(var) for var in varname])
+        trace_values = np.transpose([trace.get_values(var) for var in varnames])
         lst.append(trace_values)
     lst = np.array(lst)
     return lst

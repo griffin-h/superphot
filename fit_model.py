@@ -22,15 +22,11 @@
 # VARNAME IS A DICTIONARY CONTAINING ALL OF THE VARIABLE NAMES FOR OUR PARAMETERS IN PYMC3
 
 import os
-import sys
 import argparse
 import numpy as np
 import pymc3 as pm
 from theano.tensor import switch
 from util import light_curve_event_data
-
-varname = ['Log(Amplitude)', 'Arctan(Plateau Slope)', 'Log(Plateau Duration)',
-           'Start Time', 'Log(Rise Time)', 'Log(Fall Time)']
 
 
 def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
@@ -88,26 +84,32 @@ def setup_model(file, fltr):
         PyMC3 model object for the input data. Use this to run the MCMC.
     """
     obs = light_curve_event_data(file, fltr)
+    obs_time = obs['MJD'].filled().data
+    obs_flux = obs['FLUXCAL'].filled().data
+    obs_unc = obs['FLUXCALERR'].filled().data
 
     with pm.Model() as model:
-        obs_time = obs['MJD'].filled().data
-        obs_flux = obs['FLUXCAL'].filled().data
-        obs_unc = obs['FLUXCALERR'].filled().data
+        log_A = pm.Uniform(name='Log(Amplitude)', lower=0, upper=6)
+        arctan_beta = pm.Uniform(name='Arctan(Plateau Slope)', lower=-1.56, upper=0)
+        log_gamma = pm.Uniform(name='Log(Plateau Duration)', lower=-3, upper=3)
+        t_0 = pm.Uniform(name='Start Time', lower=-50, upper=50)
+        log_tau_rise = pm.Uniform(name='Log(Rise Time)', lower=-3, upper=3)
+        log_tau_fall = pm.Uniform(name='Log(Fall Time)', lower=-3, upper=3)
+        extra_sigma = pm.HalfNormal(name='sigma', sigma=1)
+        parameters = [log_A, arctan_beta, log_gamma, t_0, log_tau_rise, log_tau_fall]
+        varnames = [p.name for p in parameters]
 
-        A = 10 ** pm.Uniform('Log(Amplitude)', lower=0, upper=6)
-        B = np.tan(pm.Uniform('Arctan(Plateau Slope)', lower=-1.56, upper=0))
-        gamma = 10 ** pm.Uniform('Log(Plateau Duration)', lower=-3, upper=3)
-        t_0 = pm.Uniform('Start Time', lower=-50, upper=50)
-        tau_rise = 10 ** pm.Uniform('Log(Rise Time)', lower=-3, upper=3)
-        tau_fall = 10 ** pm.Uniform('Log(Fall Time)', lower=-3, upper=3)
-        sigma = np.sqrt(pm.HalfNormal('sigma', sigma=1) ** 2 + obs_unc ** 2)
-        parameters = [A, B, gamma, t_0, tau_rise, tau_fall]
+        A = 10. ** log_A
+        beta = np.tan(arctan_beta)
+        gamma = 10. ** log_gamma
+        tau_rise = 10. ** log_tau_rise
+        tau_fall = 10. ** log_tau_fall
 
-        exp_flux = flux_model(obs_time, *parameters)
+        exp_flux = flux_model(obs_time, A, beta, gamma, t_0, tau_rise, tau_fall)
+        sigma = np.sqrt(extra_sigma ** 2. + obs_unc ** 2.)
+        pm.Normal(name='Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
 
-        pm.Normal('Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
-
-    return model
+    return model, varnames
 
 
 def run_mcmc(model, iterations, tuning, walkers):
