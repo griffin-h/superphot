@@ -146,10 +146,11 @@ if __name__ == '__main__':
     parser.add_argument('--iterations', type=int, default=10000, help='Number of steps after burn-in')
     parser.add_argument('--tuning', type=int, default=25000, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=25, help='Number of walkers')
+    parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
     args = parser.parse_args()
 
     for filename in args.filenames:
-        outfile = os.path.basename(filename).replace('.snana.dat', '_F{:d}')
+        outfile = os.path.join(args.output_dir, os.path.basename(filename).replace('.snana.dat', '_F{:d}'))
         for fltr in args.filters:
             model = setup_model(filename, fltr)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)

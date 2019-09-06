@@ -148,7 +148,7 @@ def transform(lst):
     return trans
 
 
-def load_trace(file):
+def load_trace(file, trace_path='.'):
     """
     Read the stored PyMC3 traces into a 3-D array with shape (nfilters, nsteps, nparams).
 
@@ -156,13 +156,15 @@ def load_trace(file):
     ----------
     file : str
         Filename of the original SNANA data file.
+    trace_path : str, optional
+        Directory where the PyMC3 trace data is stored. Default: current directory.
 
     Returns
     -------
     lst : numpy.array
         PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
     """
-    tracefile = os.path.basename(file).replace('.snana.dat', '_F{:d}')
+    tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_F{:d}'))
     lst = []
     for fltr in range(4):
         model, varnames = setup_model(file, fltr)
@@ -173,7 +175,7 @@ def load_trace(file):
     return lst
 
 
-def produce_lc(file, rand_num, z=None):
+def produce_lc(file, rand_num, z=None, trace_path='.'):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
     (number of filters, rand_num).
@@ -186,6 +188,8 @@ def produce_lc(file, rand_num, z=None):
         The number of light curves randomly extracted from the MCMC run.
     z : float, optional
         Redshift of the transient. Default: use the redshift in the SNANA file.
+    trace_path : str, optional
+        Directory where the PyMC3 trace data is stored. Default: current directory.
 
     Returns
     -------
@@ -199,7 +203,7 @@ def produce_lc(file, rand_num, z=None):
         z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
     try:
-        lst = load_trace(file)
+        lst = load_trace(file, trace_path=trace_path)
     except ValueError:
         lst = np.tile(np.nan, (rand_num, 4, len(time)))
     lst_rand_filter = []
@@ -333,7 +337,7 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, folds, depth=None, ma
     return clf
 
 
-def extract_features(t, ndraws):
+def extract_features(t, ndraws, trace_path='.'):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -344,6 +348,8 @@ def extract_features(t, ndraws):
         Table containing the 'filename' and 'redshift' of each transient to be classified.
     ndraws : int
         Number of random draws from the MCMC posterior.
+    trace_path : str, optional
+        Directory where the PyMC3 trace data is stored. Default: current directory.
 
     Returns
     -------
@@ -352,7 +358,8 @@ def extract_features(t, ndraws):
     """
     peakmags = np.concatenate([np.tile(absolute_magnitude(row['filename'], z=row['redshift']), (ndraws, 1))
                                for row in t])
-    models = np.concatenate([produce_lc(row['filename'], ndraws, z=row['redshift']) for row in t])
+    models = np.concatenate([produce_lc(row['filename'], ndraws, z=row['redshift'], trace_path=trace_path)
+                             for row in t])
     pcs = get_principal_components(models)
     features = np.dstack([peakmags, pcs])
     features = features.reshape(-1, 24)
@@ -363,6 +370,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
     parser.add_argument('--ndraws', type=int, default=4, help='Number of draws from the LC posterior for training set')
+    parser.add_argument('--trace-path', type=str, default='.', help='Directory where the PyMC3 trace data is stored')
     args = parser.parse_args()
 
     ids = [os.path.basename(filename).replace('.snana.dat', '').split('_')[2] for filename in args.filenames]
@@ -383,7 +391,7 @@ if __name__ == '__main__':
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask]
     lst_train = lst_final[~lst_final['type'].mask]
 
-    features_train = extract_features(lst_train, args.ndraws)
+    features_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
     classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)
     good_train = ~np.isnan(features_train).any(axis=1)
     folds = good_train.sum() // args.ndraws
