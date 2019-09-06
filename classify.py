@@ -233,23 +233,8 @@ def mean_lc(file, rand_num, z=None):
         2-D list containing the light curve means separated by filter.
 
     """
-    time = np.arange(-50, 150)
-    t = read_snana(file)
-    z = t.meta['REDSHIFT']
-    A_v = t.meta['A_V']
-    lst = load_trace(file)
-    lst_mean_lc = []
-    for params, wl_eff in zip(lst, effective_wavelengths):
-        lc_sum = 0
-        for j in range(rand_num):
-            A = extinction.ccm89(wl_eff, A_v, 3.1)[0]
-            index = np.random.randint(len(params))
-            lc = Func(time, *transform(params[index]))
-            lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
-                      cosmo_P.luminosity_distance(z) ** 2)
-            lc_sum += lum_lc
-        lc_mean = lc_sum / rand_num
-        lst_mean_lc.append(lc_mean)
+    lst_rand_lc = produce_lc(file, rand_num, z)
+    lst_mean_lc = np.mean(lst_rand_lc, axis=1)
     return lst_mean_lc
 
 
