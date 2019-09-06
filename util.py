@@ -103,8 +103,7 @@ def light_curve_event_data(file, fltr, period=180., nsigma=20.):
 
     """
     t = read_snana(file)
-    peak_time = float(t.meta['PEAKMJD'])
-    t['PHASE'] = t['MJD'] - peak_time
+    t['PHASE'] = t['MJD'] - t.meta['PEAKMJD']
     t_event = t[np.abs(t['PHASE']) < period]
     t_cut = cut_outliers(t_event, nsigma)
     t_filt = filter_func(t_cut, fltr)
