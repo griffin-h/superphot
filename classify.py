@@ -198,19 +198,22 @@ def produce_lc(file, rand_num, z=None):
     if not z:
         z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
-    lst = load_trace(file)
-    lst_rand_lc = []
-    A_coeffs = extinction.ccm89(effective_wavelengths, A_v, 3.1)
-    for params, A in zip(lst, A_coeffs):
-        lst_rand_filter = []
-        for j in range(rand_num):
+    try:
+        lst = load_trace(file)
+    except ValueError:
+        lst = np.tile(np.nan, (rand_num, 4, len(time)))
+    lst_rand_filter = []
+    for j in range(rand_num):
+        lst_rand_lc = []
+        A_coeffs = extinction.ccm89(effective_wavelengths, A_v, 3.1)
+        for params, A in zip(lst, A_coeffs):
             index = np.random.randint(len(params))
             lc = flux_model(time, *transform(params[index]))
             lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
                       cosmo_P.luminosity_distance(z).value ** 2)
-            lst_rand_filter.append(lum_lc)
-        lst_rand_lc.append(lst_rand_filter)
-    return lst_rand_lc
+            lst_rand_lc.append(lum_lc)
+        lst_rand_filter.append(lst_rand_lc)
+    return np.array(lst_rand_filter)
 
 
 def absolute_magnitude(file, z=None):
@@ -330,20 +333,30 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, folds, depth=None, ma
     return clf
 
 
-def extract_features(t):
+def extract_features(t, ndraws):
     """
-    Extract features for a table of model light curves. Read in the MCMC traces, randomly select one walker-step,
-    generate the model light curve for those parameters, run PCA on the model light curves, combine the principal
-    components with the peak absolute magnitudes, and add those to the table in the 'features' column. Remove rows
-    where any of the features are nan.
+    Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
+    light curves in each filter.
+
+    Parameters
+    ----------
+    t : astropy.table.Table
+        Table containing the 'filename' and 'redshift' of each transient to be classified.
+    ndraws : int
+        Number of random draws from the MCMC posterior.
+
+    Returns
+    -------
+    features : numpy.ndarray
+        2-D array of 24 features corresponding to each draw from the posterior. Shape = (len(t) * ndraws, 24).
     """
-    peakmags = [absolute_magnitude(row['filename'], z=row['redshift']) for row in t]
-    models = np.squeeze([produce_lc(row['filename'], 1, z=row['redshift']) for row in t])
+    peakmags = np.concatenate([np.tile(absolute_magnitude(row['filename'], z=row['redshift']), (ndraws, 1))
+                               for row in t])
+    models = np.concatenate([produce_lc(row['filename'], ndraws, z=row['redshift']) for row in t])
     pcs = get_principal_components(models)
     features = np.dstack([peakmags, pcs])
-    t['features'] = features.reshape(-1, 24)
-    t = t[~np.isnan(t['features']).any(axis=1)]
-    return t
+    features = features.reshape(-1, 24)
+    return features
 
 
 if __name__ == '__main__':
@@ -368,16 +381,18 @@ if __name__ == '__main__':
     lst_final = join(lst_final, bad_lcs_2, join_type='left')
 
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask]
-    lst_classified = lst_final[~lst_final['type'].mask]
+    lst_train = lst_final[~lst_final['type'].mask]
 
-    lst_train = vstack([lst_classified] * args.ndraws)
-    lst_train = extract_features(lst_train)
-    folds = len(lst_train) // args.copies
-    lst_train['classid'] = [classes.index(t) for t in lst_train['type']]
-    clf = pca_smote_rf(lst_train['features'].data.filled(), lst_train['classid'].data.filled(),
-                       size=0.33, n_est=100, folds=folds)
+    features_train = extract_features(lst_train, args.ndraws)
+    classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)
+    good_train = ~np.isnan(features_train).any(axis=1)
+    folds = good_train.sum() // args.ndraws
+    clf = pca_smote_rf(features_train[good_train], classid_train[good_train], size=0.33, n_est=100, folds=folds)
 
-    lst_test = vstack([lst_final] * args.ndraws)
-    lst_test = extract_features(lst_test)
-    lst_test['classid_pred'] = clf.predict(lst_test['features'].data.filled())
-    lst_test['class_pred'] = [classes[i] for i in lst_test['classid_pred']]
+    features_test = extract_features(lst_final, args.ndraws)
+    good_test = ~np.isnan(features_train).any(axis=1)
+    classid_test = clf.predict(features_test[good_test])
+    lst_final['classid'] = -1
+    lst_final['classid'][good_test] = classid_test
+    lst_final['classid'].mask = ~good_test
+    lst_final.write('results.txt', format='ascii.fixed_width')
