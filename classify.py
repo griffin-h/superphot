@@ -360,10 +360,10 @@ def extract_features(t, ndraws, trace_path='.'):
                                for row in t])
     models = np.concatenate([produce_lc(row['filename'], ndraws, z=row['redshift'], trace_path=trace_path)
                              for row in t])
-    pcs = get_principal_components(models)
-    features = np.dstack([peakmags, pcs])
-    features = features.reshape(-1, 24)
-    return features
+    good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
+    pcs = get_principal_components(models[good])
+    features = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
+    return features, good
 
 
 if __name__ == '__main__':
@@ -391,15 +391,13 @@ if __name__ == '__main__':
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask]
     lst_train = lst_final[~lst_final['type'].mask]
 
-    features_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
-    classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)
-    good_train = ~np.isnan(features_train).any(axis=1)
+    features_train, good_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
+    classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)[good_train]
     folds = good_train.sum() // args.ndraws
-    clf = pca_smote_rf(features_train[good_train], classid_train[good_train], size=0.33, n_est=100, folds=folds)
+    clf = pca_smote_rf(features_train, classid_train, size=0.33, n_est=100, folds=folds)
 
-    features_test = extract_features(lst_final, args.ndraws)
-    good_test = ~np.isnan(features_train).any(axis=1)
-    classid_test = clf.predict(features_test[good_test])
+    features_test, good_test = extract_features(lst_final, args.ndraws)
+    classid_test = clf.predict(features_test)
     lst_final['classid'] = -1
     lst_final['classid'][good_test] = classid_test
     lst_final['classid'].mask = ~good_test
