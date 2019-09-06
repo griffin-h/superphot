@@ -82,7 +82,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def Func(t, A, B, gamma, t_0, tau_rise, tau_fall):
+def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
     """
     Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
     numpy.
@@ -204,7 +204,7 @@ def produce_lc(file, rand_num):
         lst_rand_filter = []
         for j in range(rand_num):
             index = np.random.randint(len(params))
-            lc = Func(time, *transform(params[index]))
+            lc = flux_model(time, *transform(params[index]))
             lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
                       cosmo_P.luminosity_distance(z).value ** 2)
             lst_rand_filter.append(lum_lc)
