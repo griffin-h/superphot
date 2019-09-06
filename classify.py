@@ -46,7 +46,7 @@ from util import read_snana, light_curve_event_data
 from fit_model import setup_model
 
 classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
-effective_wavelengths = [4866., 6215., 7545., 9633.]  # g, r, i, z
+effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
 
 
 def plot_confusion_matrix(cm, classes,
@@ -199,10 +199,10 @@ def produce_lc(file, rand_num):
     A_v = t.meta['A_V']
     lst = load_trace(file)
     lst_rand_lc = []
-    for params, wl_eff in zip(lst, effective_wavelengths):
+    A_coeffs = extinction.ccm89(effective_wavelengths, A_v, 3.1)
+    for params, A in zip(lst, A_coeffs):
         lst_rand_filter = []
         for j in range(rand_num):
-            A = extinction.ccm89(wl_eff, A_v, 3.1)[0]
             index = np.random.randint(len(params))
             lc = Func(time, *transform(params[index]))
             lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
@@ -279,7 +279,7 @@ def absolute_magnitude(file, fltr, norm=True):
     index = np.argmax(t['FLUXCAL'])
     min_m = t['MAG'][index]
     m_std = t['MAGERR'][index]
-    A = extinction.ccm89(effective_wavelengths[fltr], A_v, 3.1)[0]
+    A = extinction.ccm89(effective_wavelengths, A_v, 3.1)[fltr]
     mu = cosmo_P.distmod(z).value
     k = 2.5 * np.log10(1 + z)
     M = min_m - mu - A + 32.5 + k
