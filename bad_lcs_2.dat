@@ -1,0 +1,526 @@
+000137 m31_k_temp.fits (K star),m31_k_temp.fits (K star) Q,Q
+010163 hemtemp0.0.fits (Emission Line) X
+050221 m31_f_temp.fits (F star) X
+050580 sptemp.fits (Late Type) X
+180166 m31_k_temp.fits (K star),sptemp.fits (Late Type) Q,Q
+310042 hemtemp0.0.fits (Emission Line) X
+310058 m31_k_temp.fits (K star) C
+310073 qso2 (Quasar) X
+310146 NGC3379b (Elliptical E1) X
+320267 qso05 (Quasar) Q
+320469 hemtemp0.0.fits (Emission Line) X
+340242 qso0 (Quasar) Q
+350078 m31_k_temp.fits (K star) C
+350233 qso05 (Quasar) Q
+350330 qso3 (Quasar) Q
+350606 qso0 (Quasar) Q
+370098 qso3 (Quasar) Q
+370329 qso0 (Quasar) Q
+370330 qso05 (Quasar) Q
+370344 qso0 (Quasar) C
+370498 qsohw2010c.fits (Quasar) X
+380012 qso05 (Quasar) Q
+380040 NGC5248b (Sb) X
+380318 qso05 (Quasar) Q
+430003 habtemp90.fits (Absorption Line) X
+440011 qso05 (Quasar) Q
+440035 qso05 (Quasar) Q
+440042 m31_f_temp.fits (F star) X
+440264 qsohw2010c.fits (Quasar) X
+440420 qso0 (Quasar) X
+440643 qso3 (Quasar) X
+460001 qso05 (Quasar) Q
+460004 qsohw2010c.fits (Quasar) Q
+460037 qso0 (Quasar) Q
+460064 qso05 (Quasar) Q
+470005 qso05 (Quasar) Q
+470008 qso0 (Quasar) Q
+470244 m31_k_temp.fits (K star) C
+480154 qso05 (Quasar) X
+480464 qso05 (Quasar) Q
+490025 qso05 (Quasar) Q
+510082 qso0 (Quasar) Q
+510238 qso05 (Quasar) Q
+530061 m31_k_temp.fits (K star) Q
+530086 m31_k_temp.fits (K star) Q
+550096 qso05 (Quasar) Q
+570025 sptemp.fits (Late Type) X
+580235 qso3 (Quasar) X
+580276 qso0 (Quasar) X
+580280 qso0 (Quasar) Q
+580312 m31_k_temp.fits (K star) Q
+010013 m31_a_temp.fits (A star) X
+010046 hemtemp0.0.fits (Emission Line) X
+010061 habtemp90.fits (Absorption Line) X
+010181 sptemp.fits (Late Type) X
+010234 habtemp90.fits (Absorption Line) X
+010410 m31_k_temp.fits (K star) Q
+040308 m31_f_temp.fits (F star) X
+040479 sptemp.fits (Late Type) X
+051213 m31_k_temp.fits (K star) Q
+060088 sptemp.fits (Late Type) X
+060198 habtemp90.fits (Absorption Line) X
+060206 eatemp.fits (Elliptical+A stars) X
+060484 sptemp.fits (Late Type) X
+060678 eatemp.fits (Elliptical+A stars) X
+060723 hemtemp0.0.fits (Emission Line) X
+061143 hemtemp0.0.fits (Emission Line) X
+061153 qsohw2010c.fits (Quasar) X
+070020 m31_k_temp.fits (K star) X
+070142 m31_a_temp.fits (A star) X
+070151 sptemp.fits (Late Type) X
+070264 m31_k_temp.fits (K star) X
+070404 eltemp.fits (Elliptical) X
+070567 eltemp.fits (Elliptical),m31_k_temp.fits (K star) Q,Q
+070607 habtemp90.fits (Absorption Line) X
+070620 habtemp90.fits (Absorption Line) X
+070678 m31_k_temp.fits (K star) X
+070806 m31_k_temp.fits (K star) X
+070914 hemtemp0.0.fits (Emission Line) X
+151383 sptemp.fits (Late Type) X
+300010 m31_f_temp.fits (F star) X
+300035 habtemp90.fits (Absorption Line) X
+300047 habtemp90.fits (Absorption Line) X
+300095 m31_f_temp.fits (F star) X
+300107 m31_k_temp.fits (K star) Q
+300119 sptemp.fits (Late Type) X
+300130 habtemp90.fits (Absorption Line) X
+300134 eltemp.fits (Elliptical) X
+300139 habtemp90.fits (Absorption Line) X
+300145 m31_f_temp.fits (F star) X
+300215 eltemp.fits (Elliptical) X
+300225 sptemp.fits (Late Type) X
+310006 eatemp.fits (Elliptical+A stars) X
+310009 eltemp.fits (Elliptical) X
+310022 eltemp.fits (Elliptical) X
+310027 sptemp.fits (Late Type) X
+310041 m31_f_temp.fits (F star) X
+310055 m31_f_temp.fits (F star) X
+310056 eatemp.fits (Elliptical+A stars) X
+310072 qso0 (Quasar) X
+310081 m31_f_temp.fits (F star) X
+310101 qsohw2010c.fits (Quasar) C
+310112 qso0 (Quasar) X
+310132 qso3 (Quasar) Q
+310141 qsohw2010c.fits (Quasar) C
+310162 hemtemp0.0.fits (Emission Line) X
+310184 qso0 (Quasar) Q
+310210 eltemp.fits (Elliptical) X
+310212 qsohw2010c.fits (Quasar) X
+310240 qso05 (Quasar) Q
+310271 sptemp.fits (Late Type) X
+310289 hemtemp0.0.fits (Emission Line) X
+310331 m31_a_temp.fits (A star) X
+310335 qsohw2010c.fits (Quasar) X
+310350 sptemp.fits (Late Type) X
+310363 qso1 (Quasar) Q
+310379 qso0 (Quasar) Q
+310404 qso3 (Quasar) Q
+310467 NGC3379b (Elliptical E1) X
+310473 qso05 (Quasar) Q
+310475 qso05 (Quasar) Q
+310502 qso0 (Quasar) Q
+310550 habtemp90.fits (Absorption Line) X
+310553 habtemp90.fits (Absorption Line) X
+310557 eltemp.fits (Elliptical) X
+320034 qso0 (Quasar) Q
+320041 eatemp.fits (Elliptical+A stars) X
+320105 qso0 (Quasar) Q
+320124 qsohw2010c.fits (Quasar) X
+320266 qso0 (Quasar) Q
+320333 qso0 (Quasar) X
+320335 qso0 (Quasar) Q
+320336 qso0 (Quasar) Q
+320348 qso0 (Quasar) C
+320381 m5star_b (M star) X
+320453 qsohw2010c.fits (Quasar) Q
+320483 qsohw2010c.fits (Quasar) X
+320488 habtemp90.fits (Absorption Line) X
+320489 eatemp.fits (Elliptical+A stars) X
+320492 m31_k_temp.fits (K star) X
+320507 qso0 (Quasar) Q
+320516 qso0 (Quasar) Q
+320525 qso2 (Quasar) X
+320526 qso05 (Quasar) C
+320541 qso0 (Quasar) Q
+320562 m31_k_temp.fits (K star) X
+330005 qso0 (Quasar) Q
+330050 qso0 (Quasar) Q
+330063 m31_k_temp.fits (K star) X
+330165 qso0 (Quasar) Q
+330200 eltemp.fits (Elliptical) X
+330203 qso3 (Quasar) X
+330239 qso0 (Quasar) Q
+340020 qso0 (Quasar) Q
+340024 qso0 (Quasar) X
+340085 qso0 (Quasar) X
+340144 m31_k_temp.fits (K star) Q
+340203 sptemp.fits (Late Type) X
+350098 qso0 (Quasar) X
+350111 qso3 (Quasar) Q
+350146 qsohw2010c.fits (Quasar) Q
+350170 qso05 (Quasar) Q
+350179 qso2 (Quasar) X
+350180 qso1 (Quasar) X
+350181 qsohw2010c.fits (Quasar) C
+350190 qso0 (Quasar) C
+350201 qsohw2010c.fits (Quasar) X
+350223 qso05 (Quasar) Q
+350240 qso05 (Quasar) Q
+350255 eatemp.fits (Elliptical+A stars) X
+350296 qsohw2010c.fits (Quasar) X
+350306 qso0 (Quasar) Q
+350356 qso0 (Quasar) Q
+350362 qso0 (Quasar) Q
+350378 m31_f_temp.fits (F star) X
+350411 NGC4485b (Im) X
+350530 qso0 (Quasar) X
+350535 qso0 (Quasar) Q
+350539 qso05 (Quasar) Q
+350545 habtemp90.fits (Absorption Line) X
+350566 qsohw2010c.fits (Quasar) X
+350600 qso05 (Quasar) Q
+350601 qso0 (Quasar) X
+350619 qsohw2010c.fits (Quasar) C
+350668 qso05 (Quasar) X
+350672 qso0 (Quasar) X
+350688 qso3 (Quasar) X
+350733 NGC4485b (Im) X
+350790 eatemp.fits (Elliptical+A stars) X
+350859 qsohw2010c.fits (Quasar) X
+360040 qsohw2010c.fits (Quasar) Q
+360133 qso0 (Quasar) X
+360134 qso0 (Quasar) X
+360137 m31_k_temp.fits (K star) Q
+360155 qso3 (Quasar) Q
+360165 qso3 (Quasar) X
+360204 qso0 (Quasar) X
+360392 m31_a_temp.fits (A star) X
+360452 qsohw2010c.fits (Quasar) Q
+360516 m31_k_temp.fits (K star) Q
+360642 qsohw2010c.fits (Quasar) C
+360675 qsohw2010c.fits (Quasar) X
+360682 m31_k_temp.fits (K star) Q
+370017 qso2 (Quasar) X
+370022 qso05 (Quasar) Q
+370038 qso05 (Quasar) Q
+370085 qso3 (Quasar) C
+370112 qsohw2010c.fits (Quasar) C
+370113 qsohw2010c.fits (Quasar) C
+370131 qsohw2010c.fits (Quasar) C
+370161 qsohw2010c.fits (Quasar) Q
+370173 qsohw2010c.fits (Quasar) C
+370296 m31_f_temp.fits (F star) X
+370395 qso3 (Quasar) C
+370397 NGC3379b (Elliptical E1) X
+370398 qso05 (Quasar) X
+370467 qso0 (Quasar) X
+370488 qso0 (Quasar) X
+370500 m31_f_temp.fits (F star) X
+370509 eltemp.fits (Elliptical) X
+370533 qso0 (Quasar) X
+370582 NGC5248b (Sb) X
+380038 k0star_b K star) Q
+380049 qso0 (Quasar) X
+380148 eatemp.fits (Elliptical+A stars) X
+380149 qsohw2010c.fits (Quasar) X
+380150 m31_k_temp.fits (K star) X
+380158 sptemp.fits (Late Type) X
+380177 qso3 (Quasar) Q
+380178 qso2 (Quasar) X
+380218 qso3 (Quasar) X
+380220 m31_k_temp.fits (K star) C
+380221 m31_k_temp.fits (K star) Q
+380242 qso0 (Quasar) X
+380249 qso0 (Quasar) Q
+380280 qsohw2010c.fits (Quasar) C
+380311 qso0 (Quasar) X
+380312 qso0 (Quasar) Q
+380319 qso0 (Quasar) Q
+380320 sptemp.fits (Late Type) X
+380393 m31_a_temp.fits (A star) X
+380469 qso2 (Quasar) X
+390057 eltemp.fits (Elliptical) X
+390371 qsohw2010c.fits (Quasar) X
+390545 qsohw2010c.fits (Quasar) C
+390578 m31_k_temp.fits (K star) Q
+390607 sptemp.fits (Late Type) X
+390624 eatemp.fits (Elliptical+A stars) X
+390698 qsohw2010c.fits (Quasar) Q
+390699 qsohw2010c.fits (Quasar) C
+390733 sptemp.fits (Late Type) X
+400064 m31_k_temp.fits (K star) C
+400113 m31_k_temp.fits (K star) Q
+400124 eltemp.fits (Elliptical) X
+400211 m31_k_temp.fits (K star) X
+420022 qsohw2010c.fits (Quasar) X
+420050 m31_a_temp.fits (A star) X
+420143 m31_k_temp.fits (K star) C
+420144 m31_k_temp.fits (K star) Q
+420197 sptemp.fits (Late Type) X
+420285 hemtemp0.0.fits (Emission Line) X
+420307 m31_k_temp.fits (K star) Q
+420335 hemtemp0.0.fits (Emission Line) X
+420339 sptemp.fits (Late Type) X
+420344 qsohw2010c.fits (Quasar) X
+420365 habtemp90.fits (Absorption Line) X
+420368 m31_k_temp.fits (K star) X
+440004 qso0 (Quasar) Q
+440017 qso0 (Quasar) Q
+440032 qso05 (Quasar) Q
+440033 qso3 (Quasar) Q
+440047 qso0 (Quasar) Q
+440070 sptemp.fits (Late Type) X
+440073 qso05 (Quasar) Q
+440086 habtemp90.fits (Absorption Line) X
+440111 sptemp.fits (Late Type) X
+440116 sptemp.fits (Late Type) X
+440130 qso05 (Quasar) Q
+440132 qso0 (Quasar) Q
+440140 sptemp.fits (Late Type) X
+440180 hemtemp0.0.fits (Emission Line) X
+440187 qso0 (Quasar) X
+440215 m31_k_temp.fits (K star) Q
+440246 qso05 (Quasar) Q
+440250 qso2 (Quasar) X
+440257 qso0 (Quasar) Q
+440266 sptemp.fits (Late Type) X
+440295 qso0 (Quasar) Q
+440374 eltemp.fits (Elliptical) X
+440378 qsohw2010c.fits (Quasar) X
+440398 qso0 (Quasar) Q
+440403 NGC2276b (Sc) X
+440408 m31_a_temp.fits (A star) X
+440412 qsohw2010c.fits (Quasar) X
+440422 qso0 (Quasar) X
+440492 m31_a_temp.fits (A star) X
+440515 qso05 (Quasar) Q
+440548 NGC4485b (Im) X
+440583 qso0 (Quasar) Q
+440619 sptemp.fits (Late Type) X
+440639 qso0 (Quasar) C
+450012 qso3 (Quasar) Q
+450035 m31_k_temp.fits (K star) Q
+450052 habtemp90.fits (Absorption Line) X
+450054 qso0 (Quasar) Q
+450057 qso0 (Quasar) Q
+450068 qsohw2010c.fits (Quasar) C
+450079 m31_k_temp.fits (K star) X
+450170 habtemp90.fits (Absorption Line) X
+450174 Quasar Q
+450214 qsohw2010c.fits (Quasar) X
+450240 sptemp.fits (Late Type) X
+450251 m31_f_temp.fits (F star) X
+450277 eltemp.fits (Elliptical) X
+450278 m31_f_temp.fits (F star) X
+450282 sptemp.fits (Late Type) X
+450283 habtemp90.fits (Absorption Line) X
+450304 qso05 (Quasar) Q
+450340 m31_k_temp.fits (K star) Q
+460006 m31_f_temp.fits (F star) X
+460013 qso0 (Quasar) Q
+460021 qsohw2010c.fits (Quasar) C
+460028 qsohw2010c.fits (Quasar) X
+460033 qso3 (Quasar) Q
+460039 m31_k_temp.fits (K star) X
+460052 qso0 (Quasar) Q
+470006 qso05 (Quasar) Q
+470018 qso0 (Quasar) X
+470023 qso3 (Quasar) Q
+470033 qso05 (Quasar) Q
+470034 qso0 (Quasar) Q
+470050 qso0 (Quasar) C
+470051 qso0 (Quasar) Q
+470099 sptemp.fits (Late Type) X
+470114 qso05 (Quasar) Q
+470135 qso0 (Quasar) X
+470143 NGC4485b (Im) X
+470148 m31_k_temp.fits (K star) C
+470149 qsohw2010c.fits (Quasar) X
+470159 qso0 (Quasar) X
+470191 qso0 (Quasar) X
+470197 qso2 (Quasar) X
+470212 qso05 (Quasar) Q
+470229 qso0 (Quasar) X
+470239 m31_k_temp.fits (K star) Q
+470251 qso05 (Quasar) Q
+480069 m31_k_temp.fits (K star) C
+480078 qso0 (Quasar) X
+480114 eltemp.fits (Elliptical) X
+480144 qso3 (Quasar) X
+480150 NGC4889b (Elliptical E4) X
+480151 qso0 (Quasar) X
+480155 sptemp.fits (Late Type) X
+480170 qso1 (Quasar) X
+480214 eatemp.fits (Elliptical+A stars) X
+480265 qsohw2010c.fits (Quasar) Q
+480279 sptemp.fits (Late Type),qso05 (Quasar) Q,Q
+480305 eltemp.fits (Elliptical) X
+480348 qso0 (Quasar) Q
+480396 qso0 (Quasar) X
+480409 m31_k_temp.fits (K star) Q
+480439 qsohw2010c.fits (Quasar) Q
+480481 eatemp.fits (Elliptical+A stars) X
+480628 qso2 (Quasar) X
+480717 eatemp.fits (Elliptical+A stars) X
+480749 qso05 (Quasar) Q
+480750 NGC4889b (Elliptical E4) X
+480783 qsohw2010c.fits (Quasar) X
+480791 m31_k_temp.fits (K star) Q
+480816 qsohw2010c.fits (Quasar) C
+480819 NGC5248b (Sb) X
+480821 qso3 (Quasar) X
+480861 qso0 (Quasar) Q
+480864 qso0 (Quasar) Q
+480901 qso0 (Quasar) X
+480951 qso0 (Quasar) X
+490082 qso3 (Quasar) Q
+490156 qso0 (Quasar) X
+490237 qso2 (Quasar) Q
+490241 qso0 (Quasar) X
+490316 sptemp.fits (Late Type) X
+490422 m31_f_temp.fits (F star) X
+490427 NGC4889b (Elliptical E4) X
+490527 qso0 (Quasar) X
+490531 qso0 (Quasar) X
+490557 qsohw2010c.fits (Quasar) X
+500021 qsohw2010c.fits (Quasar) C
+500024 qso2 (Quasar) Q
+500084 m31_a_temp.fits (A star) X
+500089 qso0 (Quasar) X
+500161 qso0 (Quasar) X
+500162 qsohw2010c.fits (Quasar) C
+500256 qso0 (Quasar) Q
+500274 habtemp90.fits (Absorption Line) X
+500279 hemtemp0.0.fits (Emission Line) X
+500287 qso3 (Quasar) C
+500288 qso3 (Quasar) X
+500333 sptemp.fits (Late Type) X
+500384 sptemp.fits (Late Type) X
+500476 qso0 (Quasar) Q
+500489 qsohw2010c.fits (Quasar) Q
+510018 qso3 (Quasar) X
+510041 eatemp.fits (Elliptical+A stars) X
+510148 m31_k_temp.fits (K star) Q
+510186 m31_a_temp.fits (A star) X
+510202 qso0 (Quasar) X
+510285 qsohw2010c.fits (Quasar) X
+510505 m31_k_temp.fits (K star) Q
+520123 qsohw2010c.fits (Quasar) X
+520138 m31_k_temp.fits (K star) Q
+520222 qsohw2010c.fits (Quasar) C
+530041 sptemp.fits (Late Type) X
+530060 qsohw2010c.fits (Quasar) X
+530062 qsohw2010c.fits (Quasar) X
+530070 qsohw2010c.fits (Quasar) Q
+530071 qsohw2010c.fits (Quasar) Q
+530084 sptemp.fits (Late Type) X
+530094 m31_k_temp.fits (K star) Q
+530115 m31_k_temp.fits (K star) Q
+530130 qsohw2010c.fits (Quasar) C
+530201 qsohw2010c.fits (Quasar) X
+530206 m31_a_temp.fits (A star) X
+530208 hemtemp0.0.fits (Emission Line) X
+530216 qsohw2010c.fits (Quasar) Q
+530238 m31_a_temp.fits (A star) X
+530243 m31_k_temp.fits (K star) Q
+530244 sptemp.fits (Late Type) X
+530303 sptemp.fits (Late Type) X
+530326 qsohw2010c.fits (Quasar) X
+530447 m31_k_temp.fits (K star) X
+530508 m31_k_temp.fits (K star) C
+530521 m31_k_temp.fits (K star) C
+530592 m31_a_temp.fits (A star) X
+530593 sptemp.fits (Late Type) X
+530605 qsohw2010c.fits (Quasar) X
+530631 m31_k_temp.fits (K star) C
+540008 sptemp.fits (Late Type) X
+540086 sptemp.fits (Late Type) X
+540087 sptemp.fits (Late Type) X
+540154 sptemp.fits (Late Type) X
+540165 hemtemp0.0.fits (Emission Line) X
+540251 eltemp.fits (Elliptical) X
+540261 m31_f_temp.fits (F star) X
+540264 m31_k_temp.fits (K star) Q
+540273 m31_a_temp.fits (A star) X
+550003 qso05 (Quasar) Q
+550006 qso0 (Quasar) Q
+550008 qso05 (Quasar) Q
+550009 qso0 (Quasar) Q
+550014 qso05 (Quasar) Q
+550061 qso0 (Quasar) Q
+550062 m31_k_temp.fits (K star) Q
+550063 qsohw2010c.fits (Quasar) C
+550065 qsohw2010c.fits (Quasar) X
+550069 habtemp90.fits (Absorption Line) X
+550134 qso05 (Quasar) Q
+550181 qso05 (Quasar) Q
+550196 sptemp.fits (Late Type) X
+550219 m31_a_temp.fits (A star) X
+550227 m31_k_temp.fits (K star) Q
+560080 qso0 (Quasar) X
+560099 m31_a_temp.fits (A star) X
+560106 qso05 (Quasar) Q
+560107 qso0 (Quasar) X
+560109 eatemp.fits (Elliptical+A stars) X
+560124 qso05 (Quasar) Q
+560125 qso0 (Quasar) Q
+560126 sptemp.fits (Late Type) X
+560128 qso0 (Quasar) Q
+560138 qso05 (Quasar) Q
+560149 m31_k_temp.fits (K star) X
+560155 m31_k_temp.fits (K star) Q
+560166 eltemp.fits (Elliptical) X
+570006 qsohw2010c.fits (Quasar) X
+570011 qsohw2010c.fits (Quasar) X
+570028 qsohw2010c.fits (Quasar) X
+570036 qso0 (Quasar) X
+570041 qso05 (Quasar) Q
+570043 m31_k_temp.fits (K star) C
+570051 qso0 (Quasar) X
+570061 m31_k_temp.fits (K star) Q
+570072 m31_k_temp.fits (K star) X
+580011 qso05 (Quasar) Q
+580013 NGC5248b (Sb) X
+580036 qso05 (Quasar) Q
+580063 qso0 (Quasar) Q
+580069 qso3 (Quasar) X
+580088 m31_k_temp.fits (K star) Q
+580089 m31_k_temp.fits (K star) Q
+580095 qso05 (Quasar) X
+580096 qso0 (Quasar) X
+580121 habtemp90.fits (Absorption Line) X
+580132 m31_k_temp.fits (K star) Q
+580140 NGC4889b (Elliptical E4) X
+580142 eltemp.fits (Elliptical) X
+580153 qsohw2010c.fits (Quasar) X
+580178 qso0 (Quasar) Q
+580182 qso05 (Quasar) X
+580184 qso0 (Quasar) Q
+580233 m31_k_temp.fits (K star) C
+580240 qso05 (Quasar) X
+580248 qso0 (Quasar) X
+580256 qso05 (Quasar) Q
+580257 qso1 (Quasar) X
+580263 qso0 (Quasar) X
+580277 qso05 (Quasar) X
+580282 qso05 (Quasar) X
+580283 qso0 (Quasar) C
+580285 qso0 (Quasar) Q
+580286 qsohw2010c.fits (Quasar) C
+580355 NGC3379b (Elliptical E1) X
+590003 qso0 (Quasar) X
+590009 NGC4889b (Elliptical E4) X
+590011 qso05 (Quasar) Q
+590021 qso3 (Quasar) X
+590028 qsohw2010c.fits (Quasar) C
+590049 qso0 (Quasar) X
+590062 qso0 (Quasar) X
+590063 qso0 (Quasar) C
+590064 qso0 (Quasar) X
+590078 qso1 (Quasar) X
+590109 NGC5248b (Sb) X
+590170 m31_k_temp.fits (K star) Q
+590187 NGC3379b (Elliptical E1) X
+590212 m31_k_temp.fits (K star) C
+590244 qso05 (Quasar) Q

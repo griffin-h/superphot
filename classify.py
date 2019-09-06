@@ -35,6 +35,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pymc3 as pm
 import os
+import argparse
+from astropy.table import Table, join, vstack
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -49,10 +51,7 @@ classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
 
 
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap='Blues'):
+def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='Blues'):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -196,7 +195,7 @@ def produce_lc(file, rand_num, z=None):
     """
     time = np.arange(-50, 150)
     t = read_snana(file)
-    if z is None:
+    if not z:
         z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
     lst = load_trace(file)
@@ -214,230 +213,71 @@ def produce_lc(file, rand_num, z=None):
     return lst_rand_lc
 
 
-def mean_lc(file, rand_num, z=None):
+def absolute_magnitude(file, z=None):
     """
-    Make a 2-D list containing the mean light curves of each filter created using the parameters from the npz file.
+    Calculate the peak absolute magnitudes for a light curve in each filter.
 
     Parameters
     ----------
     file : path (.snana.dat file)
         File extention containing the light curve data.
-    rand_num : int
-        The number of light curves randomly extracted from the MCMC run.
     z : float, optional
         Redshift of the transient. Default: use the redshift in the SNANA file.
 
     Returns
     -------
-    lst_mean_lc : list
-        2-D list containing the light curve means separated by filter.
-
-    """
-    lst_rand_lc = produce_lc(file, rand_num, z)
-    lst_mean_lc = np.mean(lst_rand_lc, axis=1)
-    return lst_mean_lc
-
-
-def absolute_magnitude(file, fltr, z=None, norm=True):
-    """
-    Calculate the peak absolute magnitude for a light curve in a given filter.
-
-    Parameters
-    ----------
-    file : path (.snana.dat file)
-        File extention containing the light curve data.
-    fltr : int
-        Integer 0-3, corresponding to the filters g, r, i, z.
-    z : float, optional
-        Redshift of the transient. Default: use the redshift in the SNANA file.
-    norm : boolean, optional
-        If True, it will randomly choose an absolute magnitude with the mean and standard deviation equal to the
-        absolute magnitude and apparent magnitude standard deviation. This randomness is used for producing copies of
-        light curves to make sure not all the copies have the same absolute magnitude. If False, it will choose the
-        actual absolute magnitude.
-
-    Returns
-    -------
-    M, M_norm : float
+    M : float
         The absolute magnitude of the light curve.
 
     """
-    t = light_curve_event_data(file, fltr)
-    if len(t) == 0:
-        return np.nan
-    if z is None:
+    min_m = []
+    for fltr in range(4):
+        t = light_curve_event_data(file, fltr)
+        if len(t):
+            min_m.append(t['MAG'].min())
+        else:
+            min_m.append(np.nan)
+    min_m = np.array(min_m)
+    if not z:
         z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
-    index = np.argmax(t['FLUXCAL'])
-    min_m = t['MAG'][index]
-    m_std = t['MAGERR'][index]
-    A = extinction.ccm89(effective_wavelengths, A_v, 3.1)[fltr]
+    A = extinction.ccm89(effective_wavelengths, A_v, 3.1)
     mu = cosmo_P.distmod(z).value
     k = 2.5 * np.log10(1 + z)
     M = min_m - mu - A + 32.5 + k
-    if norm:
-        M_norm = np.mean(np.random.normal(M, m_std, 100))
-        return M_norm
     return M
 
 
-# EVERYTHING FOR THE THIRD CELL WAS PICK AND CHOOSE WHICH TRANSIENTS I WANTED TO USE IN MY SAMPLE. IF YOU HAVE ALL OF
-# THE FILES AND PATHS FOR THE LIGHT CURVES AND THEIR MCMC PARAMETERS, YOU CAN LOOP THROUGH USING THOSE DIRECTLY. FOR
-# REFERENCE:
-# NEW_PS1Z HAS THE CORRECT REDSHIFTS FOR OUR OBJECTS
-# LST_CLASS CONTAINS ALL THE PATHS OF SPECTROSCOPICALLY CLASSIFIED TRANSIENTS
-# LST_PS1 CONTAINS THE PATHS OF ALL OF THE TRANSIENTS, CLASSIFIED AND UN CLASSIFIED
-# PS1CONFIRMED_ONLY_SNE_WITHOUT_OUTLIER IS LST_CLASS WITH EACH PATH CORRESPONDING TO A CLASSIFICATION
-# ~/PS1_PS1MD_PSc000000.snana.dat SNIa
-# LST_CLASS_FINAL CONTAINS ALL THE PATHS WE USED IN OUR SAMPLE
-# LST_CLASS_ID CONTAINS ALL THE CLASSIFICATION NUMBERS (SEE DICT_SNE) FOR EACH PATH, IN INDEX ORDER
+def get_principal_components(light_curves, n_components=5, whiten=True):
+    """
+    Run a principal component analysis on a list of light curves and return a list of their 5 principal components.
 
+    Parameters
+    ----------
+    light_curves : array-like
+        A list of evenly-sampled model light curves.
+    n_components : int, optional
+        The number of principal components to calculate. Default: 5.
+    whiten : bool
+        Whiten the input data before calculating the principal components. Default: True.
 
-new_ps1 = open('/data/reu/fdauphin/new_ps1z.dat').readlines()[1:]
-new_ps1z = []
-for i in new_ps1:
-    row = i.split()
-    new_ps1z.append([row[0][3:], float(row[1])])
-
-cls_x = open('/data/reu/fdauphin/lst_class.txt')
-cls = cls_x.readlines()
-cls_x.close()
-lst_class = []
-for i in cls:
-    lst_class.append(i[:-1])
-ps1_x = open('/data/reu/fdauphin/lst_PS1.txt')
-ps1 = ps1_x.readlines()
-ps1_x.close()
-lst_PS1 = []
-for i in ps1:
-    lst_PS1.append(i[:-1])
-conf_x = open('/data/reu/fdauphin/PS1_MDS/ps1confirmed_only_sne_without_outlier.txt')
-conf = conf_x.readlines()[1:]
-conf_x.close()
-lst_conf = []
-for i in conf:
-    lst_conf.append(i.split())
-
-lst_coswo = []
-for classid in range(5):
-    lst_ij = []
-    for j in lst_conf:
-        if i == j[1]:
-            lst_ij.append([j[0][3:], classid])
-    lst_coswo.append(lst_ij)
-
-lst_exists = []
-lst_not_exists = []
-for i in lst_class:
-    if i != '380108':
-        try:
-            file = np.load('/data/reu/fdauphin/NPZ_Files_BIG_CLASS/PS1_PS1MD_PSc' + i + '.npz')
-            lst_exists.append(i)
-        except FileNotFoundError as e:
-            lst_not_exists.append(i)
-lst_exists = np.array(lst_exists)
-lst_not_exists = np.array(lst_not_exists)
-
-lst_class_final = []
-lst_nan = []
-for i in lst_exists:
-    M = absolute_magnitude(i, 3, norm=False)
-    if str(M) != 'nan':
-        lst_class_final.append(i)
-    else:
-        lst_nan.append(i)
-lst_class_final = np.array(lst_class_final)
-lst_nan = np.array(lst_nan)
-
-lst_err = np.concatenate((lst_not_exists, lst_nan))
-
-lst_index_err = []
-for i in lst_err:
-    lst_index_err.append(np.where(np.array(lst_class) == i)[0][0])
-
-train_class = []
-for _, classname in lst_conf:
-    train_class.append(classes.index(classname))
-train_class = np.array(train_class)
-
-lst_class_id = []
-for i in range(len(lst_class)):
-    if i not in lst_index_err:
-        lst_class_id.append(train_class[i])
-lst_class_id = np.array(lst_class_id)
-
-# CREATING COPIES OF THE CLASSIFICATION NUMBERS IN INDEX ORDER. PRINTING OUT THE SHAPES HELPS TO MAKE SURE EVERYTHING IS
-# LOOPING CORRECTLY.
-# [0, 1] --> [0, 0, 0, 0, 1, 1, 1, 1]
-
-copies = 4
-
-lst_class_id_super = []
-for i in lst_class_id:
-    lst_class_id_super.append(np.linspace(i, i, copies))
-lst_class_id_super = np.array(lst_class_id_super)
-lst_class_id_super = np.concatenate(lst_class_id_super, axis=0)
-
-# CREATING COPIES OF THE PATH NAMES IN INDEX ORDER
-# ['000000', '000001'] --> ['000000', '000000', '000000', '000000', '000001', '000001', '000001', '000001']
-
-lst_class_final_super = []
-for i in lst_class_final:
-    lst_class_final_super.append([i] * copies)
-lst_class_final_super = np.array(lst_class_final_super)
-lst_class_final_super = np.concatenate(lst_class_final_super, axis=0)
-
-# CREATING COPIES OF THE LIGHT CURVES IN INDEX ORDER. I DID NOT EXPLICITLY USE THE NPZ_FILE VARIABLE BECAUSE I JUST
-# LOOPED USING IT'S ID NUMBER. YOU WILL NEED TO MAKE A "LST_NPZ" LIST WITH ALL THE NPZ FILES IN INDEX ORDER.
-
-lst_class_lc_super = []
-for filename in lst_class_final:
-    lst_class_lc_super.append(produce_lc(filename, copies))
-lst_class_lc_super = np.array(lst_class_lc_super)
-lst_class_lc_super = np.concatenate(lst_class_lc_super, axis=1)
-
-
-# CONVERTING LIGHT CURVES INTO WHITEN PRINCIPAL COMPONENTS IN EACH FILTER.
-def get_principal_components(light_curves):
+    Returns
+    -------
+    principal_components : array-like
+        A list of the principal components for each of the input light curves.
+    """
     principal_components = []
-    pca = PCA(n_components=5, whiten=True)
-    for model_lc in light_curves:
-        pca.fit(model_lc)
-        lst_clc_trans = pca.transform(model_lc)
-        principal_components.append(lst_clc_trans)
+    pca = PCA(n_components, whiten=whiten)
+    for lc_filter in np.moveaxis(light_curves, 1, 0):
+        pca.fit(lc_filter)
+        princ_comp = pca.transform(lc_filter)
+        principal_components.append(princ_comp)
     principal_components = np.array(principal_components)
+    principal_components = np.moveaxis(principal_components, 0, 1)
     return principal_components
 
 
-get_principal_components(lst_class_lc_super)
-
-# FOR EACH LIGHT CURVE, CONCATENATE ALL THE PRINCIPAL COMPONENTS FOR EACH FILTER INTO ONE ARRAY AND APPEND THE ABSOLUTE
-# VALUES FROM EACH FILTER.
-
-lst_M = []
-for fltr in range(4):
-    lst_M_ij = []
-    for j in lst_class_final:
-        lst_ij = []
-        for k in range(copies):
-            M = [absolute_magnitude(j, fltr)]
-            lst_ij.append(M)
-        lst_M_ij.append(lst_ij)
-    lst_M.append(lst_M_ij)
-lst_M = np.array(lst_M)
-
-lst_M = np.transpose(lst_M, axes=[1, 0, 2, 3])
-lst_M_smart = np.concatenate(lst_M, axis=1)
-lst_pca = np.append(lst_M_smart, lst_pca_smart, axis=2)
-lst_pca = np.concatenate(lst_pca, axis=1)
-
-print(lst_M_smart.shape, lst_pca.shape)
-
-folds = int(len(lst_class_id_super) / copies)
-kf = KFold(folds)
-
-
-def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, depth=None, max_feat=None):
+def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, folds, depth=None, max_feat=None):
     """
     Make a random forest classifier using synthetic minority oversampling technique and kfolding. A lot of the
     documentation is taken directly from SciKit Learn page and should be referenced for further questions.
@@ -452,6 +292,8 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, depth=None, max_feat=
         Should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the test split.
     n_est: float
         The number of trees in the forest.
+    folds : int
+        Number of splits for k-fold cross-validation.
     depth : int or None
         The maxiumum depth of a tree. If None, the tree will have all pure leaves.
     max_feat : int or None
@@ -465,62 +307,77 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, depth=None, max_feat=
 
     """
 
-    class_pred = np.zeros(len(lst_class_id_super))
-    cnt = 0
+    class_pred = np.empty_like(lst_class_id_super, int)
+    kf = KFold(folds)
+    clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, random_state=42, class_weight='balanced',
+                                 criterion='entropy', max_features=max_feat)
+    sampler = SMOTE(random_state=0)
 
     for train_index, test_index in kf.split(lst_pca):
-        print(cnt)
         lst_pca_train, lst_pca_test = lst_pca[train_index], lst_pca[test_index]
         class_train, class_test = lst_class_id_super[train_index], lst_class_id_super[test_index]
 
-        sampler = SMOTE(random_state=0)
-
         lst_pca_res, class_res = sampler.fit_resample(lst_pca_train, class_train)
 
-        lst_pca_r_train, lst_pca_r_test, class_r_train, class_r_test = train_test_split(
-            lst_pca_res, class_res, test_size=size, random_state=42)
-
-        clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, random_state=42, class_weight='balanced',
-                                     criterion='entropy', max_features=max_feat)
+        lst_pca_r_train, lst_pca_r_test, class_r_train, class_r_test = train_test_split(lst_pca_res, class_res,
+                                                                                        test_size=size, random_state=42)
 
         clf.fit(lst_pca_r_train, class_r_train)
         class_pred[test_index] = clf.predict(lst_pca_test)
 
-        cnt += 1
-
-    cat_names = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
-
     cnf_matrix = confusion_matrix(lst_class_id_super, class_pred)
-    plot_confusion_matrix(cnf_matrix, classes=cat_names, normalize=True)
-
+    plot_confusion_matrix(cnf_matrix, normalize=True)
     return clf
 
 
-# MAKE RANDOM FOREST WITH SIZE .33 AND N_EST 100
+def extract_features(t):
+    """
+    Extract features for a table of model light curves. Read in the MCMC traces, randomly select one walker-step,
+    generate the model light curve for those parameters, run PCA on the model light curves, combine the principal
+    components with the peak absolute magnitudes, and add those to the table in the 'features' column. Remove rows
+    where any of the features are nan.
+    """
+    peakmags = [absolute_magnitude(row['filename'], z=row['redshift']) for row in t]
+    models = np.squeeze([produce_lc(row['filename'], 1, z=row['redshift']) for row in t])
+    pcs = get_principal_components(models)
+    features = np.dstack([peakmags, pcs])
+    t['features'] = features.reshape(-1, 24)
+    t = t[~np.isnan(t['features']).any(axis=1)]
+    return t
 
-clf = pca_smote_rf(lst_pca, lst_class_id_super, 0.33, 100)
 
-# MAKE A LIST OF UNCLASSIFIED TRANSIENTS WITH COMPLETED MCMC RUNS
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
+    parser.add_argument('--ndraws', type=int, default=4, help='Number of draws from the LC posterior for training set')
+    args = parser.parse_args()
 
-lst_PS1_final = []
-for i in lst_PS1:
-    if i != '530540' and i != '000518' and i != '420082':
-        try:
-            file = np.load('/data/reu/fdauphin/NPZ_Files_BIG/PS1_PS1MD_PSc' + i + '.npz')
-            lst_PS1_final.append(i)
-        except FileNotFoundError as e:
-            print(i, 'not found')
+    ids = [os.path.basename(filename).replace('.snana.dat', '').split('_')[2] for filename in args.filenames]
+    lst_input = Table([ids, args.filenames], names=['id', 'filename'])
+    new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 521 classified SNe
+    lst_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')  # classifications of 499 SNe
+    bad_lcs = Table.read('bad_lcs.dat', names=['idnum', 'flag0', 'flag1'], format='ascii', fill_values=('-', '0'))
+    bad_lcs['id'] = ['PSc{:0>6d}'.format(idnum) for idnum in bad_lcs['idnum']]  # 1227 VAR, AGN, QSO transients
+    bad_lcs.remove_column('idnum')
+    bad_lcs_2 = np.loadtxt('bad_lcs_2.dat', dtype=str, usecols=[0, -1])  # 526 transients with bad host galaxy spectra
+    bad_lcs_2 = Table([['PSc' + idnum for idnum in bad_lcs_2[:, 0]], bad_lcs_2[:, 1]], names=['id', 'flag2'])
 
-# RECREATE LIGHT CURVES FOR THE UNCLASSIFIED TRANSIENTS USING THEIR MCMC PARAMETERS. WILL NEED TO MAKE A LIST OF PATHS
-# FOR THE NPZ FILES OF UNCLASSIFIED TRANSIENTS TO LOOP THROUGH CORRECTLY.
+    lst_final = join(lst_input, new_ps1z, join_type='left')
+    lst_final = join(lst_final, lst_conf, join_type='left')
+    lst_final = join(lst_final, bad_lcs, join_type='left')
+    lst_final = join(lst_final, bad_lcs_2, join_type='left')
 
-lst_photo_lc = []
-for filename in lst_PS1_final:
-    lst_photo_lc.append(mean_lc(filename, 100))
-lst_photo_lc = np.array(lst_photo_lc)
+    lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask]
+    lst_classified = lst_final[~lst_final['type'].mask]
 
-lst_photo_lc = np.concatenate(lst_photo_lc, axis=1)
+    lst_train = vstack([lst_classified] * args.ndraws)
+    lst_train = extract_features(lst_train)
+    folds = len(lst_train) // args.copies
+    lst_train['classid'] = [classes.index(t) for t in lst_train['type']]
+    clf = pca_smote_rf(lst_train['features'].data.filled(), lst_train['classid'].data.filled(),
+                       size=0.33, n_est=100, folds=folds)
 
-# CONVERT THE LIGHT CURVES OF INCLASSIFIED TRANSIENTS TO PRINCIPAL COMPONENTS AND CLASSIFY THEM.
-lst_pca_unclassified = get_principal_components(lst_photo_lc)
-clf.predict(lst_pca_unclassified)
+    lst_test = vstack([lst_final] * args.ndraws)
+    lst_test = extract_features(lst_test)
+    lst_test['classid_pred'] = clf.predict(lst_test['features'].data.filled())
+    lst_test['class_pred'] = [classes[i] for i in lst_test['classid_pred']]
