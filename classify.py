@@ -389,6 +389,7 @@ if __name__ == '__main__':
     lst_final = join(lst_final, bad_lcs_2, join_type='left')
 
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask]
+    # TODO: filter on host galaxy redshifts
     lst_train = lst_final[~lst_final['type'].mask]
 
     features_train, good_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
@@ -398,7 +399,10 @@ if __name__ == '__main__':
 
     features_test, good_test = extract_features(lst_final, args.ndraws)
     classid_test = clf.predict(features_test)
-    lst_final['classid'] = -1
-    lst_final['classid'][good_test] = classid_test
-    lst_final['classid'].mask = ~good_test
-    lst_final.write('results.txt', format='ascii.fixed_width')
+    good_final = good_test.reshape(-1, args.ndraws).all(axis=1)
+    classid_final = classid_test.reshape(-1, args.ndraws)
+    for i, classname in enumerate(classes):
+        lst_final[classname] = -1
+        lst_final[classname][good_final] = (classid_final == i).sum(axis=1) / args.ndraws
+        lst_final[classname].mask = ~good_final
+    lst_final[['id', 'redshift', 'type'] + classes].write('results.txt', format='ascii.fixed_width')
