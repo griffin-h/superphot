@@ -174,7 +174,7 @@ def load_trace(file):
     return lst
 
 
-def produce_lc(file, rand_num):
+def produce_lc(file, rand_num, z=None):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
     (number of filters, rand_num).
@@ -185,6 +185,8 @@ def produce_lc(file, rand_num):
         File extention containing the light curve data.
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
+    z : float, optional
+        Redshift of the transient. Default: use the redshift in the SNANA file.
 
     Returns
     -------
@@ -193,9 +195,9 @@ def produce_lc(file, rand_num):
 
     """
     time = np.arange(-50, 150)
-    z_index = np.where(np.transpose(new_ps1z)[0] == file)[0][0]
-    z = new_ps1z[z_index][1]
     t = read_snana(file)
+    if z is None:
+        z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
     lst = load_trace(file)
     lst_rand_lc = []
@@ -212,7 +214,7 @@ def produce_lc(file, rand_num):
     return lst_rand_lc
 
 
-def mean_lc(file, rand_num):
+def mean_lc(file, rand_num, z=None):
     """
     Make a 2-D list containing the mean light curves of each filter created using the parameters from the npz file.
 
@@ -222,6 +224,8 @@ def mean_lc(file, rand_num):
         File extention containing the light curve data.
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
+    z : float, optional
+        Redshift of the transient. Default: use the redshift in the SNANA file.
 
     Returns
     -------
@@ -249,17 +253,19 @@ def mean_lc(file, rand_num):
     return lst_mean_lc
 
 
-def absolute_magnitude(file, fltr, norm=True):
+def absolute_magnitude(file, fltr, z=None, norm=True):
     """
-    Calculate the absolute magnitude for a light curve in a given filter.
+    Calculate the peak absolute magnitude for a light curve in a given filter.
 
     Parameters
     ----------
     file : path (.snana.dat file)
         File extention containing the light curve data.
-    fltr: int
+    fltr : int
         Integer 0-3, corresponding to the filters g, r, i, z.
-    norm : boolean
+    z : float, optional
+        Redshift of the transient. Default: use the redshift in the SNANA file.
+    norm : boolean, optional
         If True, it will randomly choose an absolute magnitude with the mean and standard deviation equal to the
         absolute magnitude and apparent magnitude standard deviation. This randomness is used for producing copies of
         light curves to make sure not all the copies have the same absolute magnitude. If False, it will choose the
@@ -272,9 +278,10 @@ def absolute_magnitude(file, fltr, norm=True):
 
     """
     t = light_curve_event_data(file, fltr)
-    z_index = np.where(np.transpose(new_ps1z)[0] == file)[0][0]
-    z = new_ps1z[z_index][1]
-    # z = t.meta['REDSHIFT']
+    if len(t) == 0:
+        return np.nan
+    if z is None:
+        z = t.meta['REDSHIFT']
     A_v = t.meta['A_V']
     index = np.argmax(t['FLUXCAL'])
     min_m = t['MAG'][index]
