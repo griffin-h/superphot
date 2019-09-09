@@ -164,10 +164,11 @@ def load_trace(file, trace_path='.'):
     lst : numpy.array
         PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
     """
-    tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_F{:d}'))
+    tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_{}'))
     lst = []
-    for fltr in range(4):
-        obs = light_curve_event_data(file, fltr)
+    t = light_curve_event_data(file)
+    for fltr in 'griz':
+        obs = t[t['FLT'] == fltr]
         model, varnames = setup_model(obs)
         trace = pm.load_trace(tracefile.format(fltr), model)
         trace_values = np.transpose([trace.get_values(var) for var in varnames])
@@ -237,10 +238,11 @@ def absolute_magnitude(file, z=None):
 
     """
     min_m = []
-    for fltr in range(4):
-        t = light_curve_event_data(file, fltr)
-        if len(t):
-            min_m.append(t['MAG'].min())
+    t = light_curve_event_data(file)
+    for fltr in 'griz':
+        obs = t[t['FLT'] == fltr]
+        if len(obs):
+            min_m.append(obs['MAG'].min())
         else:
             min_m.append(np.nan)
     min_m = np.array(min_m)

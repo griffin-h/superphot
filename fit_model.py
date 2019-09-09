@@ -138,8 +138,7 @@ def run_mcmc(model, iterations, tuning, walkers):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
-    parser.add_argument('--filters', nargs='+', type=int, default=[0, 1, 2, 3],
-                        help='Filters to fit (g=0, r=1, i=2, z=3)')
+    parser.add_argument('--filters', type=str, default='griz', help='Filters to fit (choose from griz)')
     parser.add_argument('--iterations', type=int, default=10000, help='Number of steps after burn-in')
     parser.add_argument('--tuning', type=int, default=25000, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=25, help='Number of walkers')
@@ -149,11 +148,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     for filename in args.filenames:
-        outfile = os.path.join(args.output_dir, os.path.basename(filename).replace('.snana.dat', '_F{:d}'))
+        outfile = os.path.join(args.output_dir, os.path.basename(filename).replace('.snana.dat', '_{}'))
+        t = light_curve_event_data(filename)
+        if t.meta['REDSHIFT'] < 0. and args.require_redshift:
+            raise ValueError('Skipping file with no redshift ' + filename)
         for fltr in args.filters:
-            obs = light_curve_event_data(filename, fltr)
-            if obs.meta['REDSHIFT'] < 0. and args.require_redshift:
-                raise ValueError('Skipping file with no redshift ' + filename)
+            obs = t[t['FLT'] == fltr]
             model, _ = setup_model(obs)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             pm.save_trace(trace, outfile.format(fltr), overwrite=True)
