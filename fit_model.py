@@ -66,24 +66,21 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
     return flux_model
 
 
-def setup_model(file, fltr):
+def setup_model(obs):
     """
     Run a Metropolis Hastings MCMC for a file in a single filter with a certain number iterations, burn in (tuning),
     and walkers. The period and multiplier are 180 and 20, respectively.
 
     Parameters
     ----------
-    file : str
-        Name of .snana.dat file containing the light curve data.
-    fltr: int
-        Integer 0-3, corresponding to the filters g, r, i, z.
+    obs : astropy.table.Table
+        Astropy table containing the light curve data.
 
     Returns
     -------
     model : pymc3.Model
         PyMC3 model object for the input data. Use this to run the MCMC.
     """
-    obs = light_curve_event_data(file, fltr)
     obs_time = obs['MJD'].filled().data
     obs_flux = obs['FLUXCAL'].filled().data
     obs_unc = obs['FLUXCALERR'].filled().data
@@ -147,11 +144,16 @@ if __name__ == '__main__':
     parser.add_argument('--tuning', type=int, default=25000, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=25, help='Number of walkers')
     parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
+    parser.add_argument('--ignore-redshift', action='store_false', dest='require_redshift',
+                        help='Fit the transient even though its redshift is not measured')
     args = parser.parse_args()
 
     for filename in args.filenames:
         outfile = os.path.join(args.output_dir, os.path.basename(filename).replace('.snana.dat', '_F{:d}'))
         for fltr in args.filters:
-            model = setup_model(filename, fltr)
+            obs = light_curve_event_data(filename, fltr)
+            if obs.meta['REDSHIFT'] < 0. and args.require_redshift:
+                raise ValueError('Skipping file with no redshift ' + filename)
+            model, _ = setup_model(obs)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             pm.save_trace(trace, outfile.format(fltr), overwrite=True)

@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 import pymc3 as pm
 import os
 import argparse
-from astropy.table import Table, join, vstack
+from astropy.table import Table, join
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -167,7 +167,8 @@ def load_trace(file, trace_path='.'):
     tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_F{:d}'))
     lst = []
     for fltr in range(4):
-        model, varnames = setup_model(file, fltr)
+        obs = light_curve_event_data(file, fltr)
+        model, varnames = setup_model(obs)
         trace = pm.load_trace(tracefile.format(fltr), model)
         trace_values = np.transpose([trace.get_values(var) for var in varnames])
         lst.append(trace_values)
@@ -175,19 +176,17 @@ def load_trace(file, trace_path='.'):
     return lst
 
 
-def produce_lc(file, rand_num, z=None, trace_path='.'):
+def produce_lc(row, rand_num, trace_path='.'):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
     (number of filters, rand_num).
 
     Parameters
     ----------
-    file : path (.snana.dat file)
-        File extention containing the light curve data.
+    row : astropy.table.row.Row
+        Astropy table row for a given transient, containing columns 'filename', 'A_V', and 'redshift'/'hostz'
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
-    z : float, optional
-        Redshift of the transient. Default: use the redshift in the SNANA file.
     trace_path : str, optional
         Directory where the PyMC3 trace data is stored. Default: current directory.
 
@@ -198,18 +197,18 @@ def produce_lc(file, rand_num, z=None, trace_path='.'):
 
     """
     time = np.arange(-50, 150)
-    t = read_snana(file)
-    if not z:
-        z = t.meta['REDSHIFT']
-    A_v = t.meta['A_V']
+    if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
+        z = row['redshift']
+    else:
+        z = row['hostz']
     try:
-        lst = load_trace(file, trace_path=trace_path)
+        lst = load_trace(row['filename'], trace_path=trace_path)
     except ValueError:
         lst = np.tile(np.nan, (rand_num, 4, len(time)))
     lst_rand_filter = []
     for j in range(rand_num):
         lst_rand_lc = []
-        A_coeffs = extinction.ccm89(effective_wavelengths, A_v, 3.1)
+        A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
         for params, A in zip(lst, A_coeffs):
             index = np.random.randint(len(params))
             lc = flux_model(time, *transform(params[index]))
@@ -366,6 +365,18 @@ def extract_features(t, ndraws, trace_path='.'):
     return features, good
 
 
+def meta_table(filenames):
+    t_meta = Table(names=['id', 'A_V', 'hostz'], dtype=['S9', float, float], masked=True)
+    for filename in filenames:
+        t = read_snana(filename)
+        t_meta.add_row([t.meta['SNID'], t.meta['A_V'], t.meta['REDSHIFT']])
+    t_meta['filename'] = filenames
+    t_meta['hostz'].mask = t_meta['hostz'] < 0.
+    t_meta['A_V'].format = '%.5f'
+    t_meta['hostz'].format = '%.4f'
+    return t_meta
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
@@ -373,8 +384,7 @@ if __name__ == '__main__':
     parser.add_argument('--trace-path', type=str, default='.', help='Directory where the PyMC3 trace data is stored')
     args = parser.parse_args()
 
-    ids = [os.path.basename(filename).replace('.snana.dat', '').split('_')[2] for filename in args.filenames]
-    lst_input = Table([ids, args.filenames], names=['id', 'filename'])
+    lst_input = meta_table(args.filenames)
     new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 521 classified SNe
     lst_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')  # classifications of 499 SNe
     bad_lcs = Table.read('bad_lcs.dat', names=['idnum', 'flag0', 'flag1'], format='ascii', fill_values=('-', '0'))
@@ -388,8 +398,8 @@ if __name__ == '__main__':
     lst_final = join(lst_final, bad_lcs, join_type='left')
     lst_final = join(lst_final, bad_lcs_2, join_type='left')
 
-    lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask]
-    # TODO: filter on host galaxy redshifts
+    lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask
+                          & ~lst_final['hostz'].mask]
     lst_train = lst_final[~lst_final['type'].mask]
 
     features_train, good_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
