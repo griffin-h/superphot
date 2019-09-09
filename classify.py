@@ -336,8 +336,7 @@ def extract_features(t, ndraws, trace_path='.'):
     """
     peakmags = np.concatenate([np.tile(absolute_magnitude(row['filename'], z=row['redshift']), (ndraws, 1))
                                for row in t])
-    models = np.concatenate([produce_lc(row['filename'], ndraws, z=row['redshift'], trace_path=trace_path)
-                             for row in t])
+    models = np.concatenate([produce_lc(row['filename'], ndraws, trace_path=trace_path) for row in t])
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     features = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
