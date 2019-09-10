@@ -15,9 +15,9 @@ from theano.tensor import switch
 from util import light_curve_event_data
 
 
-def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
+def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
     """
-    Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
+    Calculate the flux given amplitude, plateau decrease, plateau duration, start time, rise time, and fall time using
     theano.switch. Parameters.type = TensorType(float64, scalar).
 
     Parameters
@@ -26,8 +26,8 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
         Time.
     A : TensorVariable
         Amplitude of the light curve.
-    B : TensorVariable
-        Slope of the plateau after the light curve peaks.
+    delta : TensorVariable
+        Fractional decrease in the light curve flux during the plateau.
     gamma : TensorVariable
         The duration of the plateau after the light curve peaks.
     t_0 : TransformedRV
@@ -43,13 +43,77 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
         The predicted flux from the given model.
 
     """
-    t_1 = t_0 + gamma
-    flux_model = switch((t < t_1),
-                        ((A + B * (t - t_0)) /
-                         (1. + np.exp((t - t_0) / -tau_rise))),
-                        ((A + B * gamma) * np.exp((t - gamma - t_0) / -tau_fall) /
-                         (1. + np.exp((t - t_0) / -tau_rise))))
+    phase = t - t_0
+    flux_model = A / (1. + np.exp(-phase / tau_rise)) * switch(phase < gamma,
+                                                               (1 - delta * phase / gamma),
+                                                               (1 - delta) * np.exp(-(phase - gamma) / tau_fall))
     return flux_model
+
+
+class LogUniform(pm.distributions.continuous.BoundedContinuous):
+    R"""
+    Continuous log-uniform log-likelihood.
+
+    The pdf of this distribution is
+
+    .. math::
+
+       f(x \mid lower, upper) = \frac{1}{[\log(upper)-\log(lower)]x}
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        plt.style.use('seaborn-darkgrid')
+        x = np.linspace(-3, 3, 500)
+        ls = [0., -2]
+        us = [2., 1]
+        for l, u in zip(ls, us):
+            y = np.zeros(500)
+            y[(x<u) & (x>l)] = 1. / ((np.log(u) - np.log(l)) * x)
+            plt.plot(x, y, label='lower = {}, upper = {}'.format(l, u))
+        plt.xlabel('x', fontsize=12)
+        plt.ylabel('f(x)', fontsize=12)
+        plt.ylim(0, 1)
+        plt.legend(loc=1)
+        plt.show()
+
+    ========  =====================================
+    Support   :math:`x \in [lower, upper]`
+    Mean      :math:`\dfrac{upper - lower}{\log(upper) - \log(lower)}`
+    ========  =====================================
+
+    Parameters
+    ----------
+    lower : float
+        Lower limit.
+    upper : float
+        Upper limit.
+    """
+
+    def __init__(self, lower=0, upper=1, *args, **kwargs):
+        self.lower = lower
+        self.upper = upper
+        self.mean = (upper - lower) / (np.log(upper) - np.log(lower))
+        self.median = np.exp((np.log(upper) + np.log(lower)) / 2.)
+        super().__init__(lower=lower, upper=upper, *args, **kwargs)
+
+    def logp(self, value):
+        """
+        Calculate log-probability of LogUniform distribution at specified value.
+
+        Parameters
+        ----------
+        value : numeric
+            Value for which log-probability is calculated.
+
+        Returns
+        -------
+        TensorVariable
+        """
+        return switch((value >= self.lower) & (value <= self.upper),
+                      -np.log(np.log(self.upper) - np.log(self.lower)) - np.log(value),
+                      -np.inf)
 
 
 def setup_model(obs):
@@ -72,23 +136,18 @@ def setup_model(obs):
     obs_unc = obs['FLUXCALERR'].filled().data
 
     with pm.Model() as model:
-        log_A = pm.Uniform(name='Log(Amplitude)', lower=0, upper=6)
-        arctan_beta = pm.Uniform(name='Arctan(Plateau Slope)', lower=-1.56, upper=0)
-        log_gamma = pm.Uniform(name='Log(Plateau Duration)', lower=-3, upper=3)
-        t_0 = pm.Uniform(name='Start Time', lower=-50, upper=50)
-        log_tau_rise = pm.Uniform(name='Log(Rise Time)', lower=-3, upper=3)
-        log_tau_fall = pm.Uniform(name='Log(Fall Time)', lower=-3, upper=3)
+        A = LogUniform(name='Amplitude', lower=1., upper=100. * obs_flux.max())
+        delta = pm.Uniform(name='Plateau Decrease', lower=0., upper=1.)
+        gamma = pm.NormalMixture(name='Plateau Duration', w=np.array([2., 1.]) / 3., mu=np.array([5., 60.]),
+                                 sigma=np.array([5., 30.]))
+        t_0 = pm.Uniform(name='Start Time', lower=-50., upper=300.)
+        tau_rise = LogUniform(name='Rise Time', lower=0.01, upper=50.)
+        tau_fall = LogUniform(name='Fall Time', lower=1., upper=300.)
         extra_sigma = pm.HalfNormal(name='sigma', sigma=1)
-        parameters = [log_A, arctan_beta, log_gamma, t_0, log_tau_rise, log_tau_fall]
+        parameters = [A, delta, gamma, t_0, tau_rise, tau_fall]
         varnames = [p.name for p in parameters]
 
-        A = 10. ** log_A
-        beta = np.tan(arctan_beta)
-        gamma = 10. ** log_gamma
-        tau_rise = 10. ** log_tau_rise
-        tau_fall = 10. ** log_tau_fall
-
-        exp_flux = flux_model(obs_time, A, beta, gamma, t_0, tau_rise, tau_fall)
+        exp_flux = flux_model(obs_time, *parameters)
         sigma = np.sqrt(extra_sigma ** 2. + obs_unc ** 2.)
         pm.Normal(name='Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
 

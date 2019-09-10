@@ -3,7 +3,7 @@
 import os.path
 from util import light_curve_event_data
 from fit_model import setup_model
-from classify import transform, flux_model
+from classify import flux_model
 import pymc3 as pm
 import numpy as np
 import argparse
@@ -30,7 +30,7 @@ print(pm.summary(trace))
 x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
 plt.figure(figsize=(6., 7.))
 for i in np.random.randint(0, len(trace), size=100):
-    params = transform([trace[j][i] for j in varnames])
+    params = [trace[j][i] for j in varnames]
     y = flux_model(x, *params)
     plt.plot(x, y, 'k', alpha=0.1)
 plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o')

@@ -58,7 +58,7 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='B
     plt.xlabel('Predicted label')
 
 
-def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
+def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
     """
     Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
     numpy.
@@ -69,12 +69,12 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
         Time.
     A : float
         Amplitude of the light curve.
-    B : float
-        Slope of the plateau after the light curve peaks.
+    delta : float
+        Fractional decrease in the light curve flux during the plateau.
     gamma : float
         The duration of the plateau after the light curve peaks.
     t_0 : float
-        Start time, which is very close to when the actaul light curve peak flux occurs.
+        Start time, which is very close to when the actual light curve peak flux occurs.
     tau_rise : float
         Exponential rise time to peak.
     tau_fall : float
@@ -86,43 +86,11 @@ def flux_model(t, A, B, gamma, t_0, tau_rise, tau_fall):
         1-D array of the predicted flux from the given model.
 
     """
-    flux = np.piecewise(t, [t < t_0 + gamma, t >= t_0 + gamma],
-                        [lambda t: ((A + B * (t - t_0)) /
-                                    (1. + np.exp((t - t_0) / -tau_rise))),
-                         lambda t: ((A + B * gamma) * np.exp((t - gamma - t_0) / -tau_fall) /
-                                    (1. + np.exp((t - t_0) / -tau_rise)))])
+    phase = t - t_0
+    flux = A / (1. + np.exp(-phase / tau_rise))
+    flux[phase < gamma] *= (1. - delta * phase[phase < gamma] / gamma)
+    flux[phase >= gamma] *= (1. - delta) * np.exp(-(phase[phase >= gamma] - gamma) / tau_fall)
     return flux
-
-
-def transform(lst):
-    """
-    Convert the parameters from the flux model into their original units.
-    [Amplitude] = counts
-    [Plateau Slope] = counts / day
-    [Plateau Duration] = days
-    [Start Time] = days
-    [Rise Time] = days
-    [Fall Time] = days
-
-    Parameters
-    ----------
-    lst : list
-        1-D list containing the flux model parameters for a light curve in the order shown above.
-
-    Returns
-    -------
-    trans : numpy array
-        1-D array with the converted flux parameters.
-
-    """
-    parameters = lst
-    a = 10 ** parameters[0]
-    b = np.tan(parameters[1])
-    g = 10 ** parameters[2]
-    tr = 10 ** parameters[4]
-    tf = 10 ** parameters[5]
-    trans = np.array([a, b, g, parameters[3], tr, tf])
-    return trans
 
 
 def load_trace(file, trace_path='.'):
@@ -189,7 +157,7 @@ def produce_lc(row, rand_num, trace_path='.'):
         A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
         for params, A in zip(lst, A_coeffs):
             index = np.random.randint(len(params))
-            lc = flux_model(time, *transform(params[index]))
+            lc = flux_model(time, *params[index])
             lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
                       cosmo_P.luminosity_distance(z).value ** 2)
             lst_rand_lc.append(lum_lc)
