@@ -91,11 +91,13 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
         Upper limit.
     """
 
-    def __init__(self, lower=0, upper=1, *args, **kwargs):
+    def __init__(self, lower=1., upper=10., *args, **kwargs):
         self.lower = lower
         self.upper = upper
         self.mean = (upper - lower) / (np.log(upper) - np.log(lower))
         self.median = np.exp((np.log(upper) + np.log(lower)) / 2.)
+        if 'testval' not in kwargs:
+            kwargs['testval'] = 1.
         super().__init__(lower=lower, upper=upper, *args, **kwargs)
 
     def logp(self, value):
