@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser()
 parser.add_argument('filename', type=str, help='Path to PyMC3 trace directory')
 parser.add_argument('--snana-path', type=str, default='.', help='Path to SNANA files')
+parser.add_argument('--show', action='store_true', help='Show the plots instead of saving to a file')
 args = parser.parse_args()
 
 _, _, ps1id, fltr = os.path.split(args.filename.strip('/'))[-1].split('_')
@@ -23,12 +24,12 @@ for fltr in 'griz':
     trace = pm.load_trace(args.filename, model)
 
 pm.traceplot(trace, textsize=6, figsize=(6., 7.))
-pm.pairplot(trace, textsize=6, figsize=(6., 7.))
-pm.plot_posterior(trace, textsize=6, figsize=(6., 7.))
-print(pm.summary(trace))
+pm.pairplot(trace, textsize=6, figsize=(6., 6.))
+pm.plot_posterior(trace, textsize=6, figsize=(6., 4.))
+summary = pm.summary(trace)
 
 x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
-plt.figure(figsize=(6., 7.))
+plt.figure()
 for i in np.random.randint(0, len(trace), size=100):
     params = [trace[j][i] for j in varnames]
     y = flux_model(x, *params)
@@ -36,4 +37,14 @@ for i in np.random.randint(0, len(trace), size=100):
 plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o')
 plt.xlabel('Phase')
 plt.ylabel('Flux')
-plt.show()
+
+if args.show:
+    print(summary)
+    plt.show()
+else:
+    with open(os.path.join(args.filename, 'summary.txt'), 'w') as f:
+        f.write(summary.to_string() + '\n')
+    figure_filename = os.path.join(args.filename, 'Figure_{:d}.pdf')
+    for i in range(4):
+        fig = plt.figure(i + 1)
+        fig.savefig(figure_filename.format(i + 1))
