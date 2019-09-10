@@ -22,7 +22,7 @@ from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
 import itertools
 from util import read_snana, light_curve_event_data
-from fit_model import setup_model
+from fit_model import setup_model, flux_model
 
 classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
@@ -56,41 +56,6 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='B
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-
-
-def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
-    """
-    Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
-    numpy.
-
-    Parameters
-    ----------
-    t : 1-D numpy array
-        Time.
-    A : float
-        Amplitude of the light curve.
-    delta : float
-        Fractional decrease in the light curve flux during the plateau.
-    gamma : float
-        The duration of the plateau after the light curve peaks.
-    t_0 : float
-        Start time, which is very close to when the actual light curve peak flux occurs.
-    tau_rise : float
-        Exponential rise time to peak.
-    tau_fall : float
-        Exponential decay time after the plateau ends.
-
-    Returns
-    -------
-    flux : numpy array
-        1-D array of the predicted flux from the given model.
-
-    """
-    phase = t - t_0
-    flux = A / (1. + np.exp(-phase / tau_rise))
-    flux[phase < gamma] *= (1. - delta * phase[phase < gamma] / gamma)
-    flux[phase >= gamma] *= (1. - delta) * np.exp(-(phase[phase >= gamma] - gamma) / tau_fall)
-    return flux
 
 
 def load_trace(file, trace_path='.'):
@@ -150,40 +115,37 @@ def produce_lc(row, rand_num, trace_path='.'):
     try:
         lst = load_trace(row['filename'], trace_path=trace_path)
     except ValueError:
-        lst = np.tile(np.nan, (rand_num, 4, len(time)))
+        return np.tile(np.nan, (rand_num, 4, len(time)))
     lst_rand_filter = []
     for j in range(rand_num):
         lst_rand_lc = []
         A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
         for params, A in zip(lst, A_coeffs):
             index = np.random.randint(len(params))
-            lc = flux_model(time, *params[index])
-            lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) *
-                      cosmo_P.luminosity_distance(z).value ** 2)
+            lc = flux_model(time, *params[index]).eval()
+            lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) * cosmo_P.luminosity_distance(z).value ** 2)
             lst_rand_lc.append(lum_lc)
         lst_rand_filter.append(lst_rand_lc)
     return np.array(lst_rand_filter)
 
 
-def absolute_magnitude(file, z=None):
+def absolute_magnitude(row):
     """
     Calculate the peak absolute magnitudes for a light curve in each filter.
 
     Parameters
     ----------
-    file : path (.snana.dat file)
-        File extention containing the light curve data.
-    z : float, optional
-        Redshift of the transient. Default: use the redshift in the SNANA file.
+    row : astropy.table.row.Row
+        Astropy table row for a given transient, containing columns 'filename', 'A_V', and 'redshift'/'hostz'
 
     Returns
     -------
-    M : float
-        The absolute magnitude of the light curve.
+    M : numpy.array
+        The peak absolute magnitudes of the light curve.
 
     """
     min_m = []
-    t = light_curve_event_data(file)
+    t = light_curve_event_data(row['filename'])
     for fltr in 'griz':
         obs = t[t['FLT'] == fltr]
         if len(obs):
@@ -191,10 +153,11 @@ def absolute_magnitude(file, z=None):
         else:
             min_m.append(np.nan)
     min_m = np.array(min_m)
-    if not z:
-        z = t.meta['REDSHIFT']
-    A_v = t.meta['A_V']
-    A = extinction.ccm89(effective_wavelengths, A_v, 3.1)
+    if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
+        z = row['redshift']
+    else:
+        z = row['hostz']
+    A = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
     mu = cosmo_P.distmod(z).value
     k = 2.5 * np.log10(1 + z)
     M = min_m - mu - A + 32.5 + k
@@ -302,9 +265,8 @@ def extract_features(t, ndraws, trace_path='.'):
     features : numpy.ndarray
         2-D array of 24 features corresponding to each draw from the posterior. Shape = (len(t) * ndraws, 24).
     """
-    peakmags = np.concatenate([np.tile(absolute_magnitude(row['filename'], z=row['redshift']), (ndraws, 1))
-                               for row in t])
-    models = np.concatenate([produce_lc(row['filename'], ndraws, trace_path=trace_path) for row in t])
+    peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
+    models = np.concatenate([produce_lc(row, ndraws, trace_path=trace_path) for row in t])
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     features = np.dstack([peakmags[good], pcs]).reshape(-1, 24)

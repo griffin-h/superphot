@@ -13,7 +13,7 @@ import numpy as np
 import pymc3 as pm
 from theano.tensor import switch
 from util import light_curve_event_data
-from diagnostics import diagnostics
+import matplotlib.pyplot as plt
 
 
 def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
@@ -183,6 +183,49 @@ def run_mcmc(model, iterations, tuning, walkers):
     return trace
 
 
+def diagnostics(obs, trace, varnames, filename='.', show=False):
+    """Make some diagnostic plots for the PyMC3 fitting.
+
+    Parameters
+    ----------
+    obs : astropy.table.Table
+        Observed light curve data in a single filter.
+    trace : pymc3.MultiTrace
+        Trace object that is the result of the PyMC3 fit.
+    varnames : list
+        List of variable names in the PyMC3 model.
+    filename : str, optional
+        Directory in which to save the output plots and summary. Not used if `show=True`.
+    show : bool, optional
+        If True, show the plots instead of saving them.
+    """
+    pm.traceplot(trace, textsize=6, figsize=(6., 7.))
+    pm.pairplot(trace, textsize=6, figsize=(6., 6.))
+    pm.plot_posterior(trace, textsize=6, figsize=(6., 4.))
+    summary = pm.summary(trace)
+
+    x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
+    plt.figure()
+    for i in np.random.randint(0, len(trace), size=100):
+        params = [trace[j][i] for j in varnames]
+        y = flux_model(x, *params)
+        plt.plot(x, y.eval(), 'k', alpha=0.1)
+    plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o')
+    plt.xlabel('Phase')
+    plt.ylabel('Flux')
+
+    if show:
+        print(summary)
+        plt.show()
+    else:
+        with open(os.path.join(filename, 'summary.txt'), 'w') as f:
+            f.write(summary.to_string() + '\n')
+        figure_filename = os.path.join(filename, 'Figure_{:d}.pdf')
+        for i in range(4):
+            fig = plt.figure(i + 1)
+            fig.savefig(figure_filename.format(i + 1))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
@@ -202,7 +245,7 @@ if __name__ == '__main__':
             raise ValueError('Skipping file with no redshift ' + filename)
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
-            model, _ = setup_model(obs)
+            model, varnames = setup_model(obs)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             pm.save_trace(trace, outfile.format(fltr), overwrite=True)
-            diagnostics(obs, trace, outfile.format(fltr))
+            diagnostics(obs, trace, varnames, outfile.format(fltr))
