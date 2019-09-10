@@ -13,6 +13,7 @@ import numpy as np
 import pymc3 as pm
 from theano.tensor import switch
 from util import light_curve_event_data
+from diagnostics import diagnostics
 
 
 def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
@@ -204,3 +205,4 @@ if __name__ == '__main__':
             model, _ = setup_model(obs)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             pm.save_trace(trace, outfile.format(fltr), overwrite=True)
+            diagnostics(obs, trace, outfile.format(fltr))
