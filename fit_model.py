@@ -11,7 +11,7 @@ import os
 import argparse
 import numpy as np
 import pymc3 as pm
-from theano.tensor import switch
+import theano.tensor as tt
 from util import light_curve_event_data
 import matplotlib.pyplot as plt
 
@@ -45,9 +45,9 @@ def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
 
     """
     phase = t - t_0
-    flux_model = A / (1. + np.exp(-phase / tau_rise)) * switch(phase < gamma,
-                                                               (1 - delta * phase / gamma),
-                                                               (1 - delta) * np.exp(-(phase - gamma) / tau_fall))
+    flux_model = A / (1. + tt.exp(-phase / tau_rise)) * tt.switch(phase < gamma,
+                                                                  (1 - delta * phase / gamma),
+                                                                  (1 - delta) * tt.exp(-(phase - gamma) / tau_fall))
     return flux_model
 
 
@@ -92,14 +92,33 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
         Upper limit.
     """
 
-    def __init__(self, lower=1., upper=10., *args, **kwargs):
-        self.lower = lower
-        self.upper = upper
-        self.mean = (upper - lower) / (np.log(upper) - np.log(lower))
-        self.median = np.exp((np.log(upper) + np.log(lower)) / 2.)
-        if 'testval' not in kwargs:
-            kwargs['testval'] = 1.
+    def __init__(self, lower=1., upper=np.e, *args, **kwargs):
+        log_lower = tt.log(lower)
+        log_upper = tt.log(upper)
+        self.logdist = pm.Uniform.dist(lower=log_lower, upper=log_upper)
+        self.median = tt.exp(self.logdist.median)
+        self.mean = (upper - lower) / (log_upper - log_lower)
+
         super().__init__(lower=lower, upper=upper, *args, **kwargs)
+
+    def random(self, point=None, size=None):
+        """
+        Draw random values from LogUniform distribution.
+
+        Parameters
+        ----------
+        point : dict, optional
+            Dict of variable values on which random values are to be
+            conditioned (uses default point if not specified).
+        size : int, optional
+            Desired size of random sample (returns one sample if not
+            specified).
+
+        Returns
+        -------
+        array
+        """
+        return tt.exp(self.logdist.random(point=point, size=size))
 
     def logp(self, value):
         """
@@ -114,9 +133,8 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
         -------
         TensorVariable
         """
-        return switch((value >= self.lower) & (value <= self.upper),
-                      -np.log(np.log(self.upper) - np.log(self.lower)) - np.log(value),
-                      -np.inf)
+        log_value = tt.log(value)
+        return self.logdist.logp(log_value) - log_value
 
 
 def setup_model(obs):
@@ -134,24 +152,25 @@ def setup_model(obs):
     model : pymc3.Model
         PyMC3 model object for the input data. Use this to run the MCMC.
     """
-    obs_time = obs['MJD'].filled().data
+    obs_time = obs['PHASE'].filled().data
     obs_flux = obs['FLUXCAL'].filled().data
     obs_unc = obs['FLUXCALERR'].filled().data
 
     with pm.Model() as model:
         A = LogUniform(name='Amplitude', lower=1., upper=100. * obs_flux.max())
         delta = pm.Uniform(name='Plateau Decrease', lower=0., upper=1.)
-        gamma = pm.NormalMixture(name='Plateau Duration', w=np.array([2., 1.]) / 3., mu=np.array([5., 60.]),
-                                 sigma=np.array([5., 30.]))
+        BoundedNormal = pm.Bound(pm.Normal, lower=0.)
+        gamma = pm.Mixture(name='Plateau Duration', w=tt.constant([2., 1.]) / 3., testval=1.,
+                           comp_dists=[BoundedNormal.dist(mu=5., sigma=5.), BoundedNormal.dist(mu=60., sigma=30.)])
         t_0 = pm.Uniform(name='Start Time', lower=-50., upper=300.)
         tau_rise = LogUniform(name='Rise Time', lower=0.01, upper=50.)
         tau_fall = LogUniform(name='Fall Time', lower=1., upper=300.)
-        extra_sigma = pm.HalfNormal(name='sigma', sigma=1)
+        extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
         parameters = [A, delta, gamma, t_0, tau_rise, tau_fall]
         varnames = [p.name for p in parameters]
 
         exp_flux = flux_model(obs_time, *parameters)
-        sigma = np.sqrt(extra_sigma ** 2. + obs_unc ** 2.)
+        sigma = tt.sqrt(tt.pow(extra_sigma, 2.) + tt.pow(obs_unc, 2.))
         pm.Normal(name='Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
 
     return model, varnames
