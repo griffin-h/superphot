@@ -218,13 +218,13 @@ def diagnostics(obs, trace, varnames, filename='.', show=False):
     show : bool, optional
         If True, show the plots instead of saving them.
     """
-    pm.traceplot(trace, textsize=6, figsize=(6., 7.))
-    pm.pairplot(trace, textsize=6, figsize=(6., 6.))
-    pm.plot_posterior(trace, textsize=6, figsize=(6., 4.))
+    f1 = pm.traceplot(trace, textsize=6, figsize=(6., 7.)).flat[0].get_figure()
+    f2 = pm.pairplot(trace, kind='kde', contour=False, textsize=6, figsize=(6., 6.)).flat[0].get_figure()
+    f3 = pm.plot_posterior(trace, textsize=6, figsize=(6., 4.)).flat[0].get_figure()
     summary = pm.summary(trace)
 
     x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
-    plt.figure()
+    f4 = plt.figure()
     for i in np.random.randint(0, len(trace), size=100):
         params = [trace[j][i] for j in varnames]
         y = flux_model(x, *params)
@@ -239,10 +239,10 @@ def diagnostics(obs, trace, varnames, filename='.', show=False):
     else:
         with open(os.path.join(filename, 'summary.txt'), 'w') as f:
             f.write(summary.to_string() + '\n')
-        figure_filename = os.path.join(filename, 'Figure_{:d}.pdf')
-        for i in range(4):
-            fig = plt.figure(i + 1)
-            fig.savefig(figure_filename.format(i + 1))
+        f1.savefig(os.path.join(filename, 'trace.pdf'))
+        f2.savefig(os.path.join(filename, 'corner.pdf'))
+        f3.savefig(os.path.join(filename, 'posterior.pdf'))
+        f4.savefig(os.path.join(filename, 'lightcurve.pdf'))
 
 
 if __name__ == '__main__':
