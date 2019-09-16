@@ -65,16 +65,16 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
         import matplotlib.pyplot as plt
         import numpy as np
         plt.style.use('seaborn-darkgrid')
-        x = np.linspace(-3, 3, 500)
-        ls = [0., -2]
-        us = [2., 1]
+        x = np.linspace(1., 300., 500)
+        ls = [3., 150.]
+        us = [100., 250.]
         for l, u in zip(ls, us):
             y = np.zeros(500)
-            y[(x<u) & (x>l)] = 1. / ((np.log(u) - np.log(l)) * x)
+            inside = (x<u) & (x>l)
+            y[inside] = 1. / ((np.log(u) - np.log(l)) * x[inside])
             plt.plot(x, y, label='lower = {}, upper = {}'.format(l, u))
         plt.xlabel('x', fontsize=12)
         plt.ylabel('f(x)', fontsize=12)
-        plt.ylim(0, 1)
         plt.legend(loc=1)
         plt.show()
 
@@ -92,6 +92,8 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
     """
 
     def __init__(self, lower=1., upper=np.e, *args, **kwargs):
+        if lower <= 0. or upper <= 0.:
+            raise ValueError('LogUniform bounds must be positive')
         log_lower = tt.log(lower)
         log_upper = tt.log(upper)
         self.logdist = pm.Uniform.dist(lower=log_lower, upper=log_upper)
