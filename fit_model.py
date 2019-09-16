@@ -226,7 +226,7 @@ def diagnostics(obs, trace, varnames, filename='.', show=False):
 
     x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
     f4 = plt.figure()
-    for i in np.random.randint(0, len(trace), size=100):
+    for i in np.random.randint(0, len(trace) * trace.nchains, size=100):
         params = [trace[j][i] for j in varnames]
         y = flux_model(x, *params)
         plt.plot(x, y.eval(), 'k', alpha=0.1)
