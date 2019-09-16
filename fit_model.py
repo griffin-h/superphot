@@ -16,9 +16,9 @@ from util import light_curve_event_data
 import matplotlib.pyplot as plt
 
 
-def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
+def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
     """
-    Calculate the flux given amplitude, plateau decrease, plateau duration, start time, rise time, and fall time using
+    Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
     theano.switch. Parameters.type = TensorType(float64, scalar).
 
     Parameters
@@ -27,12 +27,12 @@ def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
         Time.
     A : TensorVariable
         Amplitude of the light curve.
-    delta : TensorVariable
-        Fractional decrease in the light curve flux during the plateau.
+    beta : TensorVariable
+        Light curve slope during the plateau, normalized by the amplitude.
     gamma : TensorVariable
         The duration of the plateau after the light curve peaks.
     t_0 : TransformedRV
-        Start time, which is very close to when the actaul light curve peak flux occurs.
+        Start time, which is very close to when the actual light curve peak flux occurs.
     tau_rise : TensorVariable
         Exponential rise time to peak.
     tau_fall : TensorVariable
@@ -45,9 +45,8 @@ def flux_model(t, A, delta, gamma, t_0, tau_rise, tau_fall):
 
     """
     phase = t - t_0
-    flux_model = A / (1. + tt.exp(-phase / tau_rise)) * tt.switch(phase < gamma,
-                                                                  (1 - delta * phase / gamma),
-                                                                  (1 - delta) * tt.exp(-(phase - gamma) / tau_fall))
+    flux_model = A / (1. + tt.exp(-phase / tau_rise)) * \
+        tt.switch(phase < gamma, 1. - beta * phase, (1. - beta * gamma) * tt.exp((gamma - phase) / tau_fall))
     return flux_model
 
 
@@ -158,7 +157,7 @@ def setup_model(obs):
 
     with pm.Model() as model:
         A = LogUniform(name='Amplitude', lower=1., upper=100. * obs_flux.max())
-        delta = pm.Uniform(name='Plateau Decrease', lower=0., upper=1.)
+        beta = pm.Uniform(name='Plateau Slope', lower=0., upper=0.01)
         BoundedNormal = pm.Bound(pm.Normal, lower=0.)
         gamma = pm.Mixture(name='Plateau Duration', w=tt.constant([2., 1.]) / 3., testval=1.,
                            comp_dists=[BoundedNormal.dist(mu=5., sigma=5.), BoundedNormal.dist(mu=60., sigma=30.)])
@@ -166,7 +165,7 @@ def setup_model(obs):
         tau_rise = LogUniform(name='Rise Time', lower=0.01, upper=50.)
         tau_fall = LogUniform(name='Fall Time', lower=1., upper=300.)
         extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
-        parameters = [A, delta, gamma, t_0, tau_rise, tau_fall]
+        parameters = [A, beta, gamma, t_0, tau_rise, tau_fall]
         varnames = [p.name for p in parameters]
 
         exp_flux = flux_model(obs_time, *parameters)
