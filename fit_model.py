@@ -14,6 +14,7 @@ import pymc3 as pm
 import theano.tensor as tt
 from util import light_curve_event_data
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
 
 
 def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
@@ -176,6 +177,75 @@ def setup_model(obs):
     return model, parameters
 
 
+def make_new_priors(traces, parameters, res=100):
+    """
+    For each parameter, combine the posteriors for the four filters and use that as the new prior.
+
+    Parameters
+    ----------
+    traces : list
+        List of MultiTrace objects for each filter.
+    parameters : list
+        List of Theano variables for which to combine the posteriors. (Only names of the parameters are used.)
+    res : int, optional
+        Number of points to sample the KDE for the new priors.
+
+    Returns
+    -------
+    x_priors : list
+        List of Numpy arrays containing the x-values of the new priors.
+    y_priors : list
+        List of Numpy arrays containing the y-values of the new priors.
+    """
+    x_priors = []
+    y_priors = []
+    for param in parameters:
+        combined_trace = np.concatenate([trace[param.name] for trace in traces])
+        x = np.linspace(combined_trace.min(), combined_trace.max(), res)
+        y = gaussian_kde(combined_trace)
+        x_priors.append(x)
+        y_priors.append(y(x))
+    return x_priors, y_priors
+
+
+def setup_new_model(obs, parameters, x_priors, y_priors):
+    """
+    Set up a PyMC3 model for observations in a given filter using the given priors and parameter names.
+
+    Parameters
+    ----------
+    obs : astropy.table.Table
+        Astropy table containing the light curve data.
+    parameters : list
+        List of Theano variables for which to create new parameters. (Only names of the parameters are used.)
+    x_priors : list
+        List of Numpy arrays containing the x-values of the priors.
+    y_priors : list
+        List of Numpy arrays containing the y-values of the priors.
+
+    Returns
+    -------
+    model : pymc3.Model
+        PyMC3 model object for the input data. Use this to run the MCMC.
+    """
+    obs_time = obs['PHASE'].filled().data
+    obs_flux = obs['FLUXCAL'].filled().data
+    obs_unc = obs['FLUXCALERR'].filled().data
+
+    with pm.Model() as model:
+        new_params = []
+        for param, x, y in zip(parameters, x_priors, y_priors):
+            new_param = pm.Interpolated(name=param.name, x_points=x, pdf_points=y)
+            new_params.append(new_param)
+
+        exp_flux = flux_model(obs_time, *new_params)
+        extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
+        sigma = tt.sqrt(tt.pow(extra_sigma, 2.) + tt.pow(obs_unc, 2.))
+        pm.Normal(name='Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
+
+    return model, new_params
+
+
 def run_mcmc(model, iterations, tuning, walkers):
     """
     Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.
@@ -262,9 +332,23 @@ if __name__ == '__main__':
         t = light_curve_event_data(filename)
         if t.meta['REDSHIFT'] < 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
+        traces = []
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
             model, parameters = setup_model(obs)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
-            pm.save_trace(trace, outfile.format(fltr), overwrite=True)
-            diagnostics(obs, trace, parameters, outfile.format(fltr))
+            outfile1 = outfile.format('1' + fltr)
+            pm.save_trace(trace, outfile1, overwrite=True)
+            diagnostics(obs, trace, parameters, outfile1)
+            traces.append(trace)
+
+        x_priors, y_priors = make_new_priors(traces, parameters)
+        print('starting second iteration of fitting')
+
+        for fltr in args.filters:
+            obs = t[t['FLT'] == fltr]
+            new_model, new_params = setup_new_model(obs, parameters, x_priors, y_priors)
+            trace = run_mcmc(new_model, args.iterations, args.tuning, args.walkers)
+            outfile2 = outfile.format('2' + fltr)
+            pm.save_trace(trace, outfile2, overwrite=True)
+            diagnostics(obs, trace, new_params, outfile2)
