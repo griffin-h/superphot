@@ -168,13 +168,12 @@ def setup_model(obs):
         tau_fall = LogUniform(name='Fall Time', lower=1., upper=300.)
         extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
         parameters = [A, beta, gamma, t_0, tau_rise, tau_fall]
-        varnames = [p.name for p in parameters]
 
         exp_flux = flux_model(obs_time, *parameters)
         sigma = tt.sqrt(tt.pow(extra_sigma, 2.) + tt.pow(obs_unc, 2.))
         pm.Normal(name='Flux_Posterior', mu=exp_flux, sigma=sigma, observed=obs_flux)
 
-    return model, varnames
+    return model, parameters
 
 
 def run_mcmc(model, iterations, tuning, walkers):
@@ -203,7 +202,7 @@ def run_mcmc(model, iterations, tuning, walkers):
     return trace
 
 
-def diagnostics(obs, trace, varnames, filename='.', show=False):
+def diagnostics(obs, trace, parameters, filename='.', show=False):
     """Make some diagnostic plots for the PyMC3 fitting.
 
     Parameters
@@ -212,24 +211,24 @@ def diagnostics(obs, trace, varnames, filename='.', show=False):
         Observed light curve data in a single filter.
     trace : pymc3.MultiTrace
         Trace object that is the result of the PyMC3 fit.
-    varnames : list
-        List of variable names in the PyMC3 model.
+    parameters : list
+        List of Theano variables in the PyMC3 model.
     filename : str, optional
         Directory in which to save the output plots and summary. Not used if `show=True`.
     show : bool, optional
         If True, show the plots instead of saving them.
     """
     f1 = pm.traceplot(trace, textsize=6, figsize=(6., 7.)).flat[0].get_figure()
-    f2 = pm.pairplot(trace, kind='kde', contour=False, textsize=6, figsize=(6., 6.)).flat[0].get_figure()
+    f2 = pm.pairplot(trace, kind='hexbin', textsize=6, figsize=(6., 6.)).flat[0].get_figure()
     f3 = pm.plot_posterior(trace, textsize=6, figsize=(6., 4.)).flat[0].get_figure()
     summary = pm.summary(trace)
 
     x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
+    flux = flux_model(x, *parameters)
     f4 = plt.figure()
     for i in np.random.randint(0, len(trace) * trace.nchains, size=100):
-        params = [trace[j][i] for j in varnames]
-        y = flux_model(x, *params)
-        plt.plot(x, y.eval(), 'k', alpha=0.1)
+        y = flux.eval({param: trace[param.name][i] for param in parameters})
+        plt.plot(x, y, 'k', alpha=0.1)
     plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o')
     plt.xlabel('Phase')
     plt.ylabel('Flux')
@@ -265,7 +264,7 @@ if __name__ == '__main__':
             raise ValueError('Skipping file with no redshift ' + filename)
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
-            model, varnames = setup_model(obs)
+            model, parameters = setup_model(obs)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             pm.save_trace(trace, outfile.format(fltr), overwrite=True)
-            diagnostics(obs, trace, varnames, outfile.format(fltr))
+            diagnostics(obs, trace, parameters, outfile.format(fltr))
