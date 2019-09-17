@@ -313,6 +313,7 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
         f2.savefig(os.path.join(filename, 'corner.pdf'))
         f3.savefig(os.path.join(filename, 'posterior.pdf'))
         f4.savefig(os.path.join(filename, 'lightcurve.pdf'))
+        plt.close('all')
 
 
 if __name__ == '__main__':
