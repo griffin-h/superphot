@@ -11,6 +11,7 @@ import extinction
 import numpy as np
 import matplotlib.pyplot as plt
 import pymc3 as pm
+import theano.tensor as tt
 import os
 import argparse
 from astropy.table import Table, join
@@ -89,7 +90,37 @@ def load_trace(file, trace_path='.', version='2'):
     return lst
 
 
-def produce_lc(row, rand_num, trace_path='.', trace_version='2'):
+def produce_lc(trace, tmin=-50., tmax=150.):
+    """
+    Load the stored PyMC3 traces and produce model light curves from the parameters.
+
+    Parameters
+    ----------
+    trace : numpy.array
+        PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
+    tmin : float, optional
+        Minimum phase (in days, with respect to PEAKMJD) to calculate the model. Default: -50.
+    tmax : float, optional
+        Maximum phase (in days, with respect to PEAKMJD) to calculate the model. Default: 150.
+
+    Returns
+    -------
+    time : numpy.array
+        Range of times over which the model was calculated.
+    lc : numpy.array
+        Model light curves. Shape = (len(trace) * nwalkers, nfilters, len(time)).
+    """
+    time = np.arange(tmin, tmax)
+    tt.config.compute_test_value = 'ignore'
+    parameters = tt.dmatrices(6)
+    flux = flux_model(time[:, np.newaxis, np.newaxis], *parameters)
+    param_values = {param: values for param, values in zip(parameters, trace.T)}
+    lc = flux.eval(param_values)
+    lc = np.moveaxis(lc, 0, 2)
+    return time, lc
+
+
+def luminosity_model(row, rand_num, trace_path='.', trace_version='2'):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
     (number of filters, rand_num).
@@ -111,26 +142,19 @@ def produce_lc(row, rand_num, trace_path='.', trace_version='2'):
         2-D list containing a random number of light curves for each filter.
 
     """
-    time = np.arange(-50, 150)
+    try:
+        trace = load_trace(row['filename'], trace_path=trace_path, version=trace_version)
+    except ValueError:
+        return np.tile(np.nan, (rand_num, 4, 200))
+    i_rand = np.random.randint(trace.shape[1], size=rand_num)
+    _, lc = produce_lc(trace[:, i_rand])
     if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
         z = row['redshift']
     else:
         z = row['hostz']
-    try:
-        lst = load_trace(row['filename'], trace_path=trace_path, version=trace_version)
-    except ValueError:
-        return np.tile(np.nan, (rand_num, 4, len(time)))
-    lst_rand_filter = []
-    for j in range(rand_num):
-        lst_rand_lc = []
-        A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
-        for params, A in zip(lst, A_coeffs):
-            index = np.random.randint(len(params))
-            lc = flux_model(time, *params[index]).eval()
-            lum_lc = (4 * np.pi * lc * 10 ** (A / 2.5) * cosmo_P.luminosity_distance(z).value ** 2)
-            lst_rand_lc.append(lum_lc)
-        lst_rand_filter.append(lst_rand_lc)
-    return np.array(lst_rand_filter)
+    A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
+    lc *= 10. ** (A_coeffs[:, np.newaxis] / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
+    return lc
 
 
 def absolute_magnitude(row):
@@ -270,7 +294,7 @@ def extract_features(t, ndraws, trace_path='.'):
         2-D array of 24 features corresponding to each draw from the posterior. Shape = (len(t) * ndraws, 24).
     """
     peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
-    models = np.concatenate([produce_lc(row, ndraws, trace_path=trace_path) for row in t])
+    models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     features = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
