@@ -58,7 +58,7 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='B
     plt.xlabel('Predicted label')
 
 
-def load_trace(file, trace_path='.'):
+def load_trace(file, trace_path='.', version='2'):
     """
     Read the stored PyMC3 traces into a 3-D array with shape (nfilters, nsteps, nparams).
 
@@ -68,26 +68,28 @@ def load_trace(file, trace_path='.'):
         Filename of the original SNANA data file.
     trace_path : str, optional
         Directory where the PyMC3 trace data is stored. Default: current directory.
+    version : str, optional
+        Version of the fit to use, where "version" is the character in the filename before the filter. Default: '2'.
 
     Returns
     -------
     lst : numpy.array
         PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
     """
-    tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_{}'))
+    tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_{}{}'))
     lst = []
     t = light_curve_event_data(file)
     for fltr in 'griz':
         obs = t[t['FLT'] == fltr]
         model, varnames = setup_model(obs)
-        trace = pm.load_trace(tracefile.format(fltr), model)
+        trace = pm.load_trace(tracefile.format(version, fltr), model)
         trace_values = np.transpose([trace.get_values(var) for var in varnames])
         lst.append(trace_values)
     lst = np.array(lst)
     return lst
 
 
-def produce_lc(row, rand_num, trace_path='.'):
+def produce_lc(row, rand_num, trace_path='.', trace_version='2'):
     """
     Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
     (number of filters, rand_num).
@@ -100,6 +102,8 @@ def produce_lc(row, rand_num, trace_path='.'):
         The number of light curves randomly extracted from the MCMC run.
     trace_path : str, optional
         Directory where the PyMC3 trace data is stored. Default: current directory.
+    trace_version : str, optional
+        Version of the trace to use, i.e., the character before the filter in the filename. Default: '2'.
 
     Returns
     -------
@@ -113,7 +117,7 @@ def produce_lc(row, rand_num, trace_path='.'):
     else:
         z = row['hostz']
     try:
-        lst = load_trace(row['filename'], trace_path=trace_path)
+        lst = load_trace(row['filename'], trace_path=trace_path, version=trace_version)
     except ValueError:
         return np.tile(np.nan, (rand_num, 4, len(time)))
     lst_rand_filter = []
