@@ -15,9 +15,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     _, _, ps1id, fltr = os.path.split(args.filename.strip('/'))[-1].split('_')
+    fltr = fltr.strip('12')
     snana_file = os.path.join(args.snana_path, f'PS1_PS1MD_{ps1id}.snana.dat')
     t = light_curve_event_data(snana_file)
     obs = t[t['FLT'] == fltr]
-    model, varnames = setup_model(obs)
+    model, parameters = setup_model(obs)
     trace = pm.load_trace(args.filename, model)
-    diagnostics(obs, trace, varnames, args.filename, args.show)
+    diagnostics(obs, trace, parameters, args.filename, args.show)
