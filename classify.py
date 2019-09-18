@@ -313,6 +313,25 @@ def meta_table(filenames):
     return t_meta
 
 
+def plot_final_fit(filename, trace_path='.'):
+    t = light_curve_event_data(filename)
+    trace1 = load_trace(filename, trace_path, version='1')
+    trace2 = load_trace(filename, trace_path, version='2')
+    time1, lc1 = produce_lc(trace1)
+    time2, lc2 = produce_lc(trace2)
+    colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
+    for fltr, color, lc_filt1, lc_filt2 in zip('griz', colors, lc1.mean(axis=0), lc2.mean(axis=0)):
+        obs = t[t['FLT'] == fltr]
+        plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color, label=fltr)
+        plt.plot(time1, lc_filt1, color=color, ls=':')
+        plt.plot(time2, lc_filt2, color=color)
+    plt.title(os.path.basename(filename))
+    plt.xlabel('Phase')
+    plt.ylabel('Flux')
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
