@@ -139,7 +139,7 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
         return self.logdist.logp(log_value) - log_value
 
 
-def setup_model(obs):
+def setup_model(obs, max_flux=None):
     """
     Run a Metropolis Hastings MCMC for a file in a single filter with a certain number iterations, burn in (tuning),
     and walkers. The period and multiplier are 180 and 20, respectively.
@@ -157,9 +157,13 @@ def setup_model(obs):
     obs_time = obs['PHASE'].filled().data
     obs_flux = obs['FLUXCAL'].filled().data
     obs_unc = obs['FLUXCALERR'].filled().data
+    if max_flux is None:
+        max_flux = obs_flux.max()
+    if max_flux <= 0.01:
+        raise ValueError('The maximum flux is very low. Cannot fit the model.')
 
     with pm.Model() as model:
-        A = LogUniform(name='Amplitude', lower=1., upper=100. * obs_flux.max())
+        A = LogUniform(name='Amplitude', lower=1., upper=100. * max_flux)
         beta = pm.Uniform(name='Plateau Slope', lower=0., upper=0.01)
         BoundedNormal = pm.Bound(pm.Normal, lower=0.)
         gamma = pm.Mixture(name='Plateau Duration', w=tt.constant([2., 1.]) / 3., testval=1.,
@@ -335,10 +339,11 @@ if __name__ == '__main__':
         t = light_curve_event_data(filename)
         if t.meta['REDSHIFT'] < 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
+        max_flux = t['FLUXCAL'].max()
         traces = []
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
-            model, parameters = setup_model(obs)
+            model, parameters = setup_model(obs, max_flux)
             trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             outfile1 = outfile.format('1' + fltr)
             pm.save_trace(trace, outfile1, overwrite=True)
