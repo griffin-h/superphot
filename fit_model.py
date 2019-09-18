@@ -294,11 +294,13 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
     summary = pm.summary(trace)
 
     x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
-    flux = flux_model(x, *parameters)
+    tt.config.compute_test_value = 'ignore'
+    vparams = tt.dvectors(6)
+    flux = flux_model(x[:, np.newaxis], *vparams)
+    i = np.random.randint(len(trace) * trace.nchains, size=100)
+    y = flux.eval({vparam: trace[param.name][i] for vparam, param in zip(vparams, parameters)})
     f4 = plt.figure()
-    for i in np.random.randint(0, len(trace) * trace.nchains, size=100):
-        y = flux.eval({param: trace[param.name][i] for param in parameters})
-        plt.plot(x, y, 'k', alpha=0.1)
+    plt.plot(x, y, 'k', alpha=0.1)
     plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o')
     plt.xlabel('Phase')
     plt.ylabel('Flux')
