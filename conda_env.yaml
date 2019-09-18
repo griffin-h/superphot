@@ -1,0 +1,8 @@
+name: classify
+dependencies:
+  - astropy
+  - scikit-learn
+  - conda-forge::arviz
+  - conda-forge::extinction
+  - conda-forge::imbalanced-learn
+  - conda-forge::pymc3=3.7
