@@ -332,6 +332,7 @@ if __name__ == '__main__':
     parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
     parser.add_argument('--ignore-redshift', action='store_false', dest='require_redshift',
                         help='Fit the transient even though its redshift is not measured')
+    parser.add_argument('-f', '--force', action='store_true', help='redo the fit even if the trace is already saved')
     args = parser.parse_args()
 
     for filename in args.filenames:
@@ -344,10 +345,14 @@ if __name__ == '__main__':
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
             model, parameters = setup_model(obs, max_flux)
-            trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
             outfile1 = outfile.format('1' + fltr)
-            pm.save_trace(trace, outfile1, overwrite=True)
-            diagnostics(obs, trace, parameters, outfile1)
+            if not os.path.exists(outfile1) or args.force:
+                trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
+                outfile1 = outfile.format('1' + fltr)
+                pm.save_trace(trace, outfile1, overwrite=True)
+                diagnostics(obs, trace, parameters, outfile1)
+            else:
+                trace = pm.load_trace(outfile1, model)
             traces.append(trace)
 
         x_priors, y_priors = make_new_priors(traces, parameters)
@@ -356,7 +361,8 @@ if __name__ == '__main__':
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
             new_model, new_params = setup_new_model(obs, parameters, x_priors, y_priors)
-            trace = run_mcmc(new_model, args.iterations, args.tuning, args.walkers)
             outfile2 = outfile.format('2' + fltr)
-            pm.save_trace(trace, outfile2, overwrite=True)
-            diagnostics(obs, trace, new_params, outfile2)
+            if not os.path.exists(outfile2) or args.force:
+                trace = run_mcmc(new_model, args.iterations, args.tuning, args.walkers)
+                pm.save_trace(trace, outfile2, overwrite=True)
+                diagnostics(obs, trace, new_params, outfile2)
