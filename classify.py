@@ -31,7 +31,7 @@ classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
 
 
-def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='Blues'):
+def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='Blues'):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -39,10 +39,6 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='B
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
-
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
     plt.axis('equal')
     plt.title(title)
@@ -57,8 +53,9 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion matrix', cmap='B
                  horizontalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.savefig('confusion_matrix_norm.pdf' if normalize else 'confusion_matrix.pdf')
 
 
 def load_trace(file, trace_path='.', version='2'):
@@ -272,6 +269,7 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, folds, depth=None, ma
         class_pred[test_index] = clf.predict(lst_pca_test)
 
     cnf_matrix = confusion_matrix(lst_class_id_super, class_pred)
+    plot_confusion_matrix(cnf_matrix)
     plot_confusion_matrix(cnf_matrix, normalize=True)
     return clf
 
@@ -298,7 +296,7 @@ def extract_features(t, ndraws, trace_path='.'):
     peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
     logging.info('peak magnitudes extracted')
     models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
-    logging.info('models LCs produced')
+    logging.info('model LCs produced')
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     logging.info('PCA finished')
@@ -364,9 +362,9 @@ if __name__ == '__main__':
                           & ~lst_final['hostz'].mask]
     lst_final = extract_features(lst_final, args.ndraws, trace_path=args.trace_path)
     lst_train = lst_final[~lst_final['type'].mask]
+    lst_train.write('training_data.txt', format='ascii.fixed_width')
+    lst_final.write('test_data.txt', format='ascii.fixed_width')
     logging.info('test and train tables produced')
-    print(lst_train)
-    print(lst_final)
 
     classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)
     clf = pca_smote_rf(lst_train['features'], classid_train, size=0.33, n_est=100, folds=len(lst_train) // args.ndraws)
@@ -378,4 +376,3 @@ if __name__ == '__main__':
         lst_final[classname] = (classid_final == i).mean(axis=1)
     lst_final[['id', 'redshift', 'type'] + classes].write('results.txt', format='ascii.fixed_width')
     logging.info('finished')
-
