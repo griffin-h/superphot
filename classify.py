@@ -14,6 +14,7 @@ import pymc3 as pm
 import theano.tensor as tt
 import os
 import argparse
+import logging
 from astropy.table import Table, join
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
@@ -25,6 +26,7 @@ import itertools
 from util import read_snana, light_curve_event_data
 from fit_model import setup_model, flux_model
 
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
 
@@ -294,9 +296,12 @@ def extract_features(t, ndraws, trace_path='.'):
         2-D array of 24 features corresponding to each draw from the posterior. Shape = (len(t) * ndraws, 24).
     """
     peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
+    logging.info('peak magnitudes extracted')
     models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
+    logging.info('models LCs produced')
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
+    logging.info('PCA finished')
     features = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
     return features, good
 
@@ -339,6 +344,7 @@ if __name__ == '__main__':
     parser.add_argument('--trace-path', type=str, default='.', help='Directory where the PyMC3 trace data is stored')
     args = parser.parse_args()
 
+    logging.info('started')
     lst_input = meta_table(args.filenames)
     new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 521 classified SNe
     lst_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')  # classifications of 499 SNe
@@ -356,11 +362,15 @@ if __name__ == '__main__':
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask
                           & ~lst_final['hostz'].mask]
     lst_train = lst_final[~lst_final['type'].mask]
+    logging.info('test and train tables produced')
+    print(lst_train)
+    print(lst_final)
 
     features_train, good_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
     classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)[good_train]
     folds = good_train.sum() // args.ndraws
     clf = pca_smote_rf(features_train, classid_train, size=0.33, n_est=100, folds=folds)
+    logging.info('classifier trained')
 
     features_test, good_test = extract_features(lst_final, args.ndraws)
     classid_test = clf.predict(features_test)
@@ -371,3 +381,5 @@ if __name__ == '__main__':
         lst_final[classname][good_final] = (classid_final == i).sum(axis=1) / args.ndraws
         lst_final[classname].mask = ~good_final
     lst_final[['id', 'redshift', 'type'] + classes].write('results.txt', format='ascii.fixed_width')
+    logging.info('finished')
+
