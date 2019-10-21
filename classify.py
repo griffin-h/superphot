@@ -292,8 +292,8 @@ def extract_features(t, ndraws, trace_path='.'):
 
     Returns
     -------
-    features : numpy.ndarray
-        2-D array of 24 features corresponding to each draw from the posterior. Shape = (len(t) * ndraws, 24).
+    t_good : astropy.table.Table
+        Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
     peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
     logging.info('peak magnitudes extracted')
@@ -302,8 +302,9 @@ def extract_features(t, ndraws, trace_path='.'):
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     logging.info('PCA finished')
-    features = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
-    return features, good
+    t_good = t[good]
+    t_good['features'] = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
+    return t_good
 
 
 def meta_table(filenames):
@@ -361,25 +362,20 @@ if __name__ == '__main__':
 
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask
                           & ~lst_final['hostz'].mask]
+    lst_final = extract_features(lst_final, args.ndraws, trace_path=args.trace_path)
     lst_train = lst_final[~lst_final['type'].mask]
     logging.info('test and train tables produced')
     print(lst_train)
     print(lst_final)
 
-    features_train, good_train = extract_features(lst_train, args.ndraws, trace_path=args.trace_path)
-    classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)[good_train]
-    folds = good_train.sum() // args.ndraws
-    clf = pca_smote_rf(features_train, classid_train, size=0.33, n_est=100, folds=folds)
+    classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)
+    clf = pca_smote_rf(lst_train['features'], classid_train, size=0.33, n_est=100, folds=len(lst_train) // args.ndraws)
     logging.info('classifier trained')
 
-    features_test, good_test = extract_features(lst_final, args.ndraws)
-    classid_test = clf.predict(features_test)
-    good_final = good_test.reshape(-1, args.ndraws).all(axis=1)
+    classid_test = clf.predict(lst_final['features'])
     classid_final = classid_test.reshape(-1, args.ndraws)
     for i, classname in enumerate(classes):
-        lst_final[classname] = -1
-        lst_final[classname][good_final] = (classid_final == i).sum(axis=1) / args.ndraws
-        lst_final[classname].mask = ~good_final
+        lst_final[classname] = (classid_final == i).mean(axis=1)
     lst_final[['id', 'redshift', 'type'] + classes].write('results.txt', format='ascii.fixed_width')
     logging.info('finished')
 
