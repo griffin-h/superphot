@@ -306,7 +306,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     logging.info('PCA finished')
-    t_good = t[good]
+    t_good = t[good.reshape(-1, ndraws).all(axis=1)]
     t_good['features'] = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
     return t_good
 
