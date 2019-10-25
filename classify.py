@@ -274,7 +274,7 @@ def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, folds, depth=None, ma
     return clf
 
 
-def extract_features(t, ndraws, trace_path='.'):
+def extract_features(t, ndraws, trace_path='.', use_stored=False):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -293,10 +293,16 @@ def extract_features(t, ndraws, trace_path='.'):
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
-    peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
-    logging.info('peak magnitudes extracted')
-    models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
-    logging.info('model LCs produced')
+    if use_stored:
+        stored = np.load('classify.npz')
+        peakmags = stored['peakmags']
+        models = stored['models']
+    else:
+        peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
+        logging.info('peak magnitudes extracted')
+        models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
+        logging.info('model LCs produced')
+        np.savez_compressed('classify.npz', peakmags=peakmags, models=models)
     good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
     pcs = get_principal_components(models[good])
     logging.info('PCA finished')
@@ -341,6 +347,7 @@ if __name__ == '__main__':
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
     parser.add_argument('--ndraws', type=int, default=4, help='Number of draws from the LC posterior for training set')
     parser.add_argument('--trace-path', type=str, default='.', help='Directory where the PyMC3 trace data is stored')
+    parser.add_argument('--use-stored-models', action='store_true', help='Use stored model LCs in classify.npz')
     args = parser.parse_args()
 
     logging.info('started')
@@ -360,7 +367,7 @@ if __name__ == '__main__':
 
     lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask
                           & ~lst_final['hostz'].mask]
-    lst_final = extract_features(lst_final, args.ndraws, trace_path=args.trace_path)
+    lst_final = extract_features(lst_final, args.ndraws, trace_path=args.trace_path, use_stored=args.use_stored_models)
     lst_train = lst_final[~lst_final['type'].mask]
     lst_train.write('training_data.txt', format='ascii.fixed_width')
     lst_final.write('test_data.txt', format='ascii.fixed_width')
