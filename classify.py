@@ -287,6 +287,8 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
         Number of random draws from the MCMC posterior.
     trace_path : str, optional
         Directory where the PyMC3 trace data is stored. Default: current directory.
+    use_stored : bool, optional
+        Use the peak magnitudes and model LCs stored in classify.npz instead of calculating new ones.
 
     Returns
     -------
