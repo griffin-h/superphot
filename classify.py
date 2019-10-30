@@ -251,10 +251,11 @@ def train_classifier(features, labels, n_est, folds, depth=None, max_feat=None):
                                  criterion='entropy', max_features=max_feat)
     sampler = SMOTE()
 
-    for train_index, test_index in kf.split(features):
+    for i, (train_index, test_index) in enumerate(kf.split(features)):
         features_resamp, labels_resamp = sampler.fit_resample(features[train_index], labels[train_index])
         clf.fit(features_resamp, labels_resamp)
         labels_test[test_index] = clf.predict(features[test_index])
+        logging.info(f'completed fold {i+1:d}/{folds:d} of cross-validation')
 
     cnf_matrix = confusion_matrix(labels, labels_test)
     plot_confusion_matrix(cnf_matrix)
