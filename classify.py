@@ -345,44 +345,66 @@ def plot_final_fit(filename, trace_path='.'):
     plt.show()
 
 
+def save_test_data(test_table):
+    save_table = test_table[['id', 'A_V', 'hostz', 'filename', 'redshift', 'err', 'type']]
+    save_table.write('test_data.txt', format='ascii.fixed_width', overwrite=True)
+    np.savez_compressed('test_data.npz', features=test_table['features'])
+    logging.info('test data saved to test_data.txt and test_data.npz')
+
+
+def load_test_data():
+    test_table = Table.read('test_data.txt', format='ascii.fixed_width')
+    test_table['features'] = np.load('test_data.npz')['features']
+    logging.info('test data loaded from test_data.txt and test_data.npz')
+    return test_table
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
     parser.add_argument('--ndraws', type=int, default=4, help='Number of draws from the LC posterior for training set')
     parser.add_argument('--trace-path', type=str, default='.', help='Directory where the PyMC3 trace data is stored')
     parser.add_argument('--use-stored-models', action='store_true', help='Use stored model LCs in classify.npz')
+    parser.add_argument('--use-stored-features', action='store_true', help='Use stored features in test_data.npz')
     args = parser.parse_args()
 
     logging.info('started')
-    lst_input = meta_table(args.filenames)
-    new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 521 classified SNe
-    lst_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')  # classifications of 499 SNe
-    bad_lcs = Table.read('bad_lcs.dat', names=['idnum', 'flag0', 'flag1'], format='ascii', fill_values=('-', '0'))
-    bad_lcs['id'] = ['PSc{:0>6d}'.format(idnum) for idnum in bad_lcs['idnum']]  # 1227 VAR, AGN, QSO transients
-    bad_lcs.remove_column('idnum')
-    bad_lcs_2 = np.loadtxt('bad_lcs_2.dat', dtype=str, usecols=[0, -1])  # 526 transients with bad host galaxy spectra
-    bad_lcs_2 = Table([['PSc' + idnum for idnum in bad_lcs_2[:, 0]], bad_lcs_2[:, 1]], names=['id', 'flag2'])
+    if not args.use_stored_features:
+        lst_input = meta_table(args.filenames)
+        new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 521 classified SNe
+        lst_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')  # classifications of 499 SNe
+        bad_lcs = Table.read('bad_lcs.dat', names=['idnum', 'flag0', 'flag1'], format='ascii', fill_values=('-', '0'))
+        bad_lcs['id'] = ['PSc{:0>6d}'.format(idnum) for idnum in bad_lcs['idnum']]  # 1227 VAR, AGN, QSO transients
+        bad_lcs.remove_column('idnum')
+        bad_lcs_2 = np.loadtxt('bad_lcs_2.dat', dtype=str, usecols=[0, -1])  # 526 transients with bad host spectra
+        bad_lcs_2 = Table([['PSc' + idnum for idnum in bad_lcs_2[:, 0]], bad_lcs_2[:, 1]], names=['id', 'flag2'])
 
-    lst_final = join(lst_input, new_ps1z, join_type='left')
-    lst_final = join(lst_final, lst_conf, join_type='left')
-    lst_final = join(lst_final, bad_lcs, join_type='left')
-    lst_final = join(lst_final, bad_lcs_2, join_type='left')
+        lst_final = join(lst_input, new_ps1z, join_type='left')
+        lst_final = join(lst_final, lst_conf, join_type='left')
+        lst_final = join(lst_final, bad_lcs, join_type='left')
+        lst_final = join(lst_final, bad_lcs_2, join_type='left')
 
-    lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask
-                          & ~lst_final['hostz'].mask]
-    lst_test = extract_features(lst_final, args.ndraws, trace_path=args.trace_path, use_stored=args.use_stored_models)
+        lst_final = lst_final[lst_final['flag0'].mask & lst_final['flag1'].mask & lst_final['flag2'].mask
+                              & ~lst_final['hostz'].mask]
+        lst_test = extract_features(lst_final, args.ndraws, trace_path=args.trace_path,
+                                    use_stored=args.use_stored_models)
+        save_test_data(lst_test)
+    else:
+        lst_test = load_test_data()
+
     lst_train = lst_test[~lst_test['type'].mask]
-    lst_train.write('training_data.txt', format='ascii.fixed_width')
-    lst_test.write('test_data.txt', format='ascii.fixed_width')
-    logging.info('test and train tables produced')
-
-    classid_train = np.repeat([classes.index(t) for t in lst_train['type']], args.ndraws)
-    clf = pca_smote_rf(lst_train['features'], classid_train, size=0.33, n_est=100, folds=len(lst_train) // args.ndraws)
+    n_train = len(np.unique(lst_train['id']))
+    classid_train = [classes.index(t) for t in lst_train['type']]
+    clf = pca_smote_rf(lst_train['features'], classid_train, size=0.33, n_est=100, folds=n_train)
     logging.info('classifier trained')
 
     classid_test = clf.predict(lst_test['features'])
-    classid_final = classid_test.reshape(-1, args.ndraws)
+    meta_columns = ['id', 'hostz', 'type']
+    lst_test.keep_columns(meta_columns)
+    lst_test['type'].fill_value = 'unk.'
     for i, classname in enumerate(classes):
-        lst_final[classname] = (classid_final == i).mean(axis=1)
-    lst_final[['id', 'redshift', 'type'] + classes].write('results.txt', format='ascii.fixed_width')
+        lst_test[classname] = classid_test == i
+    grouped = lst_test.filled().group_by(meta_columns)
+    output = grouped.groups.aggregate(np.mean)
+    output.write('results.txt', format='ascii.fixed_width')
     logging.info('finished')
