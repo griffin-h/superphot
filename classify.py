@@ -19,7 +19,7 @@ from astropy.table import Table, join
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
 import itertools
@@ -220,55 +220,43 @@ def get_principal_components(light_curves, n_components=5, whiten=True):
     return principal_components
 
 
-def pca_smote_rf(lst_pca, lst_class_id_super, size, n_est, folds, depth=None, max_feat=None):
+def train_classifier(features, labels, n_est, folds, depth=None, max_feat=None):
     """
     Make a random forest classifier using synthetic minority oversampling technique and kfolding. A lot of the
     documentation is taken directly from SciKit Learn page and should be referenced for further questions.
 
     Parameters
     ----------
-    lst_pca : numpy array
+    features : numpy array
         2-D array of the principal components for each transient.
-    lst_class_id_super: numpy array
+    labels: numpy array
         The classification numbers of each transient and their copies.
-    size: float
-        Should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the test split.
-    n_est: float
+    n_est: int
         The number of trees in the forest.
     folds : int
         Number of splits for k-fold cross-validation.
-    depth : int or None
+    depth : int, optional
         The maxiumum depth of a tree. If None, the tree will have all pure leaves.
-    max_feat : int or None
-        The maximum number of used before making a split. If None, max_feat = n_features.
+    max_feat : int, optional
+        The maximum number of used before making a split. If None, use all features.
 
     Returns
     -------
     clf : RandomForestClassifier
-        A random forest classifier trained from the classified transients. It will print which fold it is on and a
-        confusion matrix to assess how well the forest performed.
-
+        A random forest classifier trained from the classified transients.
     """
-
-    class_pred = np.empty_like(lst_class_id_super, int)
+    labels_test = np.empty_like(labels)
     kf = KFold(folds)
-    clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, random_state=42, class_weight='balanced',
+    clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, class_weight='balanced',
                                  criterion='entropy', max_features=max_feat)
-    sampler = SMOTE(random_state=0)
+    sampler = SMOTE()
 
-    for train_index, test_index in kf.split(lst_pca):
-        lst_pca_train, lst_pca_test = lst_pca[train_index], lst_pca[test_index]
-        class_train, class_test = lst_class_id_super[train_index], lst_class_id_super[test_index]
+    for train_index, test_index in kf.split(features):
+        features_resamp, labels_resamp = sampler.fit_resample(features[train_index], labels[train_index])
+        clf.fit(features_resamp, labels_resamp)
+        labels_test[test_index] = clf.predict(features[test_index])
 
-        lst_pca_res, class_res = sampler.fit_resample(lst_pca_train, class_train)
-
-        lst_pca_r_train, lst_pca_r_test, class_r_train, class_r_test = train_test_split(lst_pca_res, class_res,
-                                                                                        test_size=size, random_state=42)
-
-        clf.fit(lst_pca_r_train, class_r_train)
-        class_pred[test_index] = clf.predict(lst_pca_test)
-
-    cnf_matrix = confusion_matrix(lst_class_id_super, class_pred)
+    cnf_matrix = confusion_matrix(labels, labels_test)
     plot_confusion_matrix(cnf_matrix)
     plot_confusion_matrix(cnf_matrix, normalize=True)
     return clf
@@ -395,7 +383,7 @@ if __name__ == '__main__':
     lst_train = lst_test[~lst_test['type'].mask]
     n_train = len(np.unique(lst_train['id']))
     classid_train = [classes.index(t) for t in lst_train['type']]
-    clf = pca_smote_rf(lst_train['features'], classid_train, size=0.33, n_est=100, folds=n_train)
+    clf = train_classifier(lst_train['features'], classid_train, n_est=100, folds=n_train)
     logging.info('classifier trained')
 
     classid_test = clf.predict(lst_test['features'])
