@@ -383,7 +383,7 @@ if __name__ == '__main__':
 
     lst_train = lst_test[~lst_test['type'].mask]
     n_train = len(np.unique(lst_train['id']))
-    classid_train = [classes.index(t) for t in lst_train['type']]
+    classid_train = np.array([classes.index(t) for t in lst_train['type']])
     clf = train_classifier(lst_train['features'], classid_train, n_est=100, folds=n_train)
     logging.info('classifier trained')
 
