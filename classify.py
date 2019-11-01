@@ -39,8 +39,10 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='B
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    plt.figure(figsize=(6., 6.))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
-    plt.axis('equal')
+    plt.xlim(-0.5, 4.5)
+    plt.ylim(-0.5, 4.5)
     plt.title(title)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
@@ -55,6 +57,7 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='B
 
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
+    plt.tight_layout()
     plt.savefig('confusion_matrix_norm.pdf' if normalize else 'confusion_matrix.pdf')
 
 
