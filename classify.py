@@ -294,7 +294,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
         models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
         logging.info('model LCs produced')
         np.savez_compressed('classify.npz', peakmags=peakmags, models=models)
-    good = ~np.isnan(peakmags).any(axis=1) & ~np.isnan(models).any(axis=2).any(axis=1)
+    good = np.isfinite(peakmags).all(axis=1) & np.isfinite(models).all(axis=2).all(axis=1)
     pcs = get_principal_components(models[good])
     logging.info('PCA finished')
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
