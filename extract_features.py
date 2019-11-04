@@ -86,15 +86,14 @@ def produce_lc(trace, tmin=-50., tmax=150.):
     return time, lc
 
 
-def luminosity_model(row, rand_num, trace_path='.', trace_version='2'):
+def sample_lcs(filename, rand_num, trace_path='.', trace_version='2'):
     """
-    Make a 2-D list containing a random number of light curves created using the parameters from the npz file with shape
-    (number of filters, rand_num).
+    Produce a random number of light curves created using the parameters from the stored MCMC traces.
 
     Parameters
     ----------
-    row : astropy.table.row.Row
-        Astropy table row for a given transient, containing columns 'filename', 'A_V', and 'redshift'/'hostz'
+    filename : str
+        Filename of the original SNANA data file.
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
     trace_path : str, optional
@@ -104,23 +103,40 @@ def luminosity_model(row, rand_num, trace_path='.', trace_version='2'):
 
     Returns
     -------
-    lc : list
-        2-D list containing a random number of light curves for each filter.
+    lc : numpy.ndarray, shape=(rand_num, 4, 200)
+        3-D array containing a random number of light curves for each filter.
 
     """
     try:
-        trace = load_trace(row['filename'], trace_path=trace_path, version=trace_version)
+        trace = load_trace(filename, trace_path=trace_path, version=trace_version)
     except ValueError:
         return np.tile(np.nan, (rand_num, 4, 200))
     i_rand = np.random.randint(trace.shape[1], size=rand_num)
     _, lc = produce_lc(trace[:, i_rand])
+    return lc
+
+
+def flux_to_luminosity(row):
+    """
+    Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.
+
+    Parameters
+    ----------
+    row : astropy.table.row.Row
+        Astropy table row for a given transient, containing columns 'A_V', and 'redshift'/'hostz'.
+
+    Returns
+    -------
+    flux2lum : numpy.ndarray, shape=(4, 1)
+        Array of flux-to-luminosity conversion factors for the filters g, r, i, and z.
+    """
     if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
         z = row['redshift']
     else:
         z = row['hostz']
     A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
-    lc *= 10. ** (A_coeffs[:, np.newaxis] / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
-    return lc
+    flux2lum = 10. ** (A_coeffs[:, np.newaxis] / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
+    return flux2lum
 
 
 def absolute_magnitude(row):
@@ -215,7 +231,8 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     else:
         peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
         logging.info('peak magnitudes extracted')
-        models = np.concatenate([luminosity_model(row, ndraws, trace_path=trace_path) for row in t])
+        models = np.concatenate([sample_lcs(row['filename'], ndraws, trace_path) * flux_to_luminosity(row)
+                                 for row in t])
         logging.info('model LCs produced')
         np.savez_compressed('model_lcs.npz', peakmags=peakmags, models=models)
     good = np.isfinite(peakmags).all(axis=1) & np.isfinite(models).all(axis=(1, 2))
@@ -239,23 +256,46 @@ def meta_table(filenames):
     return t_meta
 
 
-def plot_final_fit(filename, trace_path='.'):
-    t = light_curve_event_data(filename)
-    trace1 = load_trace(filename, trace_path, version='1')
-    trace2 = load_trace(filename, trace_path, version='2')
-    time1, lc1 = produce_lc(trace1)
-    time2, lc2 = produce_lc(trace2)
+def plot_final_fit(data, trace_path='.'):
+    row = data[0]
+    flux_to_lum = flux_to_luminosity(row)
+    t = light_curve_event_data(row['filename'])
+
+    if 'models' in data.colnames:
+        lc1 = lc2 = data['models']
+    else:
+        lc1 = sample_lcs(row, len(data), trace_path, '1')
+        lc2 = sample_lcs(row, len(data), trace_path, '2')
+    lc1 = np.moveaxis(lc1, 0, -1)
+    lc2 = np.moveaxis(lc2, 0, -1)
+
     colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
-    for fltr, color, lc_filt1, lc_filt2 in zip('griz', colors, lc1.mean(axis=0), lc2.mean(axis=0)):
+    fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
+    time = np.arange(-50., 150.)
+    for ax, fltr, color, lc_filt1, lc_filt2, flux2lum in zip(axes.flatten(), 'griz', colors, lc1, lc2, flux_to_lum):
         obs = t[t['FLT'] == fltr]
-        plt.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color, label=fltr)
-        plt.plot(time1, lc_filt1, color=color, ls=':')
-        plt.plot(time2, lc_filt2, color=color)
-    plt.title(os.path.basename(filename))
-    plt.xlabel('Phase')
-    plt.ylabel('Flux')
-    plt.legend()
-    plt.show()
+        ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
+        ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
+        if lc1 is not lc2:
+            ax.plot(time, lc_filt1, color=color, ls=':', alpha=0.2)
+        ax.plot(time, lc_filt2, color=color, alpha=0.2)
+
+    # autoscale y-axis without errorbars
+    ymin = min(t['FLUXCAL'].min(), lc2.min())
+    ymax = max(t['FLUXCAL'].max(), lc2.max())
+    height = ymax - ymin
+    axes[0, 0].set_ylim(ymin - 0.08 * height, ymax + 0.08 * height)
+
+    for i in range(2):
+        axes[1, i].set_xlabel('Phase')
+        axes[i, 0].set_ylabel('Flux')
+    if np.ma.is_masked(row['type']):
+        title = row['id']
+    else:
+        title = f'{row["id"]} = {row["type"]} ($z={row["redshift"]:.3f}$)'
+    fig.text(0.5, 0.95, title, ha='center', va='bottom', size='large')
+    plt.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
+    return fig
 
 
 def save_test_data(test_table):
