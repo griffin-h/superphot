@@ -78,17 +78,17 @@ def produce_lc(trace, tmin=-50., tmax=150.):
     """
     time = np.arange(tmin, tmax)
     tt.config.compute_test_value = 'ignore'
-    parameters = tt.dmatrices(6)
-    flux = flux_model(time[:, np.newaxis, np.newaxis], *parameters)
-    param_values = {param: values for param, values in zip(parameters, trace.T)}
+    mytensor = tt.TensorType('float64', (False, False, True))
+    parameters = [mytensor() for _ in range(6)]
+    flux = flux_model(time, *parameters)
+    param_values = {param: values[:, :, np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, 2, 0))}
     lc = flux.eval(param_values)
-    lc = np.moveaxis(lc, 0, 2)
     return time, lc
 
 
-def sample_lcs(filename, rand_num, trace_path='.', trace_version='2'):
+def sample_posterior(filename, rand_num, trace_path='.', trace_version='2'):
     """
-    Produce a random number of light curves created using the parameters from the stored MCMC traces.
+    Randomly sample the parameters from the stored MCMC traces.
 
     Parameters
     ----------
@@ -103,17 +103,17 @@ def sample_lcs(filename, rand_num, trace_path='.', trace_version='2'):
 
     Returns
     -------
-    lc : numpy.ndarray, shape=(rand_num, 4, 200)
-        3-D array containing a random number of light curves for each filter.
+    trace_rand : numpy.ndarray, shape=(4, rand_num, 6)
+        3-D array containing a random sampling of parameters for each filter.
 
     """
     try:
         trace = load_trace(filename, trace_path=trace_path, version=trace_version)
+        i_rand = np.random.randint(trace.shape[1], size=rand_num)
+        trace_rand = trace[:, i_rand]
     except ValueError:
-        return np.tile(np.nan, (rand_num, 4, 200))
-    i_rand = np.random.randint(trace.shape[1], size=rand_num)
-    _, lc = produce_lc(trace[:, i_rand])
-    return lc
+        trace_rand = np.tile(np.nan, (4, rand_num, 6))
+    return trace_rand
 
 
 def flux_to_luminosity(row):
@@ -127,7 +127,7 @@ def flux_to_luminosity(row):
 
     Returns
     -------
-    flux2lum : numpy.ndarray, shape=(4, 1)
+    flux2lum : numpy.ndarray
         Array of flux-to-luminosity conversion factors for the filters g, r, i, and z.
     """
     if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
@@ -135,7 +135,7 @@ def flux_to_luminosity(row):
     else:
         z = row['hostz']
     A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
-    flux2lum = 10. ** (A_coeffs[:, np.newaxis] / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
+    flux2lum = 10. ** (A_coeffs / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
     return flux2lum
 
 
@@ -194,12 +194,11 @@ def get_principal_components(light_curves, n_components=5, whiten=True):
     """
     principal_components = []
     pca = PCA(n_components, whiten=whiten)
-    for lc_filter in np.moveaxis(light_curves, 1, 0):
+    for lc_filter in light_curves:
         pca.fit(lc_filter)
         princ_comp = pca.transform(lc_filter)
         principal_components.append(princ_comp)
     principal_components = np.array(principal_components)
-    principal_components = np.moveaxis(principal_components, 0, 1)
     return principal_components
 
 
@@ -229,18 +228,21 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
         peakmags = stored['peakmags']
         models = stored['models']
     else:
-        peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t])
+        peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t]).T
         logging.info('peak magnitudes extracted')
-        models = np.concatenate([sample_lcs(row['filename'], ndraws, trace_path) * flux_to_luminosity(row)
-                                 for row in t])
+        params = np.hstack([sample_posterior(filename, ndraws, trace_path) for filename in t['filename']])
+        logging.info('posteriors sampled')
+        _, flux = produce_lc(params)
         logging.info('model LCs produced')
+        flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
+        models = flux * flux2lum[:, :, np.newaxis]
         np.savez_compressed('model_lcs.npz', peakmags=peakmags, models=models)
-    good = np.isfinite(peakmags).all(axis=1) & np.isfinite(models).all(axis=(1, 2))
-    pcs = get_principal_components(models[good])
+    good = np.isfinite(peakmags).all(axis=0) & np.isfinite(models).all(axis=(0, 2))
+    pcs = get_principal_components(models[:, good])
     logging.info('PCA finished')
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
-    t_good['features'] = np.dstack([peakmags[good], pcs]).reshape(-1, 24)
+    t_good['features'] = np.dstack([peakmags[:, good], pcs]).reshape(-1, 24)
     return t_good
 
 
@@ -263,22 +265,22 @@ def plot_final_fit(data, trace_path='.'):
 
     if 'models' in data.colnames:
         lc1 = lc2 = data['models']
+        time = np.arange(-50., 150.)
     else:
-        lc1 = sample_lcs(row, len(data), trace_path, '1')
-        lc2 = sample_lcs(row, len(data), trace_path, '2')
-    lc1 = np.moveaxis(lc1, 0, -1)
-    lc2 = np.moveaxis(lc2, 0, -1)
+        params1 = sample_posterior(row, len(data), trace_path, '1')
+        params2 = sample_posterior(row, len(data), trace_path, '2')
+        time, lc1 = produce_lc(params1)
+        time, lc2 = produce_lc(params2)
 
     colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
     fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
-    time = np.arange(-50., 150.)
     for ax, fltr, color, lc_filt1, lc_filt2, flux2lum in zip(axes.flatten(), 'griz', colors, lc1, lc2, flux_to_lum):
         obs = t[t['FLT'] == fltr]
         ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
         ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
         if lc1 is not lc2:
-            ax.plot(time, lc_filt1, color=color, ls=':', alpha=0.2)
-        ax.plot(time, lc_filt2, color=color, alpha=0.2)
+            ax.plot(time, lc_filt1.T, color=color, ls=':', alpha=0.2)
+        ax.plot(time, lc_filt2.T, color=color, alpha=0.2)
 
     # autoscale y-axis without errorbars
     ymin = min(t['FLUXCAL'].min(), lc2.min())
