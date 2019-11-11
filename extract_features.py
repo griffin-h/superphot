@@ -216,27 +216,27 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     trace_path : str, optional
         Directory where the PyMC3 trace data is stored. Default: current directory.
     use_stored : bool, optional
-        Use the peak magnitudes and model LCs stored in model_lcs.npz instead of calculating new ones.
+        Use the model LCs stored in model_lcs.npz instead of calculating new ones.
 
     Returns
     -------
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
+    peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t]).T
+    logging.info('peak magnitudes extracted')
     if use_stored:
         stored = np.load('model_lcs.npz')
-        peakmags = stored['peakmags']
-        models = stored['models']
+        flux = stored['flux']
+        logging.info('model LCs read from model_lcs.npz')
     else:
-        peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t]).T
-        logging.info('peak magnitudes extracted')
         params = np.hstack([sample_posterior(filename, ndraws, trace_path) for filename in t['filename']])
         logging.info('posteriors sampled')
         _, flux = produce_lc(params)
-        logging.info('model LCs produced')
-        flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
-        models = flux * flux2lum[:, :, np.newaxis]
-        np.savez_compressed('model_lcs.npz', peakmags=peakmags, models=models)
+        np.savez_compressed('model_lcs.npz', flux=flux)
+        logging.info('model LCs produced, saved to model_lcs.npz')
+    flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
+    models = flux * flux2lum[:, :, np.newaxis]
     good = np.isfinite(peakmags).all(axis=0) & np.isfinite(models).all(axis=(0, 2))
     pcs = get_principal_components(models[:, good])
     logging.info('PCA finished')
@@ -260,21 +260,20 @@ def meta_table(filenames):
 
 def plot_final_fit(data, trace_path='.'):
     row = data[0]
-    flux_to_lum = flux_to_luminosity(row)
     t = light_curve_event_data(row['filename'])
 
     if 'models' in data.colnames:
-        lc1 = lc2 = data['models']
+        lc1 = lc2 = np.moveaxis(data['models'], 0, 1)
         time = np.arange(-50., 150.)
     else:
-        params1 = sample_posterior(row, len(data), trace_path, '1')
-        params2 = sample_posterior(row, len(data), trace_path, '2')
+        params1 = sample_posterior(row['filename'], len(data), trace_path, '1')
+        params2 = sample_posterior(row['filename'], len(data), trace_path, '2')
         time, lc1 = produce_lc(params1)
         time, lc2 = produce_lc(params2)
 
     colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
     fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
-    for ax, fltr, color, lc_filt1, lc_filt2, flux2lum in zip(axes.flatten(), 'griz', colors, lc1, lc2, flux_to_lum):
+    for ax, fltr, color, lc_filt1, lc_filt2 in zip(axes.flatten(), 'griz', colors, lc1, lc2):
         obs = t[t['FLT'] == fltr]
         ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
         ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
