@@ -56,34 +56,29 @@ def load_trace(file, trace_path='.', version='2'):
     return lst
 
 
-def produce_lc(trace, tmin=-50., tmax=150.):
+def produce_lc(time, trace):
     """
     Load the stored PyMC3 traces and produce model light curves from the parameters.
 
     Parameters
     ----------
+    time : numpy.array
+        Range of times (in days, with respect to PEAKMJD) over which the model should be calculated.
     trace : numpy.array
         PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
-    tmin : float, optional
-        Minimum phase (in days, with respect to PEAKMJD) to calculate the model. Default: -50.
-    tmax : float, optional
-        Maximum phase (in days, with respect to PEAKMJD) to calculate the model. Default: 150.
 
     Returns
     -------
-    time : numpy.array
-        Range of times over which the model was calculated.
     lc : numpy.array
         Model light curves. Shape = (len(trace) * nwalkers, nfilters, len(time)).
     """
-    time = np.arange(tmin, tmax)
     tt.config.compute_test_value = 'ignore'
     mytensor = tt.TensorType('float64', (False, False, True))
     parameters = [mytensor() for _ in range(6)]
     flux = flux_model(time, *parameters)
     param_values = {param: values[:, :, np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, 2, 0))}
     lc = flux.eval(param_values)
-    return time, lc
+    return lc
 
 
 def sample_posterior(filename, rand_num, trace_path='.', trace_version='2'):
@@ -195,8 +190,9 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     else:
         params = np.hstack([sample_posterior(filename, ndraws, trace_path) for filename in t['filename']])
         logging.info('posteriors sampled')
-        _, flux = produce_lc(params)
-        np.savez_compressed('model_lcs.npz', flux=flux)
+        time = np.arange(-50., 180.)
+        flux = produce_lc(time, params)
+        np.savez_compressed('model_lcs.npz', time=time, flux=flux)
         logging.info('model LCs produced, saved to model_lcs.npz')
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     models = flux * flux2lum[:, :, np.newaxis]
@@ -223,18 +219,17 @@ def meta_table(filenames):
     return t_meta
 
 
-def plot_final_fit(data, trace_path='.'):
+def plot_final_fit(time, data, trace_path='.'):
     row = data[0]
     t = light_curve_event_data(row['filename'])
 
     if 'models' in data.colnames:
         lc1 = lc2 = np.moveaxis(data['models'], 0, 1)
-        time = np.arange(-50., 150.)
     else:
         params1 = sample_posterior(row['filename'], len(data), trace_path, '1')
         params2 = sample_posterior(row['filename'], len(data), trace_path, '2')
-        time, lc1 = produce_lc(params1)
-        time, lc2 = produce_lc(params2)
+        time, lc1 = produce_lc(time, params1)
+        time, lc2 = produce_lc(time, params2)
 
     colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
     fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)

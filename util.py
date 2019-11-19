@@ -66,7 +66,7 @@ def cut_outliers(t, nsigma):
     return t_cut
 
 
-def light_curve_event_data(file, period=180., nsigma=None):
+def light_curve_event_data(file, phase_min=-50., phase_max=180., nsigma=None):
     """
     Make a 2-D array containing the time, flux, and flux uncertainties data only from the period containing the peak
     flux, with outliers cut.
@@ -75,8 +75,8 @@ def light_curve_event_data(file, period=180., nsigma=None):
     ----------
     file : str
         Path to .snana.dat file containing the light curve data.
-    period : float, optional
-        Include only points within `period` of SEARCH_PEAKMJD. Default: 180 days.
+    phase_min, phase_max : float, optional
+        Include only points within [`phase_min`, `phase_max`] days of SEARCH_PEAKMJD (inclusive). Default: [-50., 180.].
     nsigma : float, optional
         Determines at what value (flux < nsigma * mad_std) to reject outlier data points. Default: no rejection.
 
@@ -87,7 +87,7 @@ def light_curve_event_data(file, period=180., nsigma=None):
     """
     t = read_snana(file)
     t['PHASE'] = t['MJD'] - t.meta['PEAKMJD']
-    t_event = t[np.abs(t['PHASE']) < period]
+    t_event = t[(t['PHASE'] >= phase_min) & (t['PHASE'] <= phase_max)]
     if nsigma is not None:
         t_event = cut_outliers(t_event, nsigma)
     return t_event
