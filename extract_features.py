@@ -139,41 +139,6 @@ def flux_to_luminosity(row):
     return flux2lum
 
 
-def absolute_magnitude(row):
-    """
-    Calculate the peak absolute magnitudes for a light curve in each filter.
-
-    Parameters
-    ----------
-    row : astropy.table.row.Row
-        Astropy table row for a given transient, containing columns 'filename', 'A_V', and 'redshift'/'hostz'
-
-    Returns
-    -------
-    M : numpy.array
-        The peak absolute magnitudes of the light curve.
-
-    """
-    min_m = []
-    t = light_curve_event_data(row['filename'])
-    for fltr in 'griz':
-        obs = t[t['FLT'] == fltr]
-        if len(obs):
-            min_m.append(obs['MAG'].min())
-        else:
-            min_m.append(np.nan)
-    min_m = np.array(min_m)
-    if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
-        z = row['redshift']
-    else:
-        z = row['hostz']
-    A = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
-    mu = cosmo_P.distmod(z).value
-    k = 2.5 * np.log10(1 + z)
-    M = min_m - mu - A + 32.5 + k
-    return M
-
-
 def get_principal_components(light_curves, n_components=5, whiten=True):
     """
     Run a principal component analysis on a list of light curves and return a list of their 5 principal components.
@@ -223,8 +188,6 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
-    peakmags = np.concatenate([np.tile(absolute_magnitude(row), (ndraws, 1)) for row in t]).T
-    logging.info('peak magnitudes extracted')
     if use_stored:
         stored = np.load('model_lcs.npz')
         flux = stored['flux']
@@ -237,12 +200,14 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
         logging.info('model LCs produced, saved to model_lcs.npz')
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     models = flux * flux2lum[:, :, np.newaxis]
-    good = np.isfinite(peakmags).all(axis=0) & np.isfinite(models).all(axis=(0, 2))
+    good = np.isfinite(models).all(axis=(0, 2))
+    peakmags = -2.5 * np.log10(models[:, good].max(axis=2))  # arbitrary zero point
+    logging.info('peak magnitudes extracted')
     pcs = get_principal_components(models[:, good])
     logging.info('PCA finished')
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
-    t_good['features'] = np.dstack([peakmags[:, good], pcs]).reshape(-1, 24)
+    t_good['features'] = np.dstack([peakmags, pcs]).reshape(-1, 24)
     return t_good
 
 
