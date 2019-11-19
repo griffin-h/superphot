@@ -217,7 +217,7 @@ def meta_table(filenames):
         t = read_snana(filename)
         t_meta.add_row([t.meta['SNID'], t.meta['A_V'], t.meta['REDSHIFT']])
     t_meta['filename'] = filenames
-    t_meta['hostz'].mask = t_meta['hostz'] < 0.
+    t_meta['hostz'].mask = t_meta['hostz'] <= 0.
     t_meta['A_V'].format = '%.5f'
     t_meta['hostz'].format = '%.4f'
     return t_meta
