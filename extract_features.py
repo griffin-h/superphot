@@ -139,16 +139,16 @@ def flux_to_luminosity(row):
     return flux2lum
 
 
-def get_principal_components(light_curves, n_components=5, whiten=True):
+def get_principal_components(light_curves, n_components=6, whiten=True):
     """
-    Run a principal component analysis on a list of light curves and return a list of their 5 principal components.
+    Run a principal component analysis on a list of light curves and return a list of their principal components.
 
     Parameters
     ----------
     light_curves : array-like
         A list of evenly-sampled model light curves.
     n_components : int, optional
-        The number of principal components to calculate. Default: 5.
+        The number of principal components to calculate. Default: 6.
     whiten : bool
         Whiten the input data before calculating the principal components. Default: True.
 
@@ -207,7 +207,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     logging.info('PCA finished')
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
-    t_good['features'] = np.dstack([peakmags, pcs]).reshape(-1, 24)
+    t_good['features'] = np.dstack([peakmags, pcs]).reshape(len(t_good), -1)
     return t_good
 
 
