@@ -344,6 +344,9 @@ if __name__ == '__main__':
         traces = []
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
+            if not len(obs):
+                print(f'No {fltr}-band points. Skipping fit.')
+                continue
             model, parameters = setup_model(obs, max_flux)
             outfile1 = outfile.format('1' + fltr)
             if not os.path.exists(outfile1) or args.force:
@@ -360,6 +363,9 @@ if __name__ == '__main__':
 
         for fltr in args.filters:
             obs = t[t['FLT'] == fltr]
+            if not len(obs):
+                print(f'No {fltr}-band points. Skipping fit.')
+                continue
             new_model, new_params = setup_new_model(obs, parameters, x_priors, y_priors)
             outfile2 = outfile.format('2' + fltr)
             if not os.path.exists(outfile2) or args.force:
