@@ -18,7 +18,8 @@ from imblearn.over_sampling import SMOTE
 import itertools
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-classes = ['SLSNe', 'SNII', 'SNIIn', 'SNIa', 'SNIbc']
+t_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')
+classes = sorted(set(t_conf['type']))
 
 
 def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='Blues'):
