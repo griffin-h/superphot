@@ -260,7 +260,7 @@ def plot_final_fit(time, data, trace_path='.'):
 
 
 def save_test_data(test_table):
-    save_table = test_table[['id', 'A_V', 'hostz', 'filename', 'redshift', 'err', 'type']]
+    save_table = test_table[['id', 'A_V', 'hostz', 'filename', 'redshift', 'err', 'type', 'flag0', 'flag1', 'flag2']]
     save_table.write('test_data.txt', format='ascii.fixed_width', overwrite=True)
     np.savez_compressed('test_data.npz', features=test_table['features'])
     logging.info('test data saved to test_data.txt and test_data.npz')
@@ -280,8 +280,6 @@ def compile_data_table(filenames):
     t_final = join(t_final, t_conf, join_type='left')
     t_final = join(t_final, bad_lcs, join_type='left')
     t_final = join(t_final, bad_lcs_2, join_type='left')
-
-    t_final = t_final[t_final['flag0'].mask & t_final['flag1'].mask & t_final['flag2'].mask & ~t_final['hostz'].mask]
     return t_final
 
 
