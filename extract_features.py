@@ -192,7 +192,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
         logging.info('posteriors sampled')
         time = np.arange(-50., 180.)
         flux = produce_lc(time, params)
-        np.savez_compressed('model_lcs.npz', time=time, flux=flux)
+        np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params)
         logging.info('model LCs produced, saved to model_lcs.npz')
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     models = flux * flux2lum[:, :, np.newaxis]
