@@ -134,7 +134,7 @@ def flux_to_luminosity(row):
     return flux2lum
 
 
-def get_principal_components(light_curves, n_components=6, whiten=True):
+def get_principal_components(light_curves, use_for_fitting=slice(None), n_components=6, whiten=True):
     """
     Run a principal component analysis on a list of light curves and return a list of their principal components.
 
@@ -142,6 +142,9 @@ def get_principal_components(light_curves, n_components=6, whiten=True):
     ----------
     light_curves : array-like
         A list of evenly-sampled model light curves.
+    use_for_fitting : array-like or slice, optional
+        A boolean or index array into light_curves to indicate which samples should be used to fit the PCA.
+        Default: use all for fitting.
     n_components : int, optional
         The number of principal components to calculate. Default: 6.
     whiten : bool
@@ -155,7 +158,7 @@ def get_principal_components(light_curves, n_components=6, whiten=True):
     principal_components = []
     pca = PCA(n_components, whiten=whiten)
     for lc_filter in light_curves:
-        pca.fit(lc_filter)
+        pca.fit(lc_filter[use_for_fitting])
         princ_comp = pca.transform(lc_filter)
         principal_components.append(princ_comp)
     principal_components = np.array(principal_components)
