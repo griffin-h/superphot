@@ -51,7 +51,7 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='B
     plt.savefig('confusion_matrix_norm.pdf' if normalize else 'confusion_matrix.pdf')
 
 
-def train_classifier(data, n_est, depth=None, max_feat=None, n_jobs=-1):
+def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1):
     """
     Make a random forest classifier using synthetic minority oversampling technique and kfolding. A lot of the
     documentation is taken directly from SciKit Learn page and should be referenced for further questions.
@@ -60,8 +60,8 @@ def train_classifier(data, n_est, depth=None, max_feat=None, n_jobs=-1):
     ----------
     data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
-    n_est: int
-        The number of trees in the forest.
+    n_est: int, optional
+        The number of trees in the forest. Default: 100.
     depth : int, optional
         The maxiumum depth of a tree. If None, the tree will have all pure leaves.
     max_feat : int, optional
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     test_data = load_test_data()
     train_data = test_data[~test_data['type'].mask]
     train_data['label'] = [classes.index(t) for t in train_data['type']]
-    clf, sampler = train_classifier(train_data, n_est=100)
+    clf, sampler = train_classifier(train_data)
     logging.info('classifier trained')
 
     classid_test = clf.predict(test_data['features'])
