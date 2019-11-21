@@ -59,7 +59,7 @@ def train_classifier(data, n_est, depth=None, max_feat=None, n_jobs=-1):
     Parameters
     ----------
     data : astropy.table.Table
-        Astropy data table with a 'features' column and a 'type' column.
+        Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
     n_est: int
         The number of trees in the forest.
     depth : int, optional
@@ -71,26 +71,45 @@ def train_classifier(data, n_est, depth=None, max_feat=None, n_jobs=-1):
 
     Returns
     -------
-    clf : RandomForestClassifier
+    clf : sklearn.emsemble.RandomForestClassifier
         A random forest classifier trained from the classified transients.
+    sampler : imblearn.over_sampling.SMOTE
+        A SMOTE resampler used to balance the training sample.
     """
-    labels = np.array([classes.index(t) for t in data['type']])
-    labels_test = np.empty_like(labels)
-    kf = KFold(len(np.unique(data['id'])))
     clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, class_weight='balanced',
                                  criterion='entropy', max_features=max_feat, n_jobs=n_jobs)
     sampler = SMOTE(n_jobs=n_jobs)
+    features_resamp, labels_resamp = sampler.fit_resample(data['features'], data['label'])
+    clf.fit(features_resamp, labels_resamp)
+    return clf, sampler
 
+
+def validate_classifier(clf, sampler, data):
+    """
+    Validate the performance of a machine-learning classifier using leave-one-out cross-validation. The results are
+    plotted as a confusion matrix, which is saved as a PDF.
+
+    Parameters
+    ----------
+    clf : sklearn.emsemble.RandomForestClassifier
+        The classifier to validate.
+    sampler : imblearn.over_sampling.SMOTE
+        First resample the data using this sampler.
+    data : astropy.table.Table
+        Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
+    """
+    kf = KFold(len(np.unique(data['id'])))
+    labels_test = np.empty_like(data)
     for i, (train_index, test_index) in enumerate(kf.split(data)):
-        features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], labels[train_index])
+        features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['label'][train_index])
         clf.fit(features_resamp, labels_resamp)
         labels_test[test_index] = clf.predict(data['features'][test_index])
         logging.info(f'completed fold {i+1:d}/{kf.n_splits:d} of cross-validation')
 
-    cnf_matrix = confusion_matrix(labels, labels_test)
+    cnf_matrix = confusion_matrix(data['label'], labels_test)
     plot_confusion_matrix(cnf_matrix)
     plot_confusion_matrix(cnf_matrix, normalize=True)
-    return clf
+    return cnf_matrix
 
 
 def load_test_data():
@@ -104,7 +123,8 @@ if __name__ == '__main__':
     logging.info('started classify.py')
     test_data = load_test_data()
     train_data = test_data[~test_data['type'].mask]
-    clf = train_classifier(train_data, n_est=100)
+    train_data['label'] = [classes.index(t) for t in train_data['type']]
+    clf, sampler = train_classifier(train_data, n_est=100)
     logging.info('classifier trained')
 
     classid_test = clf.predict(test_data['features'])
@@ -116,4 +136,8 @@ if __name__ == '__main__':
     grouped = test_data.filled().group_by(meta_columns)
     output = grouped.groups.aggregate(np.mean)
     output.write('results.txt', format='ascii.fixed_width')
+    logging.info('classification results saved to results.txt')
+
+    cnf_matrix = validate_classifier(clf, sampler, train_data)
+    logging.info('validation complete')
     logging.info('finished classify.py')
