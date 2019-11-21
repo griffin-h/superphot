@@ -32,12 +32,11 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='B
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     plt.figure(figsize=(6., 6.))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
-    plt.xlim(-0.5, 4.5)
-    plt.ylim(4.5, -0.5)
     plt.title(title)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
+    plt.ylim(4.5, -0.5)
 
     fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.
