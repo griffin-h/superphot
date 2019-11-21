@@ -51,7 +51,7 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='B
     plt.savefig('confusion_matrix_norm.pdf' if normalize else 'confusion_matrix.pdf')
 
 
-def train_classifier(data, n_est, depth=None, max_feat=None):
+def train_classifier(data, n_est, depth=None, max_feat=None, n_jobs=-1):
     """
     Make a random forest classifier using synthetic minority oversampling technique and kfolding. A lot of the
     documentation is taken directly from SciKit Learn page and should be referenced for further questions.
@@ -66,6 +66,8 @@ def train_classifier(data, n_est, depth=None, max_feat=None):
         The maxiumum depth of a tree. If None, the tree will have all pure leaves.
     max_feat : int, optional
         The maximum number of used before making a split. If None, use all features.
+    n_jobs : int, optional
+        The number of jobs to run in parallel for the resampler and classifier. If -1, use all available processors.
 
     Returns
     -------
@@ -76,8 +78,8 @@ def train_classifier(data, n_est, depth=None, max_feat=None):
     labels_test = np.empty_like(labels)
     kf = KFold(len(np.unique(data['id'])))
     clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, class_weight='balanced',
-                                 criterion='entropy', max_features=max_feat)
-    sampler = SMOTE()
+                                 criterion='entropy', max_features=max_feat, n_jobs=n_jobs)
+    sampler = SMOTE(n_jobs=n_jobs)
 
     for i, (train_index, test_index) in enumerate(kf.split(data)):
         features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], labels[train_index])
