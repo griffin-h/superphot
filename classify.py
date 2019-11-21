@@ -127,12 +127,13 @@ if __name__ == '__main__':
     clf, sampler = train_classifier(train_data)
     logging.info('classifier trained')
 
-    classid_test = clf.predict(test_data['features'])
+    p_class = clf.predict_proba(test_data['features'])
     meta_columns = ['id', 'hostz', 'type']
     test_data.keep_columns(meta_columns)
     test_data['type'].fill_value = ''
     for i, classname in enumerate(classes):
-        test_data[classname] = classid_test == i
+        test_data[classname] = p_class[:, i]
+        test_data[classname].format = '%.3f'
     grouped = test_data.filled().group_by(meta_columns)
     output = grouped.groups.aggregate(np.mean)
     output.write('results.txt', format='ascii.fixed_width')
