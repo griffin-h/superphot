@@ -127,8 +127,10 @@ def flux_to_luminosity(row):
     """
     if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
         z = row['redshift']
-    else:
+    elif 'hostz' in row.colnames and not np.ma.is_masked(row['hostz']):
         z = row['hostz']
+    else:
+        z = np.nan
     A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
     flux2lum = 10. ** (A_coeffs / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
     return flux2lum
