@@ -285,6 +285,8 @@ def compile_data_table(filenames):
     t_final = join(t_final, t_conf, join_type='left')
     t_final = join(t_final, bad_lcs, join_type='left')
     t_final = join(t_final, bad_lcs_2, join_type='left')
+
+    t_final = t_final[~t_final['hostz'].mask | ~t_final['redshift'].mask]
     return t_final
 
 
