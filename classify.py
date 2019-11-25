@@ -99,7 +99,7 @@ def validate_classifier(clf, sampler, data):
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
     """
     kf = KFold(len(np.unique(data['id'])))
-    labels_test = np.empty_like(data)
+    labels_test = np.empty_like(data['label'])
     for i, (train_index, test_index) in enumerate(kf.split(data)):
         features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['label'][train_index])
         clf.fit(features_resamp, labels_resamp)
