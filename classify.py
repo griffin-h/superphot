@@ -128,9 +128,10 @@ if __name__ == '__main__':
     logging.info('classifier trained')
 
     p_class = clf.predict_proba(test_data['features'])
-    meta_columns = ['id', 'hostz', 'type']
+    meta_columns = ['id', 'hostz', 'type', 'flag0', 'flag1', 'flag2']
     test_data.keep_columns(meta_columns)
-    test_data['type'].fill_value = ''
+    for col in ['type', 'flag0', 'flag1', 'flag2']:
+        test_data[col].fill_value = ''
     for i, classname in enumerate(classes):
         test_data[classname] = p_class[:, i]
         test_data[classname].format = '%.3f'
