@@ -132,7 +132,7 @@ def flux_to_luminosity(row):
     else:
         z = np.nan
     A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
-    flux2lum = 10. ** (A_coeffs / 2.5) * cosmo_P.luminosity_distance(z).value ** 2. * (1. + z)
+    flux2lum = 10. ** (A_coeffs / 2.5) * cosmo_P.luminosity_distance(z).to('dapc').value ** 2. * (1. + z)
     return flux2lum
 
 
@@ -167,7 +167,7 @@ def get_principal_components(light_curves, use_for_fitting=slice(None), n_compon
     return principal_components
 
 
-def extract_features(t, ndraws, trace_path='.', use_stored=False):
+def extract_features(t, ndraws, trace_path='.', use_stored=False, zero_point=27.5):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -182,6 +182,8 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
         Directory where the PyMC3 trace data is stored. Default: current directory.
     use_stored : bool, optional
         Use the model LCs stored in model_lcs.npz instead of calculating new ones.
+    zero_point : float, optional
+        Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.
 
     Returns
     -------
@@ -202,7 +204,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False):
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     models = flux * flux2lum[:, :, np.newaxis]
     good = np.isfinite(models).all(axis=(0, 2))
-    peakmags = -2.5 * np.log10(models[:, good].max(axis=2))  # arbitrary zero point
+    peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
     logging.info('peak magnitudes extracted')
     pcs = get_principal_components(models[:, good])
     logging.info('PCA finished')
