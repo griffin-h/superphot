@@ -210,7 +210,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False, zero_point=27.
     logging.info('PCA finished')
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
-    t_good['features'] = np.dstack([peakmags, pcs]).reshape(len(t_good), -1)
+    t_good['features'] = np.hstack(np.dstack([peakmags, pcs]))
     return t_good
 
 
