@@ -171,7 +171,7 @@ def get_principal_components(light_curves, use_for_fitting=slice(None), n_compon
     return principal_components
 
 
-def extract_features(t, ndraws, trace_path='.', use_stored=False, zero_point=27.5):
+def extract_features(t, stored_models, ndraws=10, zero_point=27.5):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -180,12 +180,11 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False, zero_point=27.
     ----------
     t : astropy.table.Table
         Table containing the 'filename' and 'redshift' of each transient to be classified.
-    ndraws : int
-        Number of random draws from the MCMC posterior.
-    trace_path : str, optional
-        Directory where the PyMC3 trace data is stored. Default: current directory.
-    use_stored : bool, optional
-        Use the model LCs stored in model_lcs.npz instead of calculating new ones.
+    stored_models : str
+        If a directory, look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
+        If a Numpy file, read the model LCs (or alternatively, the parameters) from this file.
+    ndraws : int, optional
+        Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read fron Numpy file.
     zero_point : float, optional
         Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.
 
@@ -194,17 +193,27 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False, zero_point=27.
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
-    if use_stored:
-        stored = np.load('model_lcs.npz')
-        flux = stored['flux']
-        logging.info('model LCs read from model_lcs.npz')
+    if os.path.isdir(stored_models):
+        stored = {}
     else:
-        params = np.hstack([sample_posterior(filename, ndraws, trace_path) for filename in t['filename']])
-        logging.info('posteriors sampled')
+        stored = np.load(stored_models)
+        ndraws = stored.get('ndraws', ndraws)
+
+    if 'flux' in stored:
+        flux = stored['flux']
+        logging.info(f'model LCs read from {stored_models}')
+    else:
+        if 'params' in stored:
+            params = stored['params']
+            logging.info(f'parameters read from {stored_models}')
+        else:
+            params = np.hstack([sample_posterior(filename, ndraws, stored_models) for filename in t['filename']])
+            logging.info(f'posteriors sampled from {stored_models}')
         time = np.arange(-50., 180.)
         flux = produce_lc(time, params, align_to_t0=True)
-        np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params)
+        np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params, ndraws=ndraws)
         logging.info('model LCs produced, saved to model_lcs.npz')
+
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     models = flux * flux2lum[:, :, np.newaxis]
     good = np.isfinite(models).all(axis=(0, 2))
@@ -299,13 +308,13 @@ def compile_data_table(filenames):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
-    parser.add_argument('--ndraws', type=int, default=4, help='Number of draws from the LC posterior for training set')
-    parser.add_argument('--trace-path', type=str, default='.', help='Directory where the PyMC3 trace data is stored')
-    parser.add_argument('--use-stored-models', action='store_true', help='Use stored model LCs in model_lcs.npz')
+    parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
+                                              'or Numpy file containing stored model parameters/LCs')
+    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set')
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
     data_table = compile_data_table(args.filenames)
-    test_data = extract_features(data_table, args.ndraws, trace_path=args.trace_path, use_stored=args.use_stored_models)
+    test_data = extract_features(data_table, args.stored_models, args.ndraws)
     save_test_data(test_data)
     logging.info('finished extract_features.py')
