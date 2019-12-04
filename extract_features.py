@@ -307,14 +307,16 @@ def compile_data_table(filenames):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
+    parser.add_argument('input_table', type=str, help='List of input SNANA files, or input data table')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
                                               'or Numpy file containing stored model parameters/LCs')
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set')
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
-    data_table = compile_data_table(args.filenames)
+    data_table = Table.read(args.input_table, format='ascii.fixed_width')
+    if 'id' not in data_table.colnames:
+        data_table = compile_data_table(data_table['filename'])
     test_data = extract_features(data_table, args.stored_models, args.ndraws)
     save_test_data(test_data)
     logging.info('finished extract_features.py')
