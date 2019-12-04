@@ -56,7 +56,7 @@ def load_trace(file, trace_path='.', version='2'):
     return lst
 
 
-def produce_lc(time, trace):
+def produce_lc(time, trace, align_to_t0=False):
     """
     Load the stored PyMC3 traces and produce model light curves from the parameters.
 
@@ -66,6 +66,8 @@ def produce_lc(time, trace):
         Range of times (in days, with respect to PEAKMJD) over which the model should be calculated.
     trace : numpy.array
         PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
+    align_to_t0 : bool, optional
+        Interpret `time` as days with respect to t_0 instead of PEAKMJD.
 
     Returns
     -------
@@ -77,6 +79,8 @@ def produce_lc(time, trace):
     parameters = [mytensor() for _ in range(6)]
     flux = flux_model(time, *parameters)
     param_values = {param: values[:, :, np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, 2, 0))}
+    if align_to_t0:
+        param_values[parameters[3]] = 0.
     lc = flux.eval(param_values)
     return lc
 
@@ -198,7 +202,7 @@ def extract_features(t, ndraws, trace_path='.', use_stored=False, zero_point=27.
         params = np.hstack([sample_posterior(filename, ndraws, trace_path) for filename in t['filename']])
         logging.info('posteriors sampled')
         time = np.arange(-50., 180.)
-        flux = produce_lc(time, params)
+        flux = produce_lc(time, params, align_to_t0=True)
         np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params)
         logging.info('model LCs produced, saved to model_lcs.npz')
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
