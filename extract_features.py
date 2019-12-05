@@ -80,7 +80,7 @@ def produce_lc(time, trace, align_to_t0=False):
     flux = flux_model(time, *parameters)
     param_values = {param: values[:, :, np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, 2, 0))}
     if align_to_t0:
-        param_values[parameters[3]] = 0.
+        param_values[parameters[3]] = np.zeros_like(param_values[parameters[3]])
     lc = flux.eval(param_values)
     return lc
 
