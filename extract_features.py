@@ -257,8 +257,11 @@ def plot_final_fit(time, data, trace_path='.'):
     if 'models' in data.colnames:
         lc1 = lc2 = np.moveaxis(data['models'], 0, 1)
     else:
-        params1 = sample_posterior(row['filename'], len(data), trace_path, '1')
-        params2 = sample_posterior(row['filename'], len(data), trace_path, '2')
+        if 'params' in data.colnames:
+            params1 = params2 = np.moveaxis(data['params'], 0, 1)
+        else:
+            params1 = sample_posterior(row['filename'], len(data), trace_path, '1')
+            params2 = sample_posterior(row['filename'], len(data), trace_path, '2')
         lc1 = produce_lc(time, params1)
         lc2 = produce_lc(time, params2)
 
