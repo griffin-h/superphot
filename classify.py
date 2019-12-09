@@ -14,6 +14,7 @@ from astropy.table import Table
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import scale
 from imblearn.over_sampling import SMOTE
 import itertools
 
@@ -114,7 +115,7 @@ def validate_classifier(clf, sampler, data):
 
 def load_test_data():
     test_table = Table.read('test_data.txt', format='ascii.fixed_width')
-    test_table['features'] = np.load('test_data.npz')['features']
+    test_table['features'] = scale(np.load('test_data.npz')['features'])
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
 
