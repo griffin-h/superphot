@@ -259,8 +259,8 @@ def plot_final_fit(time, data, trace_path='.'):
     else:
         params1 = sample_posterior(row['filename'], len(data), trace_path, '1')
         params2 = sample_posterior(row['filename'], len(data), trace_path, '2')
-        time, lc1 = produce_lc(time, params1)
-        time, lc2 = produce_lc(time, params2)
+        lc1 = produce_lc(time, params1)
+        lc2 = produce_lc(time, params2)
 
     colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
     fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
