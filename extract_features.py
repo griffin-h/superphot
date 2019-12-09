@@ -172,7 +172,7 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     return principal_components
 
 
-def extract_features(t, stored_models, ndraws=10, zero_point=27.5):
+def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -188,6 +188,9 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5):
         Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read fron Numpy file.
     zero_point : float, optional
         Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.
+    use_pca : bool, optional
+        Use the peak absolute magnitudes and principal components of the light curve as the features (default).
+        Otherwise, use the model parameters directly.
 
     Returns
     -------
@@ -200,7 +203,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5):
         stored = np.load(stored_models)
         ndraws = stored.get('ndraws', ndraws)
 
-    if 'flux' in stored:
+    if 'flux' in stored and use_pca:
         flux = stored['flux']
         logging.info(f'model LCs read from {stored_models}')
     else:
@@ -210,21 +213,28 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5):
         else:
             params = np.hstack([sample_posterior(filename, ndraws, stored_models) for filename in t['filename']])
             logging.info(f'posteriors sampled from {stored_models}')
-        time = np.arange(-50., 180.)
-        flux = produce_lc(time, params, align_to_t0=True)
-        np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params, ndraws=ndraws)
-        logging.info('model LCs produced, saved to model_lcs.npz')
+        if use_pca:
+            time = np.arange(-50., 180.)
+            flux = produce_lc(time, params, align_to_t0=True)
+            np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params, ndraws=ndraws)
+            logging.info('model LCs produced, saved to model_lcs.npz')
 
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
-    models = flux * flux2lum[:, :, np.newaxis]
-    good = np.isfinite(models).all(axis=(0, 2))
-    peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
-    logging.info('peak magnitudes extracted')
-    pcs = get_principal_components(models[:, good])
-    logging.info('PCA finished')
+    if use_pca:
+        models = flux * flux2lum[:, :, np.newaxis]
+        good = np.isfinite(models).all(axis=(0, 2))
+        peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
+        logging.info('peak magnitudes extracted')
+        pcs = get_principal_components(models[:, good])
+        logging.info('PCA finished')
+        features = np.dstack([peakmags, pcs])
+    else:
+        params[:, :, 0] *= flux2lum
+        good = np.isfinite(params).all(axis=(0, 2))
+        features = params[:, good]
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
-    t_good['features'] = np.hstack(np.dstack([peakmags, pcs]))
+    t_good['features'] = np.hstack(features)
     return t_good
 
 
@@ -312,12 +322,13 @@ if __name__ == '__main__':
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
                                               'or Numpy file containing stored model parameters/LCs')
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set')
+    parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
     data_table = Table.read(args.input_table, format='ascii.fixed_width')
     if 'id' not in data_table.colnames:
         data_table = compile_data_table(data_table['filename'])
-    test_data = extract_features(data_table, args.stored_models, args.ndraws)
+    test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca)
     save_test_data(test_data)
     logging.info('finished extract_features.py')
