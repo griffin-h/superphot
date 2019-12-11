@@ -23,6 +23,7 @@ from fit_model import setup_model, flux_model
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
+filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
 
 
 def load_trace(file, trace_path='.', version='2'):
@@ -162,14 +163,40 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     """
     if light_curves_fit is None:
         light_curves_fit = light_curves
-    principal_components = []
-    pca = PCA(n_components, whiten=whiten)
+
+    pcas = []
+    reconstructed = []
+    coefficients = []
+
     for lc_filter, lc_filter_fit in zip(light_curves, light_curves_fit):
-        pca.fit(lc_filter_fit)
-        princ_comp = pca.transform(lc_filter)
-        principal_components.append(princ_comp)
-    principal_components = np.array(principal_components)
-    return principal_components
+        pca = PCA(n_components, whiten=whiten)
+        pcas.append(pca)
+
+        coeffs_fit = pca.fit_transform(lc_filter_fit)
+        reconst = pca.inverse_transform(coeffs_fit)
+        reconstructed.append(reconst)
+
+        coeffs = pca.transform(lc_filter)
+        coefficients.append(coeffs)
+
+    coefficients = np.array(coefficients)
+    reconstructed = np.array(reconstructed)
+    plot_principal_components(pcas)
+
+    return coefficients, reconstructed
+
+
+def plot_principal_components(pcas):
+    nrows = int(pcas[0].n_components ** 0.5)
+    ncols = int(np.ceil(pcas[0].n_components / nrows))
+    fig, axes = plt.subplots(nrows, ncols, sharex=True)
+    for pca, fltr in zip(pcas, 'griz'):
+        components = pca.inverse_transform(np.identity(pcas[0].n_components))
+        for pc, ax in zip(components, axes.flatten()):
+            ax.plot(pc, color=filter_colors[fltr], label=fltr)
+    axes[0, 0].legend()
+    fig.tight_layout()
+    fig.savefig('principal_components.pdf')
 
 
 def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True):
@@ -225,9 +252,9 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         good = np.isfinite(models).all(axis=(0, 2))
         peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
         logging.info('peak magnitudes extracted')
-        pcs = get_principal_components(models[:, good])
+        coefficients, reconstructed = get_principal_components(models[:, good])
         logging.info('PCA finished')
-        features = np.dstack([peakmags, pcs])
+        features = np.dstack([peakmags, coefficients])
     else:
         params[:, :, 0] *= flux2lum
         good = np.isfinite(params).all(axis=(0, 2))
@@ -265,9 +292,9 @@ def plot_final_fit(time, data, trace_path='.'):
         lc1 = produce_lc(time, params1)
         lc2 = produce_lc(time, params2)
 
-    colors = ['#00CCFF', '#FF7D00', '#90002C', '#000000']
     fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
-    for ax, fltr, color, lc_filt1, lc_filt2 in zip(axes.flatten(), 'griz', colors, lc1, lc2):
+    for ax, fltr, lc_filt1, lc_filt2 in zip(axes.flatten(), 'griz', lc1, lc2):
+        color = filter_colors[fltr]
         obs = t[t['FLT'] == fltr]
         ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
         ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
