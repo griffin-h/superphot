@@ -115,7 +115,7 @@ def validate_classifier(clf, sampler, data):
 
 def load_test_data():
     test_table = Table.read('test_data.txt', format='ascii.fixed_width')
-    test_table['features'] = scale(np.load('test_data.npz')['features'])
+    test_table['features'] = np.load('test_data.npz')['features']
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
 
@@ -123,6 +123,7 @@ def load_test_data():
 if __name__ == '__main__':
     logging.info('started classify.py')
     test_data = load_test_data()
+    test_data['features'] = scale(test_data['features'])
     train_data = test_data[~test_data['type'].mask]
     train_data['label'] = [classes.index(t) for t in train_data['type']]
     clf, sampler = train_classifier(train_data)
