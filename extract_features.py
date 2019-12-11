@@ -50,7 +50,10 @@ def load_trace(file, trace_path='.', version='2'):
     for fltr in 'griz':
         obs = t[t['FLT'] == fltr]
         model, varnames = setup_model(obs)
-        trace = pm.load_trace(tracefile.format(version, fltr), model)
+        tracefile_filter = tracefile.format(version, fltr)
+        if not os.path.exists(tracefile_filter):
+            raise FileNotFoundError(f"[Errno 2] No such file or directory: '{tracefile_filter}'")
+        trace = pm.load_trace(tracefile_filter, model)
         trace_values = np.transpose([trace.get_values(var) for var in varnames])
         lst.append(trace_values)
     lst = np.array(lst)
@@ -111,7 +114,7 @@ def sample_posterior(filename, rand_num, trace_path='.', trace_version='2'):
         trace = load_trace(filename, trace_path=trace_path, version=trace_version)
         i_rand = np.random.randint(trace.shape[1], size=rand_num)
         trace_rand = trace[:, i_rand]
-    except ValueError:
+    except FileNotFoundError:
         trace_rand = np.tile(np.nan, (4, rand_num, 6))
     return trace_rand
 
