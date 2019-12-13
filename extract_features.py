@@ -89,33 +89,25 @@ def produce_lc(time, trace, align_to_t0=False):
     return lc
 
 
-def sample_posterior(filename, rand_num, trace_path='.', trace_version='2'):
+def sample_posterior(trace, rand_num):
     """
     Randomly sample the parameters from the stored MCMC traces.
 
     Parameters
     ----------
-    filename : str
-        Filename of the original SNANA data file.
+    trace : numpy.ndarray, shape=(nfilters, nsteps, nparams)
+        PyMC3 trace stored as 3-D array with shape .
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
-    trace_path : str, optional
-        Directory where the PyMC3 trace data is stored. Default: current directory.
-    trace_version : str, optional
-        Version of the trace to use, i.e., the character before the filter in the filename. Default: '2'.
 
     Returns
     -------
-    trace_rand : numpy.ndarray, shape=(4, rand_num, 6)
+    trace_rand : numpy.ndarray, shape=(nfilters, rand_num, nparams)
         3-D array containing a random sampling of parameters for each filter.
 
     """
-    try:
-        trace = load_trace(filename, trace_path=trace_path, version=trace_version)
-        i_rand = np.random.randint(trace.shape[1], size=rand_num)
-        trace_rand = trace[:, i_rand]
-    except FileNotFoundError:
-        trace_rand = np.tile(np.nan, (4, rand_num, 6))
+    i_rand = np.random.randint(trace.shape[1], size=rand_num)
+    trace_rand = trace[:, i_rand]
     return trace_rand
 
 
@@ -241,11 +233,22 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
             params = stored['params']
             logging.info(f'parameters read from {stored_models}')
         else:
-            params = np.hstack([sample_posterior(filename, ndraws, stored_models) for filename in t['filename']])
+            params = []
+            bad_rows = []
+            for i, filename in enumerate(t['filename']):
+                try:
+                    trace = load_trace(filename, trace_path=stored_models)
+                except FileNotFoundError:
+                    bad_rows.append(i)
+                    continue
+                params.append(sample_posterior(trace, ndraws))
+            params = np.hstack(params)
+            t.remove_rows(bad_rows)
             logging.info(f'posteriors sampled from {stored_models}')
         if use_pca:
             time = np.arange(-50., 180.)
             flux = produce_lc(time, params, align_to_t0=True)
+            t.write('data_table.txt', format='ascii.fixed_width')  # after removing rows that have not been fit
             np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params, ndraws=ndraws)
             logging.info('model LCs produced, saved to model_lcs.npz')
 
@@ -290,8 +293,10 @@ def plot_final_fit(time, data, trace_path='.'):
         if 'params' in data.colnames:
             params1 = params2 = np.moveaxis(data['params'], 0, 1)
         else:
-            params1 = sample_posterior(row['filename'], len(data), trace_path, '1')
-            params2 = sample_posterior(row['filename'], len(data), trace_path, '2')
+            trace1 = load_trace(row['filename'], trace_path, '1')
+            trace2 = load_trace(row['filename'], trace_path, '2')
+            params1 = sample_posterior(trace1, len(data))
+            params2 = sample_posterior(trace2, len(data))
         lc1 = produce_lc(time, params1)
         lc2 = produce_lc(time, params2)
 
