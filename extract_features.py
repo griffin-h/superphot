@@ -11,19 +11,17 @@ import extinction
 import numpy as np
 import matplotlib.pyplot as plt
 import pymc3 as pm
-import theano.tensor as tt
 import os
 import argparse
 import logging
 from astropy.table import Table, join
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
-from util import read_snana, light_curve_event_data
-from fit_model import setup_model, flux_model
+from util import read_snana, light_curve_event_data, filter_colors
+from fit_model import setup_model, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
-filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
 
 
 def load_trace(file, trace_path='.', version='2'):
@@ -58,57 +56,6 @@ def load_trace(file, trace_path='.', version='2'):
         lst.append(trace_values)
     lst = np.array(lst)
     return lst
-
-
-def produce_lc(time, trace, align_to_t0=False):
-    """
-    Load the stored PyMC3 traces and produce model light curves from the parameters.
-
-    Parameters
-    ----------
-    time : numpy.array
-        Range of times (in days, with respect to PEAKMJD) over which the model should be calculated.
-    trace : numpy.array
-        PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
-    align_to_t0 : bool, optional
-        Interpret `time` as days with respect to t_0 instead of PEAKMJD.
-
-    Returns
-    -------
-    lc : numpy.array
-        Model light curves. Shape = (len(trace) * nwalkers, nfilters, len(time)).
-    """
-    tt.config.compute_test_value = 'ignore'
-    mytensor = tt.TensorType('float64', (False, False, True))
-    parameters = [mytensor() for _ in range(6)]
-    flux = flux_model(time, *parameters)
-    param_values = {param: values[:, :, np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, 2, 0))}
-    if align_to_t0:
-        param_values[parameters[3]] = np.zeros_like(param_values[parameters[3]])
-    lc = flux.eval(param_values)
-    return lc
-
-
-def sample_posterior(trace, rand_num):
-    """
-    Randomly sample the parameters from the stored MCMC traces.
-
-    Parameters
-    ----------
-    trace : numpy.ndarray, shape=(nfilters, nsteps, nparams)
-        PyMC3 trace stored as 3-D array with shape .
-    rand_num : int
-        The number of light curves randomly extracted from the MCMC run.
-
-    Returns
-    -------
-    trace_rand : numpy.ndarray, shape=(nfilters, rand_num, nparams)
-        3-D array containing a random sampling of parameters for each filter.
-
-    """
-    i_rand = np.random.randint(trace.shape[1], size=rand_num)
-    trace_rand = trace[:, i_rand]
-    return trace_rand
 
 
 def flux_to_luminosity(row):
@@ -281,51 +228,6 @@ def meta_table(filenames):
     t_meta['A_V'].format = '%.5f'
     t_meta['hostz'].format = '%.4f'
     return t_meta
-
-
-def plot_final_fit(time, data, trace_path='.'):
-    row = data[0]
-    t = light_curve_event_data(row['filename'])
-
-    if 'models' in data.colnames:
-        lc1 = lc2 = np.moveaxis(data['models'], 0, 1)
-    else:
-        if 'params' in data.colnames:
-            params1 = params2 = np.moveaxis(data['params'], 0, 1)
-        else:
-            trace1 = load_trace(row['filename'], trace_path, '1')
-            trace2 = load_trace(row['filename'], trace_path, '2')
-            params1 = sample_posterior(trace1, len(data))
-            params2 = sample_posterior(trace2, len(data))
-        lc1 = produce_lc(time, params1)
-        lc2 = produce_lc(time, params2)
-
-    fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
-    for ax, fltr, lc_filt1, lc_filt2 in zip(axes.flatten(), 'griz', lc1, lc2):
-        color = filter_colors[fltr]
-        obs = t[t['FLT'] == fltr]
-        ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
-        ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
-        if lc1 is not lc2:
-            ax.plot(time, lc_filt1.T, color=color, ls=':', alpha=0.2)
-        ax.plot(time, lc_filt2.T, color=color, alpha=0.2)
-
-    # autoscale y-axis without errorbars
-    ymin = min(t['FLUXCAL'].min(), lc2.min())
-    ymax = max(t['FLUXCAL'].max(), lc2.max())
-    height = ymax - ymin
-    axes[0, 0].set_ylim(ymin - 0.08 * height, ymax + 0.08 * height)
-
-    for i in range(2):
-        axes[1, i].set_xlabel('Phase')
-        axes[i, 0].set_ylabel('Flux')
-    if np.ma.is_masked(row['type']):
-        title = row['id']
-    else:
-        title = f'{row["id"]} = {row["type"]} ($z={row["redshift"]:.3f}$)'
-    fig.text(0.5, 0.95, title, ha='center', va='bottom', size='large')
-    plt.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
-    return fig
 
 
 def save_test_data(test_table):

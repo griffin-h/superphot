@@ -5,9 +5,10 @@
 # CENTER FOR ASTROPHYSICS | HARVARD & SMITHSONIAN
 # REU 2019 INTERN PROGRAM
 
-import numpy as np
 from astropy.stats import mad_std
 from astropy.table import Table
+
+filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
 
 
 def read_snana(filename):
