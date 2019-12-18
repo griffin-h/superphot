@@ -151,7 +151,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         Table containing the 'filename' and 'redshift' of each transient to be classified.
     stored_models : str
         If a directory, look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
-        If a Numpy file, read the model LCs (or alternatively, the parameters) from this file.
+        If a Numpy file, read the parameters from this file.
     ndraws : int, optional
         Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read fron Numpy file.
     zero_point : float, optional
@@ -171,36 +171,30 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         stored = np.load(stored_models)
         ndraws = stored.get('ndraws', ndraws)
 
-    if 'flux' in stored and use_pca:
-        flux = stored['flux']
-        logging.info(f'model LCs read from {stored_models}')
+    if 'params' in stored:
+        params = stored['params']
+        logging.info(f'parameters read from {stored_models}')
     else:
-        if 'params' in stored:
-            params = stored['params']
-            logging.info(f'parameters read from {stored_models}')
-        else:
-            params = []
-            bad_rows = []
-            for i, filename in enumerate(t['filename']):
-                try:
-                    trace = load_trace(filename, trace_path=stored_models)
-                except FileNotFoundError:
-                    bad_rows.append(i)
-                    continue
-                params.append(sample_posterior(trace, ndraws))
-            params = np.hstack(params)
-            t.remove_rows(bad_rows)
-            logging.info(f'posteriors sampled from {stored_models}')
-        if use_pca:
-            time = np.arange(-50., 180.)
-            flux = produce_lc(time, params, align_to_t0=True)
-            t.write('data_table.txt', format='ascii.fixed_width')  # after removing rows that have not been fit
-            np.savez_compressed('model_lcs.npz', time=time, flux=flux, params=params, ndraws=ndraws)
-            logging.info('model LCs produced, saved to model_lcs.npz')
+        params = []
+        bad_rows = []
+        for i, filename in enumerate(t['filename']):
+            try:
+                trace = load_trace(filename, trace_path=stored_models)
+            except FileNotFoundError:
+                bad_rows.append(i)
+                continue
+            params.append(sample_posterior(trace, ndraws))
+        params = np.hstack(params)
+        t.remove_rows(bad_rows)
+        t.write('data_table.txt', format='ascii.fixed_width')  # after removing rows that have not been fit
+        np.savez_compressed('params.npz', params=params, ndraws=ndraws)
+        logging.info(f'posteriors sampled from {stored_models}, saved to data_table.txt & params.npz')
 
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
+    params[:, :, 0] *= flux2lum
     if use_pca:
-        models = flux * flux2lum[:, :, np.newaxis]
+        time = np.arange(-50., 180.)
+        models = produce_lc(time, params, align_to_t0=True)
         good = np.isfinite(models).all(axis=(0, 2))
         peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
         logging.info('peak magnitudes extracted')
@@ -208,7 +202,6 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         logging.info('PCA finished')
         features = np.dstack([peakmags, coefficients])
     else:
-        params[:, :, 0] *= flux2lum
         good = np.isfinite(params).all(axis=(0, 2))
         features = params[:, good]
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
