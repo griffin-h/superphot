@@ -128,7 +128,49 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     return coefficients, reconstructed
 
 
+def plot_parameters(train_data, zero_point=27.5):
+    """
+    Plot histograms of the model parameters stored in train_data['params']. The plot will be saved to parameters.pdf.
+
+    Parameters
+    ----------
+    train_data : astropy.table.Table
+        Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
+    zero_point : float
+        Zero point used for converting the amplitude (parameter 1) into a magnitude. Default: 27.5.
+    """
+    fig, axarr = plt.subplots(4, 6, figsize=(11, 8.5), sharex='col')
+    for sntype, group in zip(train_data.groups.keys['type'], train_data.groups):
+        for i in range(4):
+            for j in range(6):
+                feature = group['params'][:, i, j]
+                if j == 0:
+                    feature = zero_point - 2.5 * np.log10(feature)
+                histrange = np.percentile(feature, (5, 95))
+                axarr[i, j].hist(feature, label=sntype, range=histrange, density=True, histtype='step')
+                axarr[i, j].set_yticks([])
+    axarr[0, 3].legend(loc='lower center', bbox_to_anchor=(0., 1.), ncol=5)
+    varnames = ['Amplitude (mag)', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
+    for i, var in enumerate(varnames):
+        axarr[-1, i].set_xlabel(var)
+    for i, filt in enumerate('griz'):
+        axarr[i, 0].set_ylabel(filt, rotation=0)
+    axarr[-1, 0].invert_xaxis()
+    fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0., hspace=0.)
+    fig.savefig('parameters.pdf')
+    plt.close(fig)
+
+
 def plot_principal_components(pcas):
+    """
+    Plot the principal components being used to extract features from the model light curves. The plot will be saved to
+    principal_components.pdf.
+
+    Parameters
+    ----------
+    pcas : list
+        List of the PCA objects for each filter, after fitting.
+    """
     nrows = int(pcas[0].n_components ** 0.5)
     ncols = int(np.ceil(pcas[0].n_components / nrows))
     fig, axes = plt.subplots(nrows, ncols, sharex=True)
@@ -138,6 +180,49 @@ def plot_principal_components(pcas):
     axes[0, 0].legend()
     fig.tight_layout()
     fig.savefig('principal_components.pdf')
+
+
+def plot_features(train_data, classids_to_autoscale=None):
+    """
+    Plot histograms of the features to be used for classification. The plot will be saved to features{classids}.pdf,
+    where classids is a concatenation of the integers passed in `classids_to_autoscale`.
+
+    Parameters
+    ----------
+    train_data : astropy.table.Table
+        Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
+    classids_to_autoscale : set
+        Set of classification IDs (integers corresponding to the supernova types) that the histogram axes should be
+        autoscaled to. Some classes have a much wider dynamic range of features than others, making it difficult to plot
+        all histograms on the same axes.
+    """
+    if classids_to_autoscale is None:
+        classids_to_autoscale = set(range(len(train_data.groups)))
+    ncols = int(np.ceil(train_data['features'].shape[1] / 4))
+    fig, axarr = plt.subplots(4, ncols, figsize=(11, 8.5), sharex='col')
+    for i in classids_to_autoscale:
+        group = train_data.groups[i]
+        for ax, feature in zip(axarr.flatten(), group['features'].T):
+            histrange = np.percentile(feature, (5, 95))
+            ax.hist(feature, label=group['type'][0], range=histrange, density=True, histtype='step', color='C'+str(i))
+            ax.set_yticks([])
+    for i in set(range(len(train_data.groups))) - set(classids_to_autoscale):
+        group = train_data.groups[i]
+        for ax, feature in zip(axarr.flatten(), group['features'].T):
+            ax.autoscale(False)
+            histrange = np.percentile(feature, (5, 95))
+            ax.hist(feature, label=group['type'][0], range=histrange, density=True, histtype='step', color='C'+str(i))
+    axarr[0, 3].legend(loc='lower center', bbox_to_anchor=(0.5, 1.), ncol=5)
+    axarr[-1, 0].set_xlabel('Peak Magnitude')
+    axarr[-1, 0].invert_xaxis()
+    for i in range(1, axarr.shape[1]):
+        axarr[-1, i].set_xlabel('PC' + str(i))
+    for i, filt in enumerate('griz'):
+        axarr[i, 0].set_ylabel(filt, rotation=0)
+        axarr[i, 0].set_yticks([])
+    fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0.)
+    fig.savefig('features{}.pdf'.format(''.join(str(i) for i in classids_to_autoscale)))
+    plt.close(fig)
 
 
 def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True):
@@ -206,7 +291,13 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         features = params[:, good]
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
+    t_good['params'] = np.moveaxis(params, 1, 0)
     t_good['features'] = np.hstack(features)
+
+    train_data = t_good[~t_good['type'].mask].group_by('type')
+    plot_parameters(train_data, zero_point)
+    plot_features(train_data, {0, 2})
+    plot_features(train_data, {1, 3, 4})
     return t_good
 
 
