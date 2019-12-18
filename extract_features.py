@@ -238,8 +238,8 @@ def save_test_data(test_table):
 
 def compile_data_table(filenames):
     t_input = meta_table(filenames)
-    new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 521 classified SNe
-    t_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')  # classifications of 499 SNe
+    new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 524 classified transients
+    t_conf = Table.read('ps1confirmed_only_sne.txt', format='ascii')  # classifications of 513 SNe
     bad_lcs = Table.read('bad_lcs.dat', names=['idnum', 'flag0', 'flag1'], format='ascii', fill_values=('-', '0'))
     bad_lcs['id'] = ['PSc{:0>6d}'.format(idnum) for idnum in bad_lcs['idnum']]  # 1227 VAR, AGN, QSO transients
     bad_lcs.remove_column('idnum')
