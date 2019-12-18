@@ -19,7 +19,7 @@ from imblearn.over_sampling import SMOTE
 import itertools
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-t_conf = Table.read('ps1confirmed_only_sne_without_outlier.txt', format='ascii')
+t_conf = Table.read('ps1confirmed_only_sne.txt', format='ascii')
 classes = sorted(set(t_conf['type']))
 
 
