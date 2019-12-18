@@ -193,7 +193,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     params[:, :, 0] *= flux2lum
     if use_pca:
-        time = np.arange(-50., 180.)
+        time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
         good = np.isfinite(models).all(axis=(0, 2))
         peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
