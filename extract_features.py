@@ -133,8 +133,7 @@ def plot_principal_components(pcas):
     ncols = int(np.ceil(pcas[0].n_components / nrows))
     fig, axes = plt.subplots(nrows, ncols, sharex=True)
     for pca, fltr in zip(pcas, 'griz'):
-        components = pca.inverse_transform(np.identity(pcas[0].n_components))
-        for pc, ax in zip(components, axes.flatten()):
+        for pc, ax in zip(pca.components_, axes.flatten()):
             ax.plot(pc, color=filter_colors[fltr], label=fltr)
     axes[0, 0].legend()
     fig.tight_layout()
