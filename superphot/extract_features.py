@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import extinction
 import numpy as np
 import matplotlib.pyplot as plt
 import pymc3 as pm
@@ -14,7 +13,6 @@ from .util import read_snana, light_curve_event_data, filter_colors, get_VAV19
 from .fit_model import setup_model, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
 
 
 def load_trace(file, trace_path='.', version='2'):
@@ -71,7 +69,7 @@ def flux_to_luminosity(row):
         z = row['hostz']
     else:
         z = np.nan
-    A_coeffs = extinction.ccm89(effective_wavelengths, row['A_V'], 3.1)
+    A_coeffs = row['A_V'] * np.array([1.16269427, 0.87191851, 0.66551667, 0.42906714])  # g, r, i, z
     flux2lum = 10. ** (A_coeffs / 2.5) * cosmo_P.luminosity_distance(z).to('dapc').value ** 2. * (1. + z)
     return flux2lum
 

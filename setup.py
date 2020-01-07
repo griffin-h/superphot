@@ -25,7 +25,6 @@ setuptools.setup(
         'pymc3',
         'scikit-learn',
         'imbalanced-learn',
-        'extinction',
         'arviz',
     ],
     entry_points={
