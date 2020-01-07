@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-# FREDERICK DAUPHIN
-# DEPARTMENT OF PHYSICS, CARNEGIE MELLON UNIVERSITY
-# ADVISOR: DR. GRIFFIN HOSSEINZADEH
-# MENTOR: PROF. EDO BERGER
-# CENTER FOR ASTROPHYSICS | HARVARD & SMITHSONIAN
-# REU 2019 INTERN PROGRAM
-
 import extinction
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,8 +10,8 @@ import logging
 from astropy.table import Table, join
 from astropy.cosmology import Planck15 as cosmo_P
 from sklearn.decomposition import PCA
-from util import read_snana, light_curve_event_data, filter_colors
-from fit_model import setup_model, produce_lc, sample_posterior
+from .util import read_snana, light_curve_event_data, filter_colors, get_VAV19
+from .fit_model import setup_model, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 effective_wavelengths = np.array([4866., 6215., 7545., 9633.])  # g, r, i, z
@@ -322,12 +315,13 @@ def save_test_data(test_table):
 
 def compile_data_table(filenames):
     t_input = meta_table(filenames)
-    new_ps1z = Table.read('new_ps1z.dat', format='ascii')  # redshifts of 524 classified transients
-    t_conf = Table.read('ps1confirmed_only_sne.txt', format='ascii')  # classifications of 513 SNe
-    bad_lcs = Table.read('bad_lcs.dat', names=['idnum', 'flag0', 'flag1'], format='ascii', fill_values=('-', '0'))
+    new_ps1z = Table.read(get_VAV19('new_ps1z.dat'), format='ascii')  # redshifts of 524 classified transients
+    t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')  # classifications of 513 SNe
+    bad_lcs = Table.read(get_VAV19('bad_lcs.dat'), names=['idnum', 'flag0', 'flag1'], format='ascii',
+                         fill_values=('-', '0'))
     bad_lcs['id'] = ['PSc{:0>6d}'.format(idnum) for idnum in bad_lcs['idnum']]  # 1227 VAR, AGN, QSO transients
     bad_lcs.remove_column('idnum')
-    bad_lcs_2 = np.loadtxt('bad_lcs_2.dat', dtype=str, usecols=[0, -1])  # 526 transients with bad host galaxy spectra
+    bad_lcs_2 = np.loadtxt(get_VAV19('bad_lcs_2.dat'), dtype=str, usecols=[0, -1])  # 526 transients w/bad host spectra
     bad_lcs_2 = Table([['PSc' + idnum for idnum in bad_lcs_2[:, 0]], bad_lcs_2[:, 1]], names=['id', 'flag2'])
 
     t_final = join(t_input, new_ps1z, join_type='left')
@@ -339,7 +333,7 @@ def compile_data_table(filenames):
     return t_final
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_table', type=str, help='List of input SNANA files, or input data table')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '

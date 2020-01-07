@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-# FREDERICK DAUPHIN
-# DEPARTMENT OF PHYSICS, CARNEGIE MELLON UNIVERSITY
-# ADVISOR: DR. GRIFFIN HOSSEINZADEH
-# MENTOR: PROF. EDO BERGER
-# CENTER FOR ASTROPHYSICS | HARVARD & SMITHSONIAN
-# REU 2019 INTERN PROGRAM
-
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -16,10 +9,11 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import scale
 from imblearn.over_sampling import SMOTE
+from .util import get_VAV19
 import itertools
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-t_conf = Table.read('ps1confirmed_only_sne.txt', format='ascii')
+t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
 
 
@@ -120,7 +114,7 @@ def load_test_data():
     return test_table
 
 
-if __name__ == '__main__':
+def main():
     logging.info('started classify.py')
     test_data = load_test_data()
     test_data['features'] = scale(test_data['features'])

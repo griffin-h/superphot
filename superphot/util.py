@@ -1,12 +1,7 @@
-# FREDERICK DAUPHIN
-# DEPARTMENT OF PHYSICS, CARNEGIE MELLON UNIVERSITY
-# ADVISOR: DR. GRIFFIN HOSSEINZADEH
-# MENTOR: PROF. EDO BERGER
-# CENTER FOR ASTROPHYSICS | HARVARD & SMITHSONIAN
-# REU 2019 INTERN PROGRAM
-
 from astropy.stats import mad_std
 from astropy.table import Table
+import pkg_resources
+import os
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
 
@@ -92,3 +87,21 @@ def light_curve_event_data(file, phase_min=-50., phase_max=180., nsigma=None):
     if nsigma is not None:
         t_event = cut_outliers(t_event, nsigma)
     return t_event
+
+
+def get_VAV19(filename):
+    """
+    Locate one of the data tables from the paper by V. Ashley Villar et al. (2019)
+
+    Parameters
+    ----------
+    filename : str
+        Name of the saved data table
+
+    Returns
+    -------
+    path : str
+        Full path to the saved data table in the installed package
+    """
+    path = pkg_resources.resource_filename(__name__, os.path.join('VAV19', filename))
+    return path

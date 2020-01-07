@@ -1,18 +1,11 @@
 #!/usr/bin/env python
 
-# FREDERICK DAUPHIN
-# DEPARTMENT OF PHYSICS, CARNEGIE MELLON UNIVERSITY
-# ADVISOR: DR. GRIFFIN HOSSEINZADEH
-# MENTOR: PROF. EDO BERGER
-# CENTER FOR ASTROPHYSICS | HARVARD & SMITHSONIAN
-# REU 2019 INTERN PROGRAM
-
 import os
 import argparse
 import numpy as np
 import pymc3 as pm
 import theano.tensor as tt
-from util import light_curve_event_data, filter_colors
+from .util import light_curve_event_data, filter_colors
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import gaussian_kde
@@ -387,7 +380,24 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
         plt.close('all')
 
 
-if __name__ == '__main__':
+def plot_diagnostics():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', type=str, help='Path to PyMC3 trace directory')
+    parser.add_argument('--snana-path', type=str, default='.', help='Path to SNANA files')
+    parser.add_argument('--show', action='store_true', help='Show the plots instead of saving to a file')
+    args = parser.parse_args()
+
+    _, _, ps1id, fltr = os.path.split(args.filename.strip('/'))[-1].split('_')
+    fltr = fltr.strip('12')
+    snana_file = os.path.join(args.snana_path, f'PS1_PS1MD_{ps1id}.snana.dat')
+    t = light_curve_event_data(snana_file)
+    obs = t[t['FLT'] == fltr]
+    model, parameters = setup_model(obs)
+    trace = pm.load_trace(args.filename, model)
+    diagnostics(obs, trace, parameters, args.filename, args.show)
+
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
     parser.add_argument('--filters', type=str, default='griz', help='Filters to fit (choose from griz)')
