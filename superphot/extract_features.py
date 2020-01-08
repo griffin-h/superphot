@@ -262,7 +262,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
             params.append(sample_posterior(trace, ndraws))
         params = np.hstack(params)
         t.remove_rows(bad_rows)
-        t.write('data_table.txt', format='ascii.fixed_width')  # after removing rows that have not been fit
+        t.write('data_table.txt', format='ascii.fixed_width', overwrite=True)  # excluding rows that have not been fit
         np.savez_compressed('params.npz', params=params, ndraws=ndraws)
         logging.info(f'posteriors sampled from {stored_models}, saved to data_table.txt & params.npz')
 

@@ -133,7 +133,7 @@ def main():
         test_data[classname].format = '%.3f'
     grouped = test_data.filled().group_by(meta_columns)
     output = grouped.groups.aggregate(np.mean)
-    output.write('results.txt', format='ascii.fixed_width')
+    output.write('results.txt', format='ascii.fixed_width', overwrite=True)
     logging.info('classification results saved to results.txt')
 
     cnf_matrix = validate_classifier(clf, sampler, train_data)
