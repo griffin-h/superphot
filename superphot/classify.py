@@ -108,7 +108,7 @@ def validate_classifier(clf, sampler, data):
 
 
 def load_test_data():
-    test_table = Table.read('test_data.txt', format='ascii.fixed_width')
+    test_table = Table.read('test_data.txt', format='ascii.fixed_width', fill_value=('', ''))
     test_table['features'] = np.load('test_data.npz')['features']
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
