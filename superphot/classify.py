@@ -11,6 +11,7 @@ from sklearn.preprocessing import scale
 from imblearn.over_sampling import SMOTE
 from .util import get_VAV19
 import itertools
+from tqdm import tqdm
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
@@ -95,11 +96,13 @@ def validate_classifier(clf, sampler, data):
     """
     kf = KFold(len(np.unique(data['id'])))
     labels_test = np.empty_like(data['label'])
-    for i, (train_index, test_index) in enumerate(kf.split(data)):
+    pbar = tqdm(desc='Cross-validation', total=kf.n_splits)
+    for train_index, test_index in kf.split(data):
         features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['label'][train_index])
         clf.fit(features_resamp, labels_resamp)
         labels_test[test_index] = clf.predict(data['features'][test_index])
-        logging.info(f'completed fold {i+1:d}/{kf.n_splits:d} of cross-validation')
+        pbar.update()
+    pbar.close()
 
     cnf_matrix = confusion_matrix(data['label'], labels_test)
     plot_confusion_matrix(cnf_matrix)
