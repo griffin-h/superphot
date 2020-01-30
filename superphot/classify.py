@@ -15,6 +15,7 @@ from imblearn.over_sampling import SMOTE
 from .util import get_VAV19
 import itertools
 from tqdm import tqdm
+from argparse import ArgumentParser
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
@@ -101,7 +102,7 @@ class MultivariateGaussian(BaseOverSampler):
         return X_resampled, y_resampled
 
 
-def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1, sampler_type='mvg'):
+def train_classifier(data, n_est=100, depth=None, max_feat=5, n_jobs=-1, sampler_type='mvg', random_state=None):
     """
     Initialize and train a random forest classifier. Balance the classes before training by oversampling.
 
@@ -114,12 +115,14 @@ def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1, samp
     depth : int, optional
         The maxiumum depth of a tree. If None, the tree will have all pure leaves.
     max_feat : int, optional
-        The maximum number of used before making a split. If None, use all features.
+        The maximum number of features used before making a split. If None, use all features.
     n_jobs : int, optional
         The number of jobs to run in parallel for the classifier. If -1, use all available processors.
     sampler_type : str, optional
         The type of resampler to use. Current choices are 'mvg' (multivariate Gaussian; default) or 'smote' (synthetic
         minority oversampling technique).
+    random_state : int, optional
+        A seed for the random number generators used in the classifier and resampler.
 
     Returns
     -------
@@ -129,11 +132,11 @@ def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1, samp
         A resampler used to balance the training sample.
     """
     clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, class_weight='balanced',
-                                 criterion='entropy', max_features=max_feat, n_jobs=n_jobs)
+                                 criterion='entropy', max_features=max_feat, n_jobs=n_jobs, random_state=random_state)
     if sampler_type == 'mvg':
-        sampler = MultivariateGaussian(sampling_strategy=1000)
+        sampler = MultivariateGaussian(sampling_strategy=1000, random_state=random_state)
     elif sampler_type == 'smote':
-        sampler = SMOTE()
+        sampler = SMOTE(random_state=random_state)
     else:
         raise NotImplementedError(f'{sampler_type} is not a recognized sampler type')
     features_resamp, labels_resamp = sampler.fit_resample(data['features'], data['label'])
@@ -179,12 +182,28 @@ def load_test_data():
 
 
 def main():
+    parser = ArgumentParser()
+    parser.add_argument('--estimators', type=int, default=100,
+                        help='Number of estimators (trees) in the random forest classifier.')
+    parser.add_argument('--max-depth', type=int, help='Maximum depth of a tree in the random forest classifier. '
+                        'By default, the tree will have all pure leaves.')
+    parser.add_argument('--max-feat', type=int, default=5,
+                        help='Maximum number of features in the decision tree before making a split.')
+    parser.add_argument('--jobs', type=int, default=-1, help='Number of jobs to run in parallel for the classifier. '
+                        'By default, use all available processors.')
+    parser.add_argument('--sampler', choices=['mvg', 'smote'], default='mvg', help='The resampling algorithm to use. '
+                        'Current choices are "mvg" (multivariate Gaussian; default) or "smote" (synthetic minority '
+                        'oversampling technique).')
+    parser.add_argument('--seed', type=int, help='Seed for the random number generator (use for reproducibility).')
+    args = parser.parse_args()
+
     logging.info('started classify.py')
     test_data = load_test_data()
     test_data['features'] = scale(test_data['features'])
     train_data = test_data[~test_data['type'].mask]
     train_data['label'] = [classes.index(t) for t in train_data['type']]
-    clf, sampler = train_classifier(train_data)
+    clf, sampler = train_classifier(train_data, n_est=args.estimators, depth=args.max_depth, max_feat=args.max_feat,
+                                    n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
     logging.info('classifier trained')
 
     p_class = clf.predict_proba(test_data['features'])
