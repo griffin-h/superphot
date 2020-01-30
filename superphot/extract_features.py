@@ -256,8 +256,10 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         for i, filename in enumerate(t['filename']):
             try:
                 trace = load_trace(filename, trace_path=stored_models)
-            except FileNotFoundError:
+                logging.info(f'loaded trace from {filename}')
+            except FileNotFoundError as e:
                 bad_rows.append(i)
+                logging.error(e)
                 continue
             params.append(sample_posterior(trace, ndraws))
         params = np.hstack(params)
