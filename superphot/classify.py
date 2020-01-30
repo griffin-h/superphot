@@ -8,6 +8,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import scale
+from sklearn.utils import safe_indexing, check_random_state
+from imblearn.over_sampling.base import BaseOverSampler
+from imblearn.utils import Substitution, _docstring
 from imblearn.over_sampling import SMOTE
 from .util import get_VAV19
 import itertools
@@ -47,10 +50,60 @@ def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='B
     plt.savefig('confusion_matrix_norm.pdf' if normalize else 'confusion_matrix.pdf')
 
 
-def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1):
+@Substitution(
+    sampling_strategy=BaseOverSampler._sampling_strategy_docstring.replace('dict or callable', 'dict, callable or int'),
+    random_state=_docstring._random_state_docstring)
+class MultivariateGaussian(BaseOverSampler):
+    """Class to perform over-sampling using a multivariate Gaussian (``numpy.random.multivariate_normal``).
+
+    Parameters
+    ----------
+    {sampling_strategy}
+
+        - When ```int``, it corresponds to the total number of samples in each
+          class (including the real samples). Can be used to oversample even
+          the majority class.
+
+    {random_state}
     """
-    Make a random forest classifier using synthetic minority oversampling technique and kfolding. A lot of the
-    documentation is taken directly from SciKit Learn page and should be referenced for further questions.
+    def __init__(self, sampling_strategy='all', random_state=None):
+        self.random_state = random_state
+        if isinstance(sampling_strategy, int):
+            self.samples_per_class = sampling_strategy
+            sampling_strategy = 'all'
+        else:
+            self.samples_per_class = None
+        super().__init__(sampling_strategy=sampling_strategy)
+
+    def _fit_resample(self, X, y):
+        self.fit(X, y)
+
+        X_resampled = X.copy()
+        y_resampled = y.copy()
+
+        for class_sample, n_samples in self.sampling_strategy_.items():
+            target_class_indices = np.flatnonzero(y == class_sample)
+            if self.samples_per_class is not None:
+                n_samples = self.samples_per_class - len(target_class_indices)
+            if n_samples == 0:
+                continue
+            X_class = safe_indexing(X, target_class_indices)
+
+            mean = np.mean(X_class, axis=0)
+            cov = np.cov(X_class, rowvar=False)
+            rs = check_random_state(self.random_state)
+            X_new = rs.multivariate_normal(mean, cov, n_samples)
+            y_new = np.repeat(class_sample, n_samples)
+
+            X_resampled = np.vstack((X_resampled, X_new))
+            y_resampled = np.hstack((y_resampled, y_new))
+
+        return X_resampled, y_resampled
+
+
+def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1, sampler_type='mvg'):
+    """
+    Initialize and train a random forest classifier. Balance the classes before training by oversampling.
 
     Parameters
     ----------
@@ -63,18 +116,26 @@ def train_classifier(data, n_est=100, depth=None, max_feat=None, n_jobs=-1):
     max_feat : int, optional
         The maximum number of used before making a split. If None, use all features.
     n_jobs : int, optional
-        The number of jobs to run in parallel for the resampler and classifier. If -1, use all available processors.
+        The number of jobs to run in parallel for the classifier. If -1, use all available processors.
+    sampler_type : str, optional
+        The type of resampler to use. Current choices are 'mvg' (multivariate Gaussian; default) or 'smote' (synthetic
+        minority oversampling technique).
 
     Returns
     -------
     clf : sklearn.emsemble.RandomForestClassifier
         A random forest classifier trained from the classified transients.
-    sampler : imblearn.over_sampling.SMOTE
-        A SMOTE resampler used to balance the training sample.
+    sampler : imblearn.over_sampling.base.BaseOverSampler
+        A resampler used to balance the training sample.
     """
     clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, class_weight='balanced',
                                  criterion='entropy', max_features=max_feat, n_jobs=n_jobs)
-    sampler = SMOTE(n_jobs=n_jobs)
+    if sampler_type == 'mvg':
+        sampler = MultivariateGaussian(sampling_strategy=1000)
+    elif sampler_type == 'smote':
+        sampler = SMOTE()
+    else:
+        raise NotImplementedError(f'{sampler_type} is not a recognized sampler type')
     features_resamp, labels_resamp = sampler.fit_resample(data['features'], data['label'])
     clf.fit(features_resamp, labels_resamp)
     return clf, sampler
