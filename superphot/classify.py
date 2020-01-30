@@ -63,7 +63,9 @@ class MultivariateGaussian(BaseOverSampler):
 
         - When ```int``, it corresponds to the total number of samples in each
           class (including the real samples). Can be used to oversample even
-          the majority class.
+          the majority class. If ``sampling_strategy`` is smaller than the
+          existing size of a class, that class will not be oversampled and
+          the classes may not be balanced.
 
     {random_state}
     """
@@ -86,7 +88,7 @@ class MultivariateGaussian(BaseOverSampler):
             target_class_indices = np.flatnonzero(y == class_sample)
             if self.samples_per_class is not None:
                 n_samples = self.samples_per_class - len(target_class_indices)
-            if n_samples == 0:
+            if n_samples <= 0:
                 continue
             X_class = safe_indexing(X, target_class_indices)
 
