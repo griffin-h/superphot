@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import pymc3 as pm
 import os
 import argparse
@@ -115,6 +116,7 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     coefficients = np.array(coefficients)
     reconstructed = np.array(reconstructed)
     plot_principal_components(pcas)
+    plot_pca_reconstruction(light_curves, reconstructed, coefficients)
 
     return coefficients, reconstructed
 
@@ -214,6 +216,35 @@ def plot_features(train_data, classids_to_autoscale=None):
     fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0.)
     fig.savefig('features{}.pdf'.format(''.join(str(i) for i in classids_to_autoscale)))
     plt.close(fig)
+
+
+def plot_pca_reconstruction(models, reconstructed, coefficients=None):
+    """
+    Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
+    These are saved as a multi-page PDF called pdf_reconstruction.pdf.
+
+    Parameters
+    ----------
+    models : array-like
+        A 3-D array of model light curves with shape (nfilters, ntransients, ntimes)
+    reconstructed : array-like
+        A 3-D array of reconstructed light curves with shape (nfilters, ntransients, ntimes)
+    coefficients : array-like, optional
+        A 3-D array of the principal component coefficients with shape (nfilters, ntransients, ncomponents). If given,
+        the coefficients will be printed at the top right of each plot.
+    """
+    with PdfPages('pca_reconstruction.pdf') as pdf:
+        ax = plt.axes()
+        for i in range(models.shape[1]):
+            for j, fltr in enumerate('griz'):
+                c = filter_colors[fltr]
+                ax.plot(models[j, i], color=c)
+                ax.plot(reconstructed[j, i], ls=':', color=c)
+            if coefficients is not None:
+                with np.printoptions(precision=2):
+                    ax.text(0.99, 0.99, str(coefficients[:, i]), va='top', ha='right', transform=ax.transAxes)
+            pdf.savefig()
+            ax.clear()
 
 
 def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True):
