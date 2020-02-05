@@ -307,7 +307,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         good = np.isfinite(models).all(axis=(0, 2))
         peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
         logging.info('peak magnitudes extracted')
-        coefficients, reconstructed = get_principal_components(models[:, good])
+        coefficients, reconstructed = get_principal_components(models[:, good], models[:, ~t['type'].mask])
         logging.info('PCA finished')
         features = np.dstack([peakmags, coefficients])
     else:
