@@ -22,33 +22,30 @@ t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
 
 
-def plot_confusion_matrix(cm, normalize=False, title='Confusion Matrix', cmap='Blues'):
+def plot_confusion_matrix(confusion_matrix, title='Confusion Matrix ($N={:d}$)', cmap='Blues'):
     """
     This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
     From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
     """
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    cm = confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis]
     plt.figure(figsize=(6., 6.))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
-    plt.title(title)
+    plt.title(title.format(confusion_matrix.sum()))
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
     plt.ylim(4.5, -0.5)
 
-    fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
+        plt.text(j, i, '{:.2f}\n({:d})'.format(cm[i, j], confusion_matrix[i, j]),
+                 horizontalalignment="center", verticalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
     plt.tight_layout()
-    plt.savefig('confusion_matrix_norm.pdf' if normalize else 'confusion_matrix.pdf')
+    plt.savefig('confusion_matrix.pdf')
 
 
 @Substitution(
@@ -172,7 +169,6 @@ def validate_classifier(clf, sampler, data):
 
     cnf_matrix = confusion_matrix(data['label'], labels_test)
     plot_confusion_matrix(cnf_matrix)
-    plot_confusion_matrix(cnf_matrix, normalize=True)
     return cnf_matrix
 
 
