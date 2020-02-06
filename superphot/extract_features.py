@@ -37,9 +37,10 @@ def load_trace(file, trace_path='.', version='2'):
     tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_{}{}'))
     lst = []
     t = light_curve_event_data(file)
+    max_flux = t['FLUXCAL'].max()
     for fltr in 'griz':
         obs = t[t['FLT'] == fltr]
-        model, varnames = setup_model(obs)
+        model, varnames = setup_model(obs, max_flux)
         tracefile_filter = tracefile.format(version, fltr)
         if not os.path.exists(tracefile_filter):
             raise FileNotFoundError(f"[Errno 2] No such file or directory: '{tracefile_filter}'")

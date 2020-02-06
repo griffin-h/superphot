@@ -392,7 +392,7 @@ def plot_diagnostics():
     snana_file = os.path.join(args.snana_path, f'PS1_PS1MD_{ps1id}.snana.dat')
     t = light_curve_event_data(snana_file)
     obs = t[t['FLT'] == fltr]
-    model, parameters = setup_model(obs)
+    model, parameters = setup_model(obs, t['FLUXCAL'].max())
     trace = pm.load_trace(args.filename, model)
     diagnostics(obs, trace, parameters, args.filename, args.show)
 
