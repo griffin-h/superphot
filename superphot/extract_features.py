@@ -292,7 +292,11 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
                 bad_rows.append(i)
                 logging.error(e)
                 continue
-            params.append(sample_posterior(trace, ndraws))
+            if ndraws:
+                params.append(sample_posterior(trace, ndraws))
+            else:  # ndraws == 0 means take the average
+                params.append(trace.mean(axis=1)[:, np.newaxis])
+                ndraws = 1
         params = np.hstack(params)
         t.remove_rows(bad_rows)
         t.write('data_table.txt', format='ascii.fixed_width', overwrite=True)  # excluding rows that have not been fit
@@ -392,7 +396,8 @@ def main():
     parser.add_argument('input_table', type=str, help='List of input SNANA files, or input data table')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
                                               'or Numpy file containing stored model parameters/LCs')
-    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set')
+    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
+                                                               ' Set to 0 to use the mean of the LC parameters.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     args = parser.parse_args()
 
