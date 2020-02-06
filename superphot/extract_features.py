@@ -304,17 +304,14 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
     if use_pca:
         time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
-        good = np.isfinite(models).all(axis=(0, 2))
-        peakmags = zero_point - 2.5 * np.log10(models[:, good].max(axis=2))
+        t_good, good_models = select_good_events(t, models)
+        peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        coefficients, reconstructed = get_principal_components(models[:, good], models[:, ~t['type'].mask])
+        coefficients, reconstructed = get_principal_components(good_models, good_models[:, ~t_good['type'].mask])
         logging.info('PCA finished')
         features = np.dstack([peakmags, coefficients])
     else:
-        good = np.isfinite(params).all(axis=(0, 2))
-        features = params[:, good]
-    i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
-    t_good = t[np.repeat(i_good, ndraws)]
+        t_good, features = select_good_events(t, params)
     t_good['params'] = np.moveaxis(params, 1, 0)
     t_good['features'] = np.hstack(features)
 
@@ -323,6 +320,32 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
     plot_features(train_data, {0, 2})
     plot_features(train_data, {1, 3, 4})
     return t_good
+
+
+def select_good_events(t, data):
+    """
+    Select only events with finite data for all draws. Returns the table and data for only these events.
+
+    Parameters
+    ----------
+    t : astropy.table.Table, length=nevents
+        Original data table with one row for each event.
+    data : array-like, shape=(nfilt, nevents * ndraws, ...)
+        Numpy array containing the data upon which finiteness will be judged.
+
+    Returns
+    -------
+    t_good : astropy.table.Table
+        Data table with n rows for each good event, where n is determined by the shape of `data`.
+    good_data : array-like
+        Numpy array containing only the data for good events.
+    """
+    good = np.isfinite(data).all(axis=(0, 2))
+    ndraws = data.shape[1] // len(t)
+    i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
+    t_good = t[np.repeat(i_good, ndraws)]
+    good_data = data[:, good]
+    return t_good, good_data
 
 
 def meta_table(filenames):
