@@ -27,13 +27,14 @@ def plot_confusion_matrix(confusion_matrix, title='Confusion Matrix ($N={:d}$)',
     This function prints and plots the confusion matrix.
     From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
     """
-    cm = confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis]
+    n_per_class = confusion_matrix.sum(axis=1)
+    cm = confusion_matrix.astype('float') / n_per_class[:, np.newaxis]
     plt.figure(figsize=(6., 6.))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
     plt.title(title.format(confusion_matrix.sum()))
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
+    plt.yticks(tick_marks, ['{}\n({:d})'.format(label, n) for label, n in zip(classes, n_per_class)])
     plt.ylim(4.5, -0.5)
 
     thresh = cm.max() / 2.
