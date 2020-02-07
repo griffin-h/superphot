@@ -321,8 +321,8 @@ def sample_posterior(trace, rand_num):
     return trace_rand
 
 
-def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None):
-    x = np.arange(obs['PHASE'].min(), obs['PHASE'].max())
+def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None, phase_min=-50., phase_max=180.):
+    x = np.arange(phase_min, phase_max)
     trace_values = np.transpose([trace.get_values(var) for var in parameters])[np.newaxis, :, :]
     params = sample_posterior(trace_values, size)
     y = produce_lc(x, params)[0].T
