@@ -337,10 +337,11 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
         ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
 
     # autoscale y-axis without errorbars
-    ymin = min(obs['FLUXCAL'].min(), y.min())
-    ymax = max(obs['FLUXCAL'].max(), y.max())
-    height = ymax - ymin
-    ax.set_ylim(ymin - 0.08 * height, ymax + 0.08 * height)
+    if len(obs):
+        ymin = min(obs['FLUXCAL'].min(), y.min())
+        ymax = max(obs['FLUXCAL'].max(), y.max())
+        height = ymax - ymin
+        ax.set_ylim(ymin - 0.08 * height, ymax + 0.08 * height)
 
 
 def diagnostics(obs, trace, parameters, filename='.', show=False):
