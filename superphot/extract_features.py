@@ -34,19 +34,27 @@ def load_trace(file, trace_path='.', version='2'):
     lst : numpy.array
         PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
     """
-    tracefile = os.path.join(trace_path, os.path.basename(file).replace('.snana.dat', '_{}{}'))
+    basename = os.path.basename(file)
+    tracefile = os.path.join(trace_path, basename.replace('.snana.dat', '_{}{}'))
     lst = []
     t = light_curve_event_data(file)
     max_flux = t['FLUXCAL'].max()
+    missing_filters = []
     for fltr in 'griz':
-        obs = t[t['FLT'] == fltr]
-        model, varnames = setup_model(obs, max_flux)
         tracefile_filter = tracefile.format(version, fltr)
-        if not os.path.exists(tracefile_filter):
-            raise FileNotFoundError(f"[Errno 2] No such file or directory: '{tracefile_filter}'")
-        trace = pm.load_trace(tracefile_filter, model)
-        trace_values = np.transpose([trace.get_values(var) for var in varnames])
-        lst.append(trace_values)
+        if os.path.exists(tracefile_filter):
+            obs = t[t['FLT'] == fltr]
+            model, varnames = setup_model(obs, max_flux)
+            trace = pm.load_trace(tracefile_filter, model)
+            trace_values = np.transpose([trace.get_values(var) for var in varnames])
+            lst.append(trace_values)
+        else:
+            logging.warning(f"No such file or directory: '{tracefile_filter}'")
+            missing_filters.append(fltr)
+    if len(missing_filters) == 4:
+        raise FileNotFoundError(f"No traces found for {basename}")
+    for fltr in missing_filters:
+        lst.insert('griz'.index(fltr), np.mean(lst, axis=0))
     lst = np.array(lst)
     return lst
 
