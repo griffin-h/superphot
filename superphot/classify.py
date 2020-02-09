@@ -22,24 +22,26 @@ t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
 
 
-def plot_confusion_matrix(confusion_matrix, title='Confusion Matrix ($N={:d}$)', cmap='Blues'):
+def plot_confusion_matrix(confusion_matrix, ndraws=1, title='Confusion Matrix ($N={:.0f}\\times{:d}$)', cmap='Blues'):
     """
     This function prints and plots the confusion matrix.
     From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
     """
+    confusion_matrix = confusion_matrix / ndraws
     n_per_class = confusion_matrix.sum(axis=1)
-    cm = confusion_matrix.astype('float') / n_per_class[:, np.newaxis]
+    cm = confusion_matrix / n_per_class[:, np.newaxis]
     plt.figure(figsize=(6., 6.))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
-    plt.title(title.format(confusion_matrix.sum()))
+    plt.title(title.format(confusion_matrix.sum(), ndraws))
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, ['{}\n({:d})'.format(label, n) for label, n in zip(classes, n_per_class)])
+    plt.yticks(tick_marks, ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_class)])
     plt.ylim(4.5, -0.5)
 
     thresh = cm.max() / 2.
+    cell_label = '{:.2f}\n({:.1f})' if ndraws > 1 else '{:.2f}\n({:.0f})'
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, '{:.2f}\n({:d})'.format(cm[i, j], confusion_matrix[i, j]),
+        plt.text(j, i, cell_label.format(cm[i, j], confusion_matrix[i, j]),
                  horizontalalignment="center", verticalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
@@ -169,7 +171,7 @@ def validate_classifier(clf, sampler, data):
     pbar.close()
 
     cnf_matrix = confusion_matrix(data['label'], labels_test)
-    plot_confusion_matrix(cnf_matrix)
+    plot_confusion_matrix(cnf_matrix, len(data) // kf.n_splits)
     return cnf_matrix
 
 
