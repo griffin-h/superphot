@@ -146,7 +146,7 @@ def train_classifier(data, n_est=100, depth=None, max_feat=5, n_jobs=-1, sampler
     return clf, sampler
 
 
-def validate_classifier(clf, sampler, data):
+def validate_classifier(clf, sampler, data, p_min=0.):
     """
     Validate the performance of a machine-learning classifier using leave-one-out cross-validation. The results are
     plotted as a confusion matrix, which is saved as a PDF.
@@ -159,6 +159,8 @@ def validate_classifier(clf, sampler, data):
         First resample the data using this sampler.
     data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
+    p_min : float, optional
+        Minimum confidence to be included in the confusion matrix. Default: include all samples.
     """
     kf = KFold(len(np.unique(data['id'])))
     p_class = np.empty((len(data), len(classes)))
@@ -171,7 +173,8 @@ def validate_classifier(clf, sampler, data):
     pbar.close()
 
     labels_test = np.argmax(p_class, axis=1)
-    cnf_matrix = confusion_matrix(data['label'], labels_test)
+    include = p_class.max(axis=1) > p_min
+    cnf_matrix = confusion_matrix(data['label'][include], labels_test[include])
     plot_confusion_matrix(cnf_matrix, len(data) // kf.n_splits)
     write_results(data, p_class, 'validation.txt', aggregate=False)
     return cnf_matrix
@@ -227,6 +230,8 @@ def main():
                         'Current choices are "mvg" (multivariate Gaussian; default) or "smote" (synthetic minority '
                         'oversampling technique).')
     parser.add_argument('--seed', type=int, help='Seed for the random number generator (use for reproducibility).')
+    parser.add_argument('--pmin', type=float, default=0.,
+                        help='Minimum confidence to be included in the confusion matrix.')
     args = parser.parse_args()
 
     logging.info('started classify.py')
@@ -241,6 +246,6 @@ def main():
     p_class = clf.predict_proba(test_data['features'])
     write_results(test_data, p_class, 'results.txt')
 
-    cnf_matrix = validate_classifier(clf, sampler, train_data)
+    cnf_matrix = validate_classifier(clf, sampler, train_data, p_min=args.pmin)
     logging.info('validation complete')
     logging.info('finished classify.py')
