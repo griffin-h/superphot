@@ -161,17 +161,19 @@ def validate_classifier(clf, sampler, data):
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
     """
     kf = KFold(len(np.unique(data['id'])))
-    labels_test = np.empty_like(data['label'])
+    p_class = np.empty((len(data), len(classes)))
     pbar = tqdm(desc='Cross-validation', total=kf.n_splits)
     for train_index, test_index in kf.split(data):
         features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['label'][train_index])
         clf.fit(features_resamp, labels_resamp)
-        labels_test[test_index] = clf.predict(data['features'][test_index])
+        p_class[test_index] = clf.predict_proba(data['features'][test_index])
         pbar.update()
     pbar.close()
 
+    labels_test = np.argmax(p_class, axis=1)
     cnf_matrix = confusion_matrix(data['label'], labels_test)
     plot_confusion_matrix(cnf_matrix, len(data) // kf.n_splits)
+    write_results(data, p_class, 'validation.txt', aggregate=False)
     return cnf_matrix
 
 
@@ -180,6 +182,35 @@ def load_test_data():
     test_table['features'] = np.load('test_data.npz')['features']
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
+
+
+def write_results(test_data, p_class, filename, aggregate=True):
+    """
+    Write the classification results to a text file.
+
+    Parameters
+    ----------
+    test_data : astropy.table.Table
+        Astropy table containing the supernova metadata: 'id', 'hostz', 'type', 'flag0', 'flag1', 'flag2'
+    p_class : array-like, shape=(nsamples, nclasses)
+        Array containing the classification probabilities for each sample (from `clf.predict_proba`)
+    filename : str
+        Name of the output file
+    aggregate : bool, optional
+        If True, average the classification probabilities for each unique supernova (if ndraws > 1)
+    """
+    meta_columns = ['id', 'hostz', 'type', 'flag0', 'flag1', 'flag2']
+    output = test_data[meta_columns]
+    for i, classname in enumerate(classes):
+        output[classname] = p_class[:, i]
+        output[classname].format = '%.3f'
+    if aggregate:
+        for col in ['type', 'flag0', 'flag1', 'flag2']:
+            output[col].fill_value = ''
+        grouped = output.filled().group_by(meta_columns)
+        output = grouped.groups.aggregate(np.mean)
+    output.write(filename, format='ascii.fixed_width', overwrite=True)
+    logging.info(f'classification results saved to {filename}')
 
 
 def main():
@@ -208,17 +239,7 @@ def main():
     logging.info('classifier trained')
 
     p_class = clf.predict_proba(test_data['features'])
-    meta_columns = ['id', 'hostz', 'type', 'flag0', 'flag1', 'flag2']
-    test_data.keep_columns(meta_columns)
-    for col in ['type', 'flag0', 'flag1', 'flag2']:
-        test_data[col].fill_value = ''
-    for i, classname in enumerate(classes):
-        test_data[classname] = p_class[:, i]
-        test_data[classname].format = '%.3f'
-    grouped = test_data.filled().group_by(meta_columns)
-    output = grouped.groups.aggregate(np.mean)
-    output.write('results.txt', format='ascii.fixed_width', overwrite=True)
-    logging.info('classification results saved to results.txt')
+    write_results(test_data, p_class, 'results.txt')
 
     cnf_matrix = validate_classifier(clf, sampler, train_data)
     logging.info('validation complete')
