@@ -418,7 +418,7 @@ def main():
         if t.meta['REDSHIFT'] < 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
         max_flux = t['FLUXCAL'].max()
-        fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
+        fig, axes = plt.subplots(2, 2, sharex=True)
         fig.text(0.5, 0.95, f'{t.meta["SNID"]} ($z={t.meta["REDSHIFT"]:.3f}$)', ha='center', va='bottom', size='large')
         traces = []
         for fltr, ax in zip(args.filters, axes.flatten()):
