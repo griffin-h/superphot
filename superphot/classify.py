@@ -20,19 +20,26 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
+meta_columns = ['id', 'hostz', 'type', 'flag0', 'flag1', 'flag2']
 
 
-def plot_confusion_matrix(confusion_matrix, ndraws=1, title='Confusion Matrix ($N={:.0f}\\times{:d}$)', cmap='Blues'):
+def plot_confusion_matrix(confusion_matrix, ndraws=0, title=None, cmap='Blues'):
     """
     This function prints and plots the confusion matrix.
     From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
     """
-    confusion_matrix = confusion_matrix / ndraws
+    if ndraws:
+        confusion_matrix = confusion_matrix / ndraws
     n_per_class = confusion_matrix.sum(axis=1)
     cm = confusion_matrix / n_per_class[:, np.newaxis]
     plt.figure(figsize=(6., 6.))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
-    plt.title(title.format(confusion_matrix.sum(), ndraws))
+    if title is not None:
+        plt.title(title)
+    elif ndraws:
+        plt.title('Confusion Matrix ($N={:.0f}\\times{:d}$)'.format(confusion_matrix.sum(), ndraws))
+    else:
+        plt.title('Confusion Matrix ($N={:d}$)'.format(confusion_matrix.sum()))
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_class)])
@@ -146,6 +153,34 @@ def train_classifier(data, n_est=100, depth=None, max_feat=5, n_jobs=-1, sampler
     return clf, sampler
 
 
+def mean_axis0(x, axis=0):
+    """Equivalent to the numpy.mean function but with axis=0 by default."""
+    return x.mean(axis=axis)
+
+
+def aggregate_probabilities(table, p_class):
+    """
+    Average the classification probabilities for a given supernova across the multiple model light curves.
+
+    Parameters
+    ----------
+    table : astropy.table.Table
+        Astropy table containing the metadata for a supernova
+    p_class : array-like, shape=(nsupernovae * ndraws, nclasses)
+        Classification probabilities for the supernovae in table from `clf.predict_proba`
+
+    Returns
+    -------
+    results : astropy.table.Table
+        Astropy table containing the supernova metadata and classification probabilities (column name = 'probabilities')
+    """
+    table.keep_columns(meta_columns)
+    grouped = table.filled().group_by(meta_columns)
+    grouped['probabilities'] = p_class
+    results = grouped.groups.aggregate(mean_axis0)
+    return results
+
+
 def validate_classifier(clf, sampler, data, p_min=0.):
     """
     Validate the performance of a machine-learning classifier using leave-one-out cross-validation. The results are
@@ -172,46 +207,41 @@ def validate_classifier(clf, sampler, data, p_min=0.):
         pbar.update()
     pbar.close()
 
-    labels_test = np.argmax(p_class, axis=1)
-    include = p_class.max(axis=1) > p_min
-    cnf_matrix = confusion_matrix(data['label'][include], labels_test[include])
-    plot_confusion_matrix(cnf_matrix, len(data) // kf.n_splits)
-    write_results(data, p_class, 'validation.txt', aggregate=False)
+    results = aggregate_probabilities(data, p_class)
+    predicted_types = np.take(classes, np.argmax(results['probabilities'], axis=1))
+    include = results['probabilities'].max(axis=1) > p_min
+    cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include], labels=classes)
+    plot_confusion_matrix(cnf_matrix)
+    write_results(results, 'validation.txt')
     return cnf_matrix
 
 
 def load_test_data():
     test_table = Table.read('test_data.txt', format='ascii.fixed_width', fill_values=('', ''))
+    for col in test_table.colnames:
+        if isinstance(test_table[col].filled()[0], str):
+            test_table[col].fill_value = ''
     test_table['features'] = np.load('test_data.npz')['features']
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
 
 
-def write_results(test_data, p_class, filename, aggregate=True):
+def write_results(test_data, filename):
     """
     Write the classification results to a text file.
 
     Parameters
     ----------
     test_data : astropy.table.Table
-        Astropy table containing the supernova metadata: 'id', 'hostz', 'type', 'flag0', 'flag1', 'flag2'
-    p_class : array-like, shape=(nsamples, nclasses)
-        Array containing the classification probabilities for each sample (from `clf.predict_proba`)
+        Astropy table containing the supernova metadata and the classification probabilities for each sample
+        from `clf.predict_proba` (column name = 'probabilities').
     filename : str
         Name of the output file
-    aggregate : bool, optional
-        If True, average the classification probabilities for each unique supernova (if ndraws > 1)
     """
-    meta_columns = ['id', 'hostz', 'type', 'flag0', 'flag1', 'flag2']
     output = test_data[meta_columns]
     for i, classname in enumerate(classes):
-        output[classname] = p_class[:, i]
+        output[classname] = test_data['probabilities'][:, i]
         output[classname].format = '%.3f'
-    if aggregate:
-        for col in ['type', 'flag0', 'flag1', 'flag2']:
-            output[col].fill_value = ''
-        grouped = output.filled().group_by(meta_columns)
-        output = grouped.groups.aggregate(np.mean)
     output.write(filename, format='ascii.fixed_width', overwrite=True)
     logging.info(f'classification results saved to {filename}')
 
@@ -244,7 +274,8 @@ def main():
     logging.info('classifier trained')
 
     p_class = clf.predict_proba(test_data['features'])
-    write_results(test_data, p_class, 'results.txt')
+    results = aggregate_probabilities(test_data, p_class)
+    write_results(results, 'results.txt')
 
     cnf_matrix = validate_classifier(clf, sampler, train_data, p_min=args.pmin)
     logging.info('validation complete')
