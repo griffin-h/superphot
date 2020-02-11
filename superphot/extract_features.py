@@ -328,8 +328,9 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
 
     train_data = t_good[~t_good['type'].mask].group_by('type')
     plot_parameters(train_data)
-    plot_features(train_data, {0, 2})
-    plot_features(train_data, {1, 3, 4})
+    if use_pca:
+        plot_features(train_data, {0, 2})
+        plot_features(train_data, {1, 3, 4})
     return t_good
 
 
