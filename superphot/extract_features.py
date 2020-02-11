@@ -130,7 +130,7 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     return coefficients, reconstructed
 
 
-def plot_parameters(train_data, zero_point=27.5):
+def plot_parameters(train_data):
     """
     Plot histograms of the model parameters stored in train_data['params']. The plot will be saved to parameters.pdf.
 
@@ -138,16 +138,12 @@ def plot_parameters(train_data, zero_point=27.5):
     ----------
     train_data : astropy.table.Table
         Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
-    zero_point : float
-        Zero point used for converting the amplitude (parameter 1) into a magnitude. Default: 27.5.
     """
     fig, axarr = plt.subplots(4, 6, figsize=(11, 8.5), sharex='col')
     for sntype, group in zip(train_data.groups.keys['type'], train_data.groups):
         for i in range(4):
             for j in range(6):
                 feature = group['params'][:, i, j]
-                if j == 0:
-                    feature = zero_point - 2.5 * np.log10(feature)
                 histrange = np.percentile(feature, (5, 95))
                 axarr[i, j].hist(feature, label=sntype, range=histrange, density=True, histtype='step')
                 axarr[i, j].set_yticks([])
@@ -314,6 +310,9 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
 
     flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
     params[:, :, 0] *= flux2lum
+    params_mag = params.copy()
+    params_mag[:, :, 0] = zero_point - 2.5 * np.log10(params_mag[:, :, 0])  # convert amplitude to magnitude
+    t['params'] = np.moveaxis(params_mag, 1, 0)
     if use_pca:
         time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
@@ -324,12 +323,11 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         logging.info('PCA finished')
         features = np.dstack([peakmags, coefficients])
     else:
-        t_good, features = select_good_events(t, params)
-    t_good['params'] = np.moveaxis(params, 1, 0)
+        t_good, features = select_good_events(t, params_mag[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
     t_good['features'] = np.hstack(features)
 
     train_data = t_good[~t_good['type'].mask].group_by('type')
-    plot_parameters(train_data, zero_point)
+    plot_parameters(train_data)
     plot_features(train_data, {0, 2})
     plot_features(train_data, {1, 3, 4})
     return t_good
