@@ -10,7 +10,7 @@ import logging
 from astropy.table import Table, join
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
-from .util import read_snana, light_curve_event_data, filter_colors, get_VAV19
+from .util import read_snana, light_curve_event_data, filter_colors, get_VAV19, meta_columns
 from .fit_model import setup_model, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -298,8 +298,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
                 params.append(trace.mean(axis=1)[:, np.newaxis])
                 ndraws = 1
         params = np.hstack(params)
-        t.remove_rows(bad_rows)
-        t.write('data_table.txt', format='ascii.fixed_width', overwrite=True)  # excluding rows that have not been fit
+        t.remove_rows(bad_rows)  # excluding rows that have not been fit
         np.savez_compressed('params.npz', params=params, ndraws=ndraws)
         logging.info(f'posteriors sampled from {stored_models}, saved to data_table.txt & params.npz')
 
@@ -307,7 +306,6 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
     params[:, :, 0] *= flux2lum
     params_mag = params.copy()
     params_mag[:, :, 0] = zero_point - 2.5 * np.log10(params_mag[:, :, 0])  # convert amplitude to magnitude
-    t['params'] = np.moveaxis(params_mag, 1, 0)
     if use_pca:
         time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
@@ -319,6 +317,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         features = np.dstack([peakmags, coefficients])
     else:
         t_good, features = select_good_events(t, params_mag[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
+    t_good['params'] = np.moveaxis(params_mag, 1, 0)
     t_good['features'] = np.hstack(features)
 
     train_data = t_good[~t_good['type'].mask].group_by('type')
@@ -351,6 +350,7 @@ def select_good_events(t, data):
     ndraws = data.shape[1] // len(t)
     i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
     t_good = t[np.repeat(i_good, ndraws)]
+    t_good.meta['ndraws'] = ndraws
     good_data = data[:, good]
     return t_good, good_data
 
@@ -368,9 +368,11 @@ def meta_table(filenames):
 
 
 def save_test_data(test_table):
-    save_table = test_table[['id', 'A_V', 'filename', 'redshift', 'type']]
-    save_table.write('test_data.txt', format='ascii.fixed_width', overwrite=True)
-    np.savez_compressed('test_data.npz', features=test_table['features'])
+    test_table.sort('id')
+    save_table = test_table[::test_table.meta['ndraws']]
+    save_table.keep_columns(meta_columns)
+    save_table.write('test_data.txt', format='ascii.fixed_width_two_line', overwrite=True)
+    np.savez_compressed('test_data.npz', features=test_table['features'], ndraws=test_table.meta['ndraws'])
     logging.info('test data saved to test_data.txt and test_data.npz')
 
 
@@ -394,7 +396,7 @@ def main():
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
-    data_table = Table.read(args.input_table, format='ascii.fixed_width')
+    data_table = Table.read(args.input_table, format='ascii')
     if 'id' not in data_table.colnames:
         data_table = compile_data_table(data_table['filename'])
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca)

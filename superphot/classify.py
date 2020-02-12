@@ -12,7 +12,7 @@ from sklearn.utils import safe_indexing, check_random_state
 from imblearn.over_sampling.base import BaseOverSampler
 from imblearn.utils import Substitution, _docstring
 from imblearn.over_sampling import SMOTE
-from .util import get_VAV19
+from .util import get_VAV19, meta_columns
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -20,7 +20,6 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
-meta_columns = ['id', 'redshift', 'type']
 
 
 def plot_confusion_matrix(confusion_matrix, ndraws=0, title=None, cmap='Blues'):
@@ -217,14 +216,22 @@ def validate_classifier(clf, sampler, data, p_min=0.):
 
 
 def load_test_data():
-    test_table = Table.read('test_data.txt', format='ascii.fixed_width', fill_values=('', ''))
-    if test_table.masked:
-        for col in test_table.colnames:
-            if isinstance(test_table[col].filled()[0], str):
-                test_table[col].fill_value = ''
-    test_table['features'] = np.load('test_data.npz')['features']
+    t = Table.read('test_data.txt', format='ascii', fill_values=('', ''))
+    stored = np.load('test_data.npz')
+    test_table = Table(np.repeat(t, stored['ndraws']), masked=True)
+    for col in test_table.colnames:
+        if isinstance(test_table[col].filled()[0], str):
+            test_table[col].fill_value = ''
+    test_table['features'] = stored['features']
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
+
+
+def load_results(filename):
+    results = Table.read(filename, format='ascii')
+    results['probabilities'] = np.stack([results[sntype].data for sntype in classes]).T
+    results.remove_columns(classes)
+    return results
 
 
 def write_results(test_data, filename):
@@ -240,10 +247,12 @@ def write_results(test_data, filename):
         Name of the output file
     """
     output = test_data[meta_columns]
+    output['A_V'].format = '%.5f'
+    output['redshift'].format = '%.4f'
     for i, classname in enumerate(classes):
         output[classname] = test_data['probabilities'][:, i]
         output[classname].format = '%.3f'
-    output.write(filename, format='ascii.fixed_width', overwrite=True)
+    output.write(filename, format='ascii.fixed_width_two_line', overwrite=True)
     logging.info(f'classification results saved to {filename}')
 
 

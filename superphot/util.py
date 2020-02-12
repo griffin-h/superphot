@@ -4,6 +4,7 @@ import pkg_resources
 import os
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
+meta_columns = ['id', 'A_V', 'filename', 'redshift', 'type']
 
 
 def read_snana(filename):
