@@ -7,10 +7,10 @@ import pymc3 as pm
 import os
 import argparse
 import logging
-from astropy.table import Table, join
+from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
-from .util import read_snana, light_curve_event_data, filter_colors, get_VAV19, meta_columns
+from .util import read_snana, light_curve_event_data, filter_colors, meta_columns
 from .fit_model import setup_model, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -355,16 +355,22 @@ def select_good_events(t, data):
     return t_good, good_data
 
 
-def meta_table(filenames):
-    t_meta = Table(names=['id', 'A_V', 'redshift'], dtype=['S9', float, float], masked=True)
-    for filename in filenames:
-        t = read_snana(filename)
-        t_meta.add_row([t.meta['SNID'], t.meta['A_V'], t.meta['REDSHIFT']])
-    t_meta['filename'] = filenames
-    t_meta['redshift'].mask = t_meta['redshift'] <= 0.
-    t_meta['A_V'].format = '%.5f'
-    t_meta['redshift'].format = '%.4f'
-    return t_meta
+def compile_data_table(filename):
+    t_input = Table.read(filename, format='ascii')
+    required_cols = ['id', 'A_V', 'redshift']
+    missing_cols = [col for col in required_cols if col not in t_input.colnames]
+    if missing_cols:
+        t_meta = Table(names=required_cols, dtype=['S9', float, float], masked=True)
+        for lc_file in t_input['filename']:
+            t = read_snana(lc_file)
+            t_meta.add_row([t.meta['SNID'], t.meta['A_V'], t.meta['REDSHIFT']])
+        t_final = hstack([t_input, t_meta[missing_cols]])
+    else:
+        t_final = Table(t_input, masked=True)
+    t_final['redshift'].mask = t_final['redshift'] <= 0.
+    t_final['A_V'].format = '%.5f'
+    t_final['redshift'].format = '%.4f'
+    return t_final
 
 
 def save_test_data(test_table):
@@ -374,15 +380,6 @@ def save_test_data(test_table):
     save_table.write('test_data.txt', format='ascii.fixed_width_two_line', overwrite=True)
     np.savez_compressed('test_data.npz', features=test_table['features'], ndraws=test_table.meta['ndraws'])
     logging.info('test data saved to test_data.txt and test_data.npz')
-
-
-def compile_data_table(filenames):
-    t_input = meta_table(filenames)
-    t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')  # classifications of 513 SNe
-
-    t_final = join(t_input, t_conf, join_type='left')
-    t_final = t_final[~t_final['redshift'].mask]
-    return t_final
 
 
 def main():
@@ -396,9 +393,7 @@ def main():
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
-    data_table = Table.read(args.input_table, format='ascii')
-    if 'id' not in data_table.colnames:
-        data_table = compile_data_table(data_table['filename'])
+    data_table = compile_data_table(args.input_table)
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca)
     save_test_data(test_data)
     logging.info('finished extract_features.py')

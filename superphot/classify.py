@@ -12,17 +12,15 @@ from sklearn.utils import safe_indexing, check_random_state
 from imblearn.over_sampling.base import BaseOverSampler
 from imblearn.utils import Substitution, _docstring
 from imblearn.over_sampling import SMOTE
-from .util import get_VAV19, meta_columns
+from .util import meta_columns
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
-classes = sorted(set(t_conf['type']))
 
 
-def plot_confusion_matrix(confusion_matrix, ndraws=0, title=None, cmap='Blues'):
+def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap='Blues'):
     """
     This function prints and plots the confusion matrix.
     From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
@@ -147,7 +145,7 @@ def train_classifier(data, n_est=100, depth=None, max_feat=5, n_jobs=-1, sampler
         sampler = SMOTE(random_state=random_state)
     else:
         raise NotImplementedError(f'{sampler_type} is not a recognized sampler type')
-    features_resamp, labels_resamp = sampler.fit_resample(data['features'], data['label'])
+    features_resamp, labels_resamp = sampler.fit_resample(data['features'], data['type'])
     clf.fit(features_resamp, labels_resamp)
     return clf, sampler
 
@@ -197,21 +195,21 @@ def validate_classifier(clf, sampler, data, p_min=0.):
         Minimum confidence to be included in the confusion matrix. Default: include all samples.
     """
     kf = KFold(len(np.unique(data['id'])))
-    p_class = np.empty((len(data), len(classes)))
+    p_class = np.empty((len(data), len(clf.classes_)))
     pbar = tqdm(desc='Cross-validation', total=kf.n_splits)
     for train_index, test_index in kf.split(data):
-        features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['label'][train_index])
+        features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['type'][train_index])
         clf.fit(features_resamp, labels_resamp)
         p_class[test_index] = clf.predict_proba(data['features'][test_index])
         pbar.update()
     pbar.close()
 
     results = aggregate_probabilities(data, p_class)
-    predicted_types = np.take(classes, np.argmax(results['probabilities'], axis=1))
+    predicted_types = clf.classes_[np.argmax(results['probabilities'], axis=1)]
     include = results['probabilities'].max(axis=1) > p_min
-    cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include], labels=classes)
-    plot_confusion_matrix(cnf_matrix)
-    write_results(results, 'validation.txt')
+    cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
+    plot_confusion_matrix(cnf_matrix, clf.classes_)
+    write_results(results, clf.classes_, 'validation.txt')
     return cnf_matrix
 
 
@@ -229,12 +227,13 @@ def load_test_data():
 
 def load_results(filename):
     results = Table.read(filename, format='ascii')
+    classes = [col for col in results.colnames if col not in meta_columns]
     results['probabilities'] = np.stack([results[sntype].data for sntype in classes]).T
     results.remove_columns(classes)
     return results
 
 
-def write_results(test_data, filename):
+def write_results(test_data, classes, filename):
     """
     Write the classification results to a text file.
 
@@ -243,6 +242,8 @@ def write_results(test_data, filename):
     test_data : astropy.table.Table
         Astropy table containing the supernova metadata and the classification probabilities for each sample
         from `clf.predict_proba` (column name = 'probabilities').
+    classes : list
+        The labels that correspond to the columns in 'probabilities'
     filename : str
         Name of the output file
     """
@@ -278,14 +279,13 @@ def main():
     test_data = load_test_data()
     test_data['features'] = scale(test_data['features'])
     train_data = test_data[~test_data['type'].mask]
-    train_data['label'] = [classes.index(t) for t in train_data['type']]
     clf, sampler = train_classifier(train_data, n_est=args.estimators, depth=args.max_depth, max_feat=args.max_feat,
                                     n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
     logging.info('classifier trained')
 
     p_class = clf.predict_proba(test_data['features'])
     results = aggregate_probabilities(test_data, p_class)
-    write_results(results, 'results.txt')
+    write_results(results, clf.classes_, 'results.txt')
 
     cnf_matrix = validate_classifier(clf, sampler, train_data, p_min=args.pmin)
     logging.info('validation complete')
