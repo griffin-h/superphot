@@ -8,7 +8,7 @@ import os
 import argparse
 import logging
 from astropy.table import Table, join
-from astropy.cosmology import Planck15 as cosmo_P
+from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from .util import read_snana, light_curve_event_data, filter_colors, get_VAV19
 from .fit_model import setup_model, produce_lc, sample_posterior
@@ -66,21 +66,16 @@ def flux_to_luminosity(row):
     Parameters
     ----------
     row : astropy.table.row.Row
-        Astropy table row for a given transient, containing columns 'A_V', and 'redshift'/'hostz'.
+        Astropy table row for a given transient, containing columns 'A_V' and 'redshift'.
 
     Returns
     -------
     flux2lum : numpy.ndarray
         Array of flux-to-luminosity conversion factors for the filters g, r, i, and z.
     """
-    if 'redshift' in row.colnames and not np.ma.is_masked(row['redshift']):
-        z = row['redshift']
-    elif 'hostz' in row.colnames and not np.ma.is_masked(row['hostz']):
-        z = row['hostz']
-    else:
-        z = np.nan
     A_coeffs = row['A_V'] * np.array([1.16269427, 0.87191851, 0.66551667, 0.42906714])  # g, r, i, z
-    flux2lum = 10. ** (A_coeffs / 2.5) * cosmo_P.luminosity_distance(z).to('dapc').value ** 2. * (1. + z)
+    dist = cosmo.luminosity_distance(row['redshift']).to('dapc').value
+    flux2lum = 10. ** (A_coeffs / 2.5) * dist ** 2. * (1. + row['redshift'])
     return flux2lum
 
 
@@ -361,19 +356,19 @@ def select_good_events(t, data):
 
 
 def meta_table(filenames):
-    t_meta = Table(names=['id', 'A_V', 'hostz'], dtype=['S9', float, float], masked=True)
+    t_meta = Table(names=['id', 'A_V', 'redshift'], dtype=['S9', float, float], masked=True)
     for filename in filenames:
         t = read_snana(filename)
         t_meta.add_row([t.meta['SNID'], t.meta['A_V'], t.meta['REDSHIFT']])
     t_meta['filename'] = filenames
-    t_meta['hostz'].mask = t_meta['hostz'] <= 0.
+    t_meta['redshift'].mask = t_meta['redshift'] <= 0.
     t_meta['A_V'].format = '%.5f'
-    t_meta['hostz'].format = '%.4f'
+    t_meta['redshift'].format = '%.4f'
     return t_meta
 
 
 def save_test_data(test_table):
-    save_table = test_table[['id', 'A_V', 'hostz', 'filename', 'redshift', 'err', 'type']]
+    save_table = test_table[['id', 'A_V', 'filename', 'redshift', 'type']]
     save_table.write('test_data.txt', format='ascii.fixed_width', overwrite=True)
     np.savez_compressed('test_data.npz', features=test_table['features'])
     logging.info('test data saved to test_data.txt and test_data.npz')
@@ -381,12 +376,10 @@ def save_test_data(test_table):
 
 def compile_data_table(filenames):
     t_input = meta_table(filenames)
-    new_ps1z = Table.read(get_VAV19('new_ps1z.dat'), format='ascii')  # redshifts of 524 classified transients
     t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')  # classifications of 513 SNe
 
-    t_final = join(t_input, new_ps1z, join_type='left')
-    t_final = join(t_final, t_conf, join_type='left')
-    t_final = t_final[~t_final['hostz'].mask | ~t_final['redshift'].mask]
+    t_final = join(t_input, t_conf, join_type='left')
+    t_final = t_final[~t_final['redshift'].mask]
     return t_final
 
 

@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
-meta_columns = ['id', 'hostz', 'type']
+meta_columns = ['id', 'redshift', 'type']
 
 
 def plot_confusion_matrix(confusion_matrix, ndraws=0, title=None, cmap='Blues'):
@@ -218,9 +218,10 @@ def validate_classifier(clf, sampler, data, p_min=0.):
 
 def load_test_data():
     test_table = Table.read('test_data.txt', format='ascii.fixed_width', fill_values=('', ''))
-    for col in test_table.colnames:
-        if isinstance(test_table[col].filled()[0], str):
-            test_table[col].fill_value = ''
+    if test_table.masked:
+        for col in test_table.colnames:
+            if isinstance(test_table[col].filled()[0], str):
+                test_table[col].fill_value = ''
     test_table['features'] = np.load('test_data.npz')['features']
     logging.info('test data loaded from test_data.txt and test_data.npz')
     return test_table
