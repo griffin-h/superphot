@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')
 classes = sorted(set(t_conf['type']))
-meta_columns = ['id', 'hostz', 'type', 'flag0', 'flag1', 'flag2']
+meta_columns = ['id', 'hostz', 'type']
 
 
 def plot_confusion_matrix(confusion_matrix, ndraws=0, title=None, cmap='Blues'):

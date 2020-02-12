@@ -373,7 +373,7 @@ def meta_table(filenames):
 
 
 def save_test_data(test_table):
-    save_table = test_table[['id', 'A_V', 'hostz', 'filename', 'redshift', 'err', 'type', 'flag0', 'flag1', 'flag2']]
+    save_table = test_table[['id', 'A_V', 'hostz', 'filename', 'redshift', 'err', 'type']]
     save_table.write('test_data.txt', format='ascii.fixed_width', overwrite=True)
     np.savez_compressed('test_data.npz', features=test_table['features'])
     logging.info('test data saved to test_data.txt and test_data.npz')
@@ -383,18 +383,9 @@ def compile_data_table(filenames):
     t_input = meta_table(filenames)
     new_ps1z = Table.read(get_VAV19('new_ps1z.dat'), format='ascii')  # redshifts of 524 classified transients
     t_conf = Table.read(get_VAV19('ps1confirmed_only_sne.txt'), format='ascii')  # classifications of 513 SNe
-    bad_lcs = Table.read(get_VAV19('bad_lcs.dat'), names=['idnum', 'flag0', 'flag1'], format='ascii',
-                         fill_values=('-', '0'))
-    bad_lcs['id'] = ['PSc{:0>6d}'.format(idnum) for idnum in bad_lcs['idnum']]  # 1227 VAR, AGN, QSO transients
-    bad_lcs.remove_column('idnum')
-    bad_lcs_2 = np.loadtxt(get_VAV19('bad_lcs_2.dat'), dtype=str, usecols=[0, -1])  # 526 transients w/bad host spectra
-    bad_lcs_2 = Table([['PSc' + idnum for idnum in bad_lcs_2[:, 0]], bad_lcs_2[:, 1]], names=['id', 'flag2'])
 
     t_final = join(t_input, new_ps1z, join_type='left')
     t_final = join(t_final, t_conf, join_type='left')
-    t_final = join(t_final, bad_lcs, join_type='left')
-    t_final = join(t_final, bad_lcs_2, join_type='left')
-
     t_final = t_final[~t_final['hostz'].mask | ~t_final['redshift'].mask]
     return t_final
 
