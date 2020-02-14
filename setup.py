@@ -33,6 +33,7 @@ setuptools.setup(
             'superphot-diagnostics = superphot.fit_model:plot_diagnostics',
             'superphot-extract = superphot.extract_features:main',
             'superphot-classify = superphot.classify:main',
+            'superphot-confuse = superphot.classify:plot_confusion_matrix_from_file',
         ],
     },
 )

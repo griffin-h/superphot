@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
 
-def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap='Blues'):
+def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap='Blues', filename=None):
     """
     This function prints and plots the confusion matrix.
     From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
@@ -52,7 +52,10 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap=
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
     plt.tight_layout()
-    plt.savefig('confusion_matrix.pdf')
+    if filename is None:
+        plt.show()
+    else:
+        plt.savefig(filename)
 
 
 @Substitution(
@@ -178,7 +181,7 @@ def aggregate_probabilities(table, p_class):
     return results
 
 
-def validate_classifier(clf, sampler, data, p_min=0.):
+def validate_classifier(clf, sampler, data):
     """
     Validate the performance of a machine-learning classifier using leave-one-out cross-validation. The results are
     plotted as a confusion matrix, which is saved as a PDF.
@@ -191,8 +194,6 @@ def validate_classifier(clf, sampler, data, p_min=0.):
         First resample the data using this sampler.
     data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
-    p_min : float, optional
-        Minimum confidence to be included in the confusion matrix. Default: include all samples.
     """
     kf = KFold(len(np.unique(data['id'])))
     p_class = np.empty((len(data), len(clf.classes_)))
@@ -203,14 +204,30 @@ def validate_classifier(clf, sampler, data, p_min=0.):
         p_class[test_index] = clf.predict_proba(data['features'][test_index])
         pbar.update()
     pbar.close()
+    return p_class
 
-    results = aggregate_probabilities(data, p_class)
-    predicted_types = clf.classes_[np.argmax(results['probabilities'], axis=1)]
+
+def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
+    """
+    Given a data table with classification probabilities, calculate and plot the confusion matrix.
+
+    Parameters
+    ----------
+    results : astropy.table.Table
+        Astropy table containing the supernova metadata and classification probabilities (column name = 'probabilities')
+    classes : array-like, optional
+        Labels corresponding to the 'probabilities' column. If None, use the sorted entries in the 'type' column.
+    p_min : float, optional
+        Minimum confidence to be included in the confusion matrix. Default: include all samples.
+    saveto : str, optional
+        Save the plot to this filename. If None, the plot is displayed and not saved.
+    """
+    if classes is None:
+        classes = np.unique(results['type'])
+    predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
     include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
-    plot_confusion_matrix(cnf_matrix, clf.classes_)
-    write_results(results, clf.classes_, 'validation.txt')
-    return cnf_matrix
+    plot_confusion_matrix(cnf_matrix, classes, filename=saveto)
 
 
 def load_test_data():
@@ -257,6 +274,18 @@ def write_results(test_data, classes, filename):
     logging.info(f'classification results saved to {filename}')
 
 
+def plot_confusion_matrix_from_file():
+    parser = ArgumentParser()
+    parser.add_argument('filename', type=str, help='Filename containing the table of classification results.')
+    parser.add_argument('--pmin', type=float, default=0.,
+                        help='Minimum confidence to be included in the confusion matrix.')
+    parser.add_argument('--saveto', type=str, help='If provided, save the confusion matrix to this file.')
+    args = parser.parse_args()
+
+    results = load_results(args.filename)
+    make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto)
+
+
 def main():
     parser = ArgumentParser()
     parser.add_argument('--estimators', type=int, default=100,
@@ -287,6 +316,9 @@ def main():
     results = aggregate_probabilities(test_data, p_class)
     write_results(results, clf.classes_, 'results.txt')
 
-    cnf_matrix = validate_classifier(clf, sampler, train_data, p_min=args.pmin)
+    p_class_validate = validate_classifier(clf, sampler, train_data)
+    results_validate = aggregate_probabilities(train_data, p_class_validate)
+    write_results(results_validate, clf.classes_, 'validation.txt')
+    make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
     logging.info('validation complete')
     logging.info('finished classify.py')
