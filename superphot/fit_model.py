@@ -166,8 +166,8 @@ def setup_model(obs, max_flux=None):
         gamma = pm.Mixture(name='Plateau Duration', w=tt.constant([2., 1.]) / 3., testval=1.,
                            comp_dists=[BoundedNormal.dist(mu=5., sigma=5.), BoundedNormal.dist(mu=60., sigma=30.)])
         t_0 = pm.Uniform(name='Start Time', lower=-50., upper=180.)
-        tau_rise = LogUniform(name='Rise Time', lower=0.01, upper=50.)
-        tau_fall = LogUniform(name='Fall Time', lower=1., upper=300.)
+        tau_rise = pm.Uniform(name='Rise Time', lower=0.01, upper=50.)
+        tau_fall = pm.Uniform(name='Fall Time', lower=1., upper=300.)
         extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
         parameters = [A, beta, gamma, t_0, tau_rise, tau_fall]
 
