@@ -79,7 +79,7 @@ def flux_to_luminosity(row):
     return flux2lum
 
 
-def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True):
+def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True, reconstruct=False):
     """
     Run a principal component analysis on a list of light curves and return a list of their principal components.
 
@@ -91,8 +91,10 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
         A list of model light curves to be used for fitting the PCA. Default: fit and transform the same light curves.
     n_components : int, optional
         The number of principal components to calculate. Default: 6.
-    whiten : bool
+    whiten : bool, optional
         Whiten the input data before calculating the principal components. Default: True.
+    reconstruct : bool, optional
+        Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow). Default: False.
 
     Returns
     -------
@@ -120,7 +122,8 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     coefficients = np.array(coefficients)
     reconstructed = np.array(reconstructed)
     plot_principal_components(pcas)
-    plot_pca_reconstruction(light_curves, reconstructed, coefficients)
+    if reconstruct:
+        plot_pca_reconstruction(light_curves, reconstructed, coefficients)
 
     return coefficients, reconstructed
 
@@ -247,7 +250,7 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None):
             ax.clear()
 
 
-def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True):
+def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True, reconstruct=False):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -266,6 +269,8 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
     use_pca : bool, optional
         Use the peak absolute magnitudes and principal components of the light curve as the features (default).
         Otherwise, use the model parameters directly.
+    reconstruct : bool, optional
+        Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow). Default: False.
 
     Returns
     -------
@@ -312,7 +317,8 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True)
         t_good, good_models = select_good_events(t, models)
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        coefficients, reconstructed = get_principal_components(good_models, good_models[:, ~t_good['type'].mask])
+        coefficients, reconstructed = get_principal_components(good_models, good_models[:, ~t_good['type'].mask],
+                                                               reconstruct=reconstruct)
         logging.info('PCA finished')
         features = np.dstack([peakmags, coefficients])
     else:
@@ -390,10 +396,13 @@ def main():
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
                                                                ' Set to 0 to use the mean of the LC parameters.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
+    parser.add_argument('--reconstruct', action='store_true',
+                        help='Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow)')
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
     data_table = compile_data_table(args.input_table)
-    test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca)
+    test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
+                                 reconstruct=args.reconstruct)
     save_test_data(test_data)
     logging.info('finished extract_features.py')
