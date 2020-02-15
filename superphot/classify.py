@@ -228,16 +228,16 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
     plot_confusion_matrix(cnf_matrix, classes, filename=saveto)
 
 
-def load_test_data():
-    t = Table.read('test_data.txt', format='ascii', fill_values=('', ''))
-    stored = np.load('test_data.npz')
-    test_table = Table(np.repeat(t, stored['ndraws']), masked=True)
-    for col in test_table.colnames:
-        if isinstance(test_table[col].filled()[0], str):
-            test_table[col].fill_value = ''
-    test_table['features'] = stored['features']
-    logging.info('test data loaded from test_data.txt and test_data.npz')
-    return test_table
+def load_data(basename):
+    t = Table.read(f'{basename}.txt', format='ascii', fill_values=('', ''))
+    stored = np.load(f'{basename}.npz')
+    data_table = Table(np.repeat(t, stored['ndraws']), masked=True)
+    for col in data_table.colnames:
+        if isinstance(data_table[col].filled()[0], str):
+            data_table[col].fill_value = ''
+    data_table['features'] = stored['features']
+    logging.info(f'data loaded from {basename}.txt and {basename}.npz')
+    return data_table
 
 
 def load_results(filename):
@@ -286,6 +286,9 @@ def plot_confusion_matrix_from_file():
 
 def main():
     parser = ArgumentParser()
+    parser.add_argument('test_data', help='Filename (without extension) of the test data table and features.')
+    parser.add_argument('--train-data', help='Filename (without extension) of the training data and features.'
+                                             'By default, use all classified supernovae in the test data.')
     parser.add_argument('--estimators', type=int, default=100,
                         help='Number of estimators (trees) in the random forest classifier.')
     parser.add_argument('--max-depth', type=int, help='Maximum depth of a tree in the random forest classifier. '
@@ -303,9 +306,13 @@ def main():
     args = parser.parse_args()
 
     logging.info('started classify.py')
-    test_data = load_test_data()
+    test_data = load_data(args.test_data)
     test_data['features'] = scale(test_data['features'])
-    train_data = test_data[~test_data['type'].mask]
+    validation_data = test_data[~test_data['type'].mask]
+    if args.train_data is None:
+        train_data = validation_data
+    else:
+        train_data = load_data(args.train_data)
     clf, sampler = train_classifier(train_data, n_est=args.estimators, depth=args.max_depth, max_feat=args.max_feat,
                                     n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
     logging.info('classifier trained')
@@ -314,9 +321,9 @@ def main():
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')
 
-    train_data['probabilities'] = validate_classifier(clf, sampler, train_data)
-    write_results(train_data, clf.classes_, 'validation_full.txt')
-    results_validate = aggregate_probabilities(train_data)
+    validation_data['probabilities'] = validate_classifier(clf, sampler, validation_data)
+    write_results(validation_data, clf.classes_, 'validation_full.txt')
+    results_validate = aggregate_probabilities(validation_data)
     write_results(results_validate, clf.classes_, 'validation.txt')
     make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
     logging.info('validation complete')

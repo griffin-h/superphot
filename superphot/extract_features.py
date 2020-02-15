@@ -379,13 +379,13 @@ def compile_data_table(filename):
     return t_final
 
 
-def save_test_data(test_table):
-    test_table.sort('id')
-    save_table = test_table[::test_table.meta['ndraws']]
+def save_data(t, basename):
+    t.sort('id')
+    save_table = t[::t.meta['ndraws']]
     save_table.keep_columns(meta_columns)
-    save_table.write('test_data.txt', format='ascii.fixed_width_two_line', overwrite=True)
-    np.savez_compressed('test_data.npz', features=test_table['features'], ndraws=test_table.meta['ndraws'])
-    logging.info('test data saved to test_data.txt and test_data.npz')
+    save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
+    np.savez_compressed(f'{basename}.npz', features=t['features'], ndraws=t.meta['ndraws'])
+    logging.info(f'data saved to {basename}.txt and {basename}.npz')
 
 
 def main():
@@ -398,11 +398,13 @@ def main():
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
                         help='Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow)')
+    parser.add_argument('--output', default='test_data',
+                        help='Filename (without extension) to save the test data and features')
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
     data_table = compile_data_table(args.input_table)
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
                                  reconstruct=args.reconstruct)
-    save_test_data(test_data)
+    save_data(test_data, args.output)
     logging.info('finished extract_features.py')
