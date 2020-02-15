@@ -9,6 +9,9 @@ from .util import light_curve_event_data, filter_colors
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import gaussian_kde
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
 
 def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
@@ -436,37 +439,40 @@ def main():
         for fltr, ax in zip(args.filters, axes.flatten()):
             obs = t[t['FLT'] == fltr]
             if not len(obs):
-                print(f'No {fltr}-band points. Skipping fit.')
+                logging.warning(f'No {fltr}-band points. Skipping fit.')
                 continue
             model, parameters = setup_model(obs, max_flux)
             outfile1 = outfile.format('1' + fltr)
             if not os.path.exists(outfile1) or args.force:
+                logging.info(f'Starting {fltr}-band fit, first iteration')
                 trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
-                outfile1 = outfile.format('1' + fltr)
                 pm.save_trace(trace, outfile1, overwrite=True)
                 diagnostics(obs, trace, parameters, outfile1)
             else:
                 trace = pm.load_trace(outfile1, model)
+                logging.info(f'Loaded {fltr}-band trace from {outfile1}')
             traces.append(trace)
             plot_model_lcs(obs, trace, parameters, size=10, ax=ax, fltr=fltr, ls=':')
 
         x_priors, y_priors, prior_fig = make_new_priors(traces, parameters)
         prior_fig.savefig(os.path.join(args.output_dir, t.meta['SNID'] + '_priors.pdf'))
         plt.close(prior_fig)
-        print('starting second iteration of fitting')
+        logging.info('Starting second iteration of fitting')
 
         for fltr, ax in zip(args.filters, axes.flatten()):
             obs = t[t['FLT'] == fltr]
             if not len(obs):
-                print(f'No {fltr}-band points. Skipping fit.')
+                logging.warning(f'No {fltr}-band points. Skipping fit.')
                 continue
             new_model, new_params = setup_new_model(obs, parameters, x_priors, y_priors)
             outfile2 = outfile.format('2' + fltr)
             if not os.path.exists(outfile2) or args.force or args.force_second:
+                logging.info(f'Starting {fltr}-band fit, second iteration')
                 trace = run_mcmc(new_model, args.iterations, args.tuning, args.walkers)
                 pm.save_trace(trace, outfile2, overwrite=True)
                 diagnostics(obs, trace, new_params, outfile2)
             else:
+                logging.info(f'Loaded {fltr}-band trace from {outfile2}')
                 trace = pm.load_trace(outfile2, new_model)
             plot_model_lcs(obs, trace, new_params, size=10, ax=ax, fltr=fltr)
 
