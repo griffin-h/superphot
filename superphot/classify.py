@@ -158,25 +158,23 @@ def mean_axis0(x, axis=0):
     return x.mean(axis=axis)
 
 
-def aggregate_probabilities(table, p_class):
+def aggregate_probabilities(table):
     """
     Average the classification probabilities for a given supernova across the multiple model light curves.
 
     Parameters
     ----------
     table : astropy.table.Table
-        Astropy table containing the metadata for a supernova
-    p_class : array-like, shape=(nsupernovae * ndraws, nclasses)
-        Classification probabilities for the supernovae in table from `clf.predict_proba`
+        Astropy table containing the metadata for a supernova and the classification probabilities from
+        `clf.predict_proba` (column name = 'probabilities')
 
     Returns
     -------
     results : astropy.table.Table
-        Astropy table containing the supernova metadata and classification probabilities (column name = 'probabilities')
+        Astropy table containing the supernova metadata and average classification probabilities for each supernova
     """
-    table.keep_columns(meta_columns)
+    table.keep_columns(meta_columns + ['probabilities'])
     grouped = table.filled().group_by(meta_columns)
-    grouped['probabilities'] = p_class
     results = grouped.groups.aggregate(mean_axis0)
     return results
 
@@ -312,12 +310,13 @@ def main():
                                     n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
     logging.info('classifier trained')
 
-    p_class = clf.predict_proba(test_data['features'])
-    results = aggregate_probabilities(test_data, p_class)
+    test_data['probabilities'] = clf.predict_proba(test_data['features'])
+    results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')
 
-    p_class_validate = validate_classifier(clf, sampler, train_data)
-    results_validate = aggregate_probabilities(train_data, p_class_validate)
+    train_data['probabilities'] = validate_classifier(clf, sampler, train_data)
+    write_results(train_data, clf.classes_, 'validation_full.txt')
+    results_validate = aggregate_probabilities(train_data)
     write_results(results_validate, clf.classes_, 'validation.txt')
     make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
     logging.info('validation complete')
