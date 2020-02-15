@@ -197,13 +197,23 @@ def make_new_priors(traces, parameters, res=100):
     """
     x_priors = []
     y_priors = []
-    for param in parameters:
-        combined_trace = np.concatenate([trace[param.name] for trace in traces])
+    fig, axarr = plt.subplots(len(parameters) // 3 + bool(len(parameters) % 3), 3)
+    for param, ax in zip(parameters, axarr.flatten()):
+        trace_values = [trace[param.name] for trace in traces]
+        combined_trace = np.concatenate(trace_values)
         x = np.linspace(combined_trace.min(), combined_trace.max(), res)
-        y = gaussian_kde(combined_trace)
+        y_orig = np.exp(param.distribution.logp(x).eval())
+        ax.plot(x, y_orig, color='gray', lw=1, ls='--')
+        for flt, trace_flt in zip('griz', trace_values):
+            y_filt = gaussian_kde(trace_flt)(x)
+            ax.plot(x, y_filt, color=filter_colors[flt], lw=1, ls=':')
+        y_comb = gaussian_kde(combined_trace)(x)
+        ax.plot(x, y_comb, color='gray')
+        ax.set_xlabel(param.name)
         x_priors.append(x)
-        y_priors.append(y(x))
-    return x_priors, y_priors
+        y_priors.append(y_comb)
+    fig.tight_layout()
+    return x_priors, y_priors, fig
 
 
 def setup_new_model(obs, parameters, x_priors, y_priors):
@@ -438,7 +448,9 @@ def main():
             traces.append(trace)
             plot_model_lcs(obs, trace, parameters, size=10, ax=ax, fltr=fltr, ls=':')
 
-        x_priors, y_priors = make_new_priors(traces, parameters)
+        x_priors, y_priors, prior_fig = make_new_priors(traces, parameters)
+        prior_fig.savefig(os.path.join(args.output_dir, t.meta['SNID'] + '_priors.pdf'))
+        plt.close(prior_fig)
         print('starting second iteration of fitting')
 
         for fltr, ax in zip(args.filters, axes.flatten()):
@@ -457,7 +469,7 @@ def main():
             plot_model_lcs(obs, trace, new_params, size=10, ax=ax, fltr=fltr)
 
         fig.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
-        fig.savefig(t.meta['SNID'] + '.pdf')
+        fig.savefig(os.path.join(args.output_dir, t.meta['SNID'] + '_final.pdf'))
         pdf.savefig(fig)
         plt.close(fig)
     pdf.close()
