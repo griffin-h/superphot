@@ -419,6 +419,8 @@ def main():
     parser.add_argument('--ignore-redshift', action='store_false', dest='require_redshift',
                         help='Fit the transient even though its redshift is not measured')
     parser.add_argument('-f', '--force', action='store_true', help='redo the fit even if the trace is already saved')
+    parser.add_argument('-2', '--force-second', action='store_true',
+                        help='redo only the second iteration of fitting even if the trace is already saved')
     args = parser.parse_args()
 
     pdf = PdfPages('lc_fits.pdf')
@@ -460,7 +462,7 @@ def main():
                 continue
             new_model, new_params = setup_new_model(obs, parameters, x_priors, y_priors)
             outfile2 = outfile.format('2' + fltr)
-            if not os.path.exists(outfile2) or args.force:
+            if not os.path.exists(outfile2) or args.force or args.force_second:
                 trace = run_mcmc(new_model, args.iterations, args.tuning, args.walkers)
                 pm.save_trace(trace, outfile2, overwrite=True)
                 diagnostics(obs, trace, new_params, outfile2)
