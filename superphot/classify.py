@@ -68,7 +68,7 @@ class MultivariateGaussian(BaseOverSampler):
     ----------
     {sampling_strategy}
 
-        - When ```int``, it corresponds to the total number of samples in each
+        - When ``int``, it corresponds to the total number of samples in each
           class (including the real samples). Can be used to oversample even
           the majority class. If ``sampling_strategy`` is smaller than the
           existing size of a class, that class will not be oversampled and
@@ -119,7 +119,7 @@ def train_classifier(data, n_est=100, depth=None, max_feat=5, n_jobs=-1, sampler
     ----------
     data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
-    n_est: int, optional
+    n_est : int, optional
         The number of trees in the forest. Default: 100.
     depth : int, optional
         The maxiumum depth of a tree. If None, the tree will have all pure leaves.

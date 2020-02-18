@@ -47,7 +47,7 @@ def cut_outliers(t, nsigma):
     ----------
     t : astropy.table.Table
         Astropy table containing the light curve data.
-    nsigma: float
+    nsigma : float
         Determines at what value (flux < nsigma * mad_std) to cut outlier data points.
 
     Returns
