@@ -10,7 +10,7 @@ import logging
 from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
-from .util import read_snana, light_curve_event_data, filter_colors, meta_columns
+from .util import read_light_curve, select_event_data, filter_colors, meta_columns
 from .fit_model import setup_model, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -37,7 +37,8 @@ def load_trace(file, trace_path='.', version='2'):
     basename = os.path.basename(file)
     tracefile = os.path.join(trace_path, basename.replace('.snana.dat', '_{}{}'))
     lst = []
-    t = light_curve_event_data(file)
+    t_full = read_light_curve(file)
+    t = select_event_data(t_full)
     max_flux = t['FLUXCAL'].max()
     missing_filters = []
     for fltr in 'griz':
@@ -59,21 +60,23 @@ def load_trace(file, trace_path='.', version='2'):
     return lst
 
 
-def flux_to_luminosity(row):
+def flux_to_luminosity(row, R_V=3.1):
     """
     Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.
 
     Parameters
     ----------
     row : astropy.table.row.Row
-        Astropy table row for a given transient, containing columns 'A_V' and 'redshift'.
+        Astropy table row for a given transient, containing columns 'MWEBV' and 'redshift'.
+    R_V : float
+        Ratio of total to selective extinction, i.e., A_V = row['MWEBV'] * R_V. Default: 3.1
 
     Returns
     -------
     flux2lum : numpy.ndarray
         Array of flux-to-luminosity conversion factors for the filters g, r, i, and z.
     """
-    A_coeffs = row['A_V'] * np.array([1.16269427, 0.87191851, 0.66551667, 0.42906714])  # g, r, i, z
+    A_coeffs = row['MWEBV'] * R_V * np.array([1.16269427, 0.87191851, 0.66551667, 0.42906714])  # g, r, i, z
     dist = cosmo.luminosity_distance(row['redshift']).to('dapc').value
     flux2lum = 10. ** (A_coeffs / 2.5) * dist ** 2. * (1. + row['redshift'])
     return flux2lum
@@ -363,26 +366,25 @@ def select_good_events(t, data):
 
 def compile_data_table(filename):
     t_input = Table.read(filename, format='ascii')
-    required_cols = ['A_V', 'redshift']
+    required_cols = ['MWEBV', 'redshift']
     missing_cols = [col for col in required_cols if col not in t_input.colnames]
     if missing_cols:
         t_meta = Table(names=required_cols, dtype=[float, float], masked=True)
         for lc_file in t_input['filename']:
-            t = read_snana(lc_file)
+            t = read_light_curve(lc_file)
             t_meta.add_row([t.meta[col.upper()] for col in required_cols])
         t_final = hstack([t_input, t_meta[missing_cols]])
     else:
         t_final = Table(t_input, masked=True)
     t_final['redshift'].mask = t_final['redshift'] <= 0.
-    t_final['A_V'].format = '%.5f'
+    t_final['MWEBV'].format = '%.4f'
     t_final['redshift'].format = '%.4f'
     return t_final
 
 
 def save_data(t, basename):
     t.sort('filename')
-    save_table = t[::t.meta['ndraws']]
-    save_table.keep_columns(meta_columns)
+    save_table = t[meta_columns][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
     np.savez_compressed(f'{basename}.npz', features=t['features'], ndraws=t.meta['ndraws'])
     logging.info(f'data saved to {basename}.txt and {basename}.npz')

@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import pymc3 as pm
 import theano.tensor as tt
-from .util import light_curve_event_data, filter_colors
+from .util import read_light_curve, select_event_data, filter_colors
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import gaussian_kde
@@ -404,7 +404,8 @@ def plot_diagnostics():
     _, _, ps1id, fltr = os.path.split(args.filename.strip('/'))[-1].split('_')
     fltr = fltr.strip('12')
     snana_file = os.path.join(args.snana_path, f'PS1_PS1MD_{ps1id}.snana.dat')
-    t = light_curve_event_data(snana_file)
+    t_full = read_light_curve(snana_file)
+    t = select_event_data(t_full)
     obs = t[t['FLT'] == fltr]
     model, parameters = setup_model(obs, t['FLUXCAL'].max())
     trace = pm.load_trace(args.filename, model)
@@ -430,7 +431,8 @@ def main():
     for filename in args.filenames:
         basename = os.path.basename(filename).split('.')[0]
         outfile = os.path.join(args.output_dir, basename + '_{}')
-        t = light_curve_event_data(filename)
+        t_full = read_light_curve(filename)
+        t = select_event_data(t_full)
         if t.meta['REDSHIFT'] < 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
         max_flux = t['FLUXCAL'].max()

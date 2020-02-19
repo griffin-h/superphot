@@ -263,7 +263,7 @@ def write_results(test_data, classes, filename):
         Name of the output file
     """
     output = test_data[meta_columns]
-    output['A_V'].format = '%.5f'
+    output['MWEBV'].format = '%.4f'
     output['redshift'].format = '%.4f'
     for i, classname in enumerate(classes):
         output[classname] = test_data['probabilities'][:, i]
