@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-from astropy.table import Table
+from astropy.table import Table, unique
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
@@ -193,7 +193,7 @@ def validate_classifier(clf, sampler, data):
     data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
     """
-    kf = KFold(len(np.unique(data['id'])))
+    kf = KFold(len(unique(data, keys=meta_columns, silent=True)))
     p_class = np.empty((len(data), len(clf.classes_)))
     pbar = tqdm(desc='Cross-validation', total=kf.n_splits)
     for train_index, test_index in kf.split(data):

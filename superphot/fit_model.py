@@ -428,13 +428,14 @@ def main():
 
     pdf = PdfPages('lc_fits.pdf')
     for filename in args.filenames:
-        outfile = os.path.join(args.output_dir, os.path.basename(filename).replace('.snana.dat', '_{}'))
+        basename = os.path.basename(filename).split('.')[0]
+        outfile = os.path.join(args.output_dir, basename + '_{}')
         t = light_curve_event_data(filename)
         if t.meta['REDSHIFT'] < 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
         max_flux = t['FLUXCAL'].max()
         fig, axes = plt.subplots(2, 2, sharex=True)
-        fig.text(0.5, 0.95, f'{t.meta["SNID"]} ($z={t.meta["REDSHIFT"]:.3f}$)', ha='center', va='bottom', size='large')
+        fig.text(0.5, 0.95, f'{basename} ($z={t.meta["REDSHIFT"]:.3f}$)', ha='center', va='bottom', size='large')
         traces = []
         for fltr, ax in zip(args.filters, axes.flatten()):
             obs = t[t['FLT'] == fltr]
@@ -455,7 +456,7 @@ def main():
             plot_model_lcs(obs, trace, parameters, size=10, ax=ax, fltr=fltr, ls=':')
 
         x_priors, y_priors, prior_fig = make_new_priors(traces, parameters)
-        prior_fig.savefig(os.path.join(args.output_dir, t.meta['SNID'] + '_priors.pdf'))
+        prior_fig.savefig(os.path.join(args.output_dir, basename + '_priors.pdf'))
         plt.close(prior_fig)
         logging.info('Starting second iteration of fitting')
 
@@ -477,7 +478,7 @@ def main():
             plot_model_lcs(obs, trace, new_params, size=10, ax=ax, fltr=fltr)
 
         fig.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
-        fig.savefig(os.path.join(args.output_dir, t.meta['SNID'] + '_final.pdf'))
+        fig.savefig(os.path.join(args.output_dir, basename + '_final.pdf'))
         pdf.savefig(fig)
         plt.close(fig)
     pdf.close()

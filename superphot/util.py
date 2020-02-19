@@ -2,7 +2,7 @@ from astropy.stats import mad_std
 from astropy.table import Table
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
-meta_columns = ['filename', 'type', 'id', 'A_V', 'redshift']
+meta_columns = ['filename', 'type', 'A_V', 'redshift']
 
 
 def read_snana(filename):

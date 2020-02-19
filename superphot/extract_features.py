@@ -363,13 +363,13 @@ def select_good_events(t, data):
 
 def compile_data_table(filename):
     t_input = Table.read(filename, format='ascii')
-    required_cols = ['id', 'A_V', 'redshift']
+    required_cols = ['A_V', 'redshift']
     missing_cols = [col for col in required_cols if col not in t_input.colnames]
     if missing_cols:
-        t_meta = Table(names=required_cols, dtype=['S9', float, float], masked=True)
+        t_meta = Table(names=required_cols, dtype=[float, float], masked=True)
         for lc_file in t_input['filename']:
             t = read_snana(lc_file)
-            t_meta.add_row([t.meta['SNID'], t.meta['A_V'], t.meta['REDSHIFT']])
+            t_meta.add_row([t.meta[col.upper()] for col in required_cols])
         t_final = hstack([t_input, t_meta[missing_cols]])
     else:
         t_final = Table(t_input, masked=True)
@@ -380,7 +380,7 @@ def compile_data_table(filename):
 
 
 def save_data(t, basename):
-    t.sort('id')
+    t.sort('filename')
     save_table = t[::t.meta['ndraws']]
     save_table.keep_columns(meta_columns)
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
