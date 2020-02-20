@@ -433,7 +433,7 @@ def main():
         outfile = os.path.join(args.output_dir, basename + '_{}')
         t_full = read_light_curve(filename)
         t = select_event_data(t_full)
-        if t.meta['REDSHIFT'] < 0. and args.require_redshift:
+        if t.meta['REDSHIFT'] <= 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
         max_flux = t['FLUXCAL'].max()
         fig, axes = plt.subplots(2, 2, sharex=True)

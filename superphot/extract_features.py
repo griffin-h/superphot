@@ -376,7 +376,7 @@ def compile_data_table(filename):
         t_final = hstack([t_input, t_meta[missing_cols]])
     else:
         t_final = Table(t_input, masked=True)
-    t_final['redshift'].mask = t_final['redshift'] <= 0.
+    t_final = t_final[t_final['redshift'] > 0.]
     t_final['MWEBV'].format = '%.4f'
     t_final['redshift'].format = '%.4f'
     return t_final
