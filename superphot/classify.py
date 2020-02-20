@@ -231,7 +231,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
 def load_data(basename):
     t = Table.read(f'{basename}.txt', format='ascii', fill_values=('', ''))
     stored = np.load(f'{basename}.npz')
-    data_table = Table(np.repeat(t, stored['ndraws']), masked=True)
+    data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
     for col in data_table.colnames:
         if isinstance(data_table[col].filled()[0], str):
             data_table[col].fill_value = ''
