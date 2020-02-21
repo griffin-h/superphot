@@ -5,13 +5,18 @@ import argparse
 import numpy as np
 import pymc3 as pm
 import theano.tensor as tt
-from .util import read_light_curve, select_event_data, filter_colors
+from .util import read_light_curve, select_event_data, filter_colors, PHASE_MIN, PHASE_MAX
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import gaussian_kde
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+# Default fitting parameters
+FILTERS = 'griz'
+ITERATIONS = 10000
+TUNING = 25000
+WALKERS = 25
 
 
 def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
@@ -136,15 +141,17 @@ class LogUniform(pm.distributions.continuous.BoundedContinuous):
         return self.logdist.logp(log_value) - log_value
 
 
-def setup_model(obs, max_flux=None):
+def setup_model1(obs, max_flux=None):
     """
-    Run a Metropolis Hastings MCMC for a file in a single filter with a certain number iterations, burn in (tuning),
-    and walkers. The period and multiplier are 180 and 20, respectively.
+    Set up the PyMC3 model object, which contains the priors and the likelihood.
 
     Parameters
     ----------
     obs : astropy.table.Table
         Astropy table containing the light curve data.
+    max_flux : float, optional
+        The maximum flux observed in any filter. The amplitude prior is 100 * `max_flux`. If None, the maximum flux in
+        the input table is used, even though it does not contain all the filters.
 
     Returns
     -------
@@ -165,7 +172,7 @@ def setup_model(obs, max_flux=None):
         BoundedNormal = pm.Bound(pm.Normal, lower=0.)
         gamma = pm.Mixture(name='Plateau Duration', w=tt.constant([2., 1.]) / 3., testval=1.,
                            comp_dists=[BoundedNormal.dist(mu=5., sigma=5.), BoundedNormal.dist(mu=60., sigma=30.)])
-        t_0 = pm.Uniform(name='Start Time', lower=-50., upper=180.)
+        t_0 = pm.Uniform(name='Start Time', lower=PHASE_MIN, upper=PHASE_MAX)
         tau_rise = pm.Uniform(name='Rise Time', lower=0.01, upper=50.)
         tau_fall = pm.Uniform(name='Fall Time', lower=1., upper=300.)
         extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
@@ -197,29 +204,58 @@ def make_new_priors(traces, parameters, res=100):
         List of Numpy arrays containing the x-values of the new priors.
     y_priors : list
         List of Numpy arrays containing the y-values of the new priors.
+    old_posteriors : list
+        List of Numpy arrays containing the y-values of the old posteriors.
     """
     x_priors = []
     y_priors = []
-    fig, axarr = plt.subplots(len(parameters) // 3 + bool(len(parameters) % 3), 3)
-    for param, ax in zip(parameters, axarr.flatten()):
+    old_posteriors = []
+    for param in parameters:
         trace_values = [trace[param.name] for trace in traces]
         combined_trace = np.concatenate(trace_values)
         x = np.linspace(combined_trace.min(), combined_trace.max(), res)
+        y_comb = gaussian_kde(combined_trace)(x)
+        x_priors.append(x)
+        y_priors.append(y_comb)
+        old_posteriors.append(trace_values)
+    return x_priors, y_priors, old_posteriors
+
+
+def plot_priors(x_priors, y_priors, old_posteriors, parameters, saveto=None):
+    """
+    Overplot the old priors, the old posteriors in each filter, and the new priors for each parameter.
+
+    Parameters
+    ----------
+    x_priors : list
+        List of Numpy arrays containing the x-values of the new priors.
+    y_priors : list
+        List of Numpy arrays containing the y-values of the new priors.
+    old_posteriors : list
+        List of Numpy arrays containing the y-values of the old posteriors.
+    parameters : list
+        List of Theano variables for which to combine the posteriors.
+    saveto : str, optional
+        Filename to which to save the plot. If None, display the plot instead of saving it.
+    """
+    fig, axarr = plt.subplots(len(parameters) // 3 + bool(len(parameters) % 3), 3)
+    for param, x, y_comb, trace_values, ax in zip(parameters, x_priors, y_priors, old_posteriors, axarr.flatten()):
         y_orig = np.exp(param.distribution.logp(x).eval())
         ax.plot(x, y_orig, color='gray', lw=1, ls='--')
         for flt, trace_flt in zip('griz', trace_values):
             y_filt = gaussian_kde(trace_flt)(x)
             ax.plot(x, y_filt, color=filter_colors[flt], lw=1, ls=':')
-        y_comb = gaussian_kde(combined_trace)(x)
         ax.plot(x, y_comb, color='gray')
         ax.set_xlabel(param.name)
-        x_priors.append(x)
-        y_priors.append(y_comb)
     fig.tight_layout()
-    return x_priors, y_priors, fig
+    if saveto:
+        fig.savefig(saveto)
+    else:
+        plt.show()
+    plt.close(fig)
 
 
-def setup_new_model(obs, parameters, x_priors, y_priors):
+def setup_model2(obs, parameters, x_priors, y_priors):
     """
     Set up a PyMC3 model for observations in a given filter using the given priors and parameter names.
 
@@ -257,29 +293,41 @@ def setup_new_model(obs, parameters, x_priors, y_priors):
     return model, new_params
 
 
-def run_mcmc(model, iterations, tuning, walkers):
-    """
+def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
+    f"""
     Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.
+
+    If the MCMC has already been run, read and return the existing trace (unless `force=True`).
 
     Parameters
     ----------
     model : pymc3.Model
-        PyMC3 model object for the input data from `setup_model`.
-    iterations : int
-        The number of iterations after tuning.
-    tuning : int
-        The number of iterations used for tuning.
-    walkers : int
-        The number of cores and walkers used.
+        PyMC3 model object for the input data.
+    trace_file : str
+        Path where the trace will be stored. If this path exists, load the trace from there instead.
+    force : bool, optional
+        Resample the model even if `trace_file` already exists.
+    iterations : int, optional
+        The number of iterations after tuning. Default: {ITERATIONS:d}
+    walkers : int, optional
+        The number of cores and walkers used. Default: {WALKERS:d}
+    tuning : int, optional
+        The number of iterations used for tuning. Default: {TUNING:d}
 
     Returns
     -------
-    trace : MultiTrace
-        The trace has a shape (len(varnames), walkers, iterations) and contains every iteration for each walker for all
-        parameters.
+    trace : pymc3.MultiTrace
+        The PyMC3 trace object for the MCMC run.
     """
+    basename = os.path.basename(trace_file)
     with model:
-        trace = pm.sample(iterations, tune=tuning, cores=walkers, chains=walkers, step=pm.Metropolis())
+        if not os.path.exists(trace_file) or force:
+            logging.info(f'Starting fit for {basename}')
+            trace = pm.sample(iterations, tune=tuning, cores=walkers, chains=walkers, step=pm.Metropolis())
+            pm.save_trace(trace, trace_file, overwrite=True)
+        else:
+            trace = pm.load_trace(trace_file)
+            logging.info(f'Loaded trace from {trace_file}')
     return trace
 
 
@@ -334,7 +382,30 @@ def sample_posterior(trace, rand_num):
     return trace_rand
 
 
-def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None, phase_min=-50., phase_max=180.):
+def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None, phase_min=PHASE_MIN,
+                   phase_max=PHASE_MAX):
+    f"""
+    Plot sample light curves from a fit compared to the observations.
+
+    Parameters
+    ----------
+    obs : astropy.table.Table
+        Astropy table containing the observed light curve in a single filter.
+    trace : pymc3.MultiTrace
+        PyMC3 trace object containing values for the fit parameters.
+    parameters : list
+        List of Theano variables in the PyMC3 model.
+    size : int, optional
+        Number of draws from the posterior to plot. Default: 100.
+    ax : matplotlib.axes.Axes, optional
+        Axes object on which to plot the light curves. If None, create new Axes.
+    fltr : str, optional
+        Filter these data were observed in. Only used to label and color the plot.
+    ls : str, optional
+        Line style for the model light curves. Default: solid line.
+    phase_min, phase_max : float, optional
+        Time range over which to plot the light curves. Default: [-{PHASE_MIN:.0f}, {PHASE_MAX:.0f})
+    """
     x = np.arange(phase_min, phase_max)
     trace_values = np.transpose([trace.get_values(var) for var in parameters])[np.newaxis, :, :]
     params = sample_posterior(trace_values, size)
@@ -346,6 +417,7 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
     ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
     ax.set_xlabel('Phase')
     ax.set_ylabel('Flux')
+    ax.set_xlim(phase_min, phase_max)
     if fltr:
         ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
 
@@ -355,6 +427,43 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
         ymax = max(obs['FLUXCAL'].max(), y.max())
         height = ymax - ymin
         ax.set_ylim(ymin - 0.08 * height, ymax + 0.08 * height)
+
+
+def plot_final_fits(t, traces1, traces2, parameters, outfile=None, filters=FILTERS):
+    f"""
+    Make a four-panel plot showing sample light curves from each of the two fitting iterations compared to observations.
+
+    Parameters
+    ----------
+    t : astropy.table.Table
+        Astropy table containing the observed light curve.
+    traces1, traces2 : list
+        Lists of the trace objects (for each filter) from which to generate the model light curves.
+    parameters : list
+        List of Theano variables in the PyMC3 model.
+    outfile : str, optional
+        Filename to which to save the plot. If None, display the plot instead of saving it.
+    filters : str, optional
+        Filters corresponding to the traces in `trace1` and `trace2`. Default: {FILTERS}.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure object for the plot (can be added to a multipage PDF).
+    """
+    fig, axes = plt.subplots(2, 2, sharex=True)
+    basename = os.path.splitext(os.path.basename(outfile))[0]
+    fig.text(0.5, 0.95, basename, ha='center', va='bottom', size='large')
+    for fltr, trace1, trace2, ax in zip(filters, traces1, traces2, axes.flatten()):
+        obs = t[t['FLT'] == fltr]
+        plot_model_lcs(obs, trace1, parameters, size=10, ax=ax, fltr=fltr, ls=':')
+        plot_model_lcs(obs, trace2, parameters, size=10, ax=ax, fltr=fltr)
+    fig.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
+    if outfile:
+        fig.savefig(outfile)
+    else:
+        plt.show()
+    return fig
 
 
 def diagnostics(obs, trace, parameters, filename='.', show=False):
@@ -394,6 +503,77 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
         plt.close('all')
 
 
+def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force_second=False, do_diagnostics=True,
+                       iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
+    f"""
+    Fit the model to the observed light curve. Then combine the posteriors for each filter and use that as the new prior
+    for a second iteration of fitting.
+
+    Parameters
+    ----------
+    light_curve : astropy.table.Table
+        Astropy table containing the observed light curve.
+    outfile : str
+        Path where the trace will be stored. This should include a blank field ({{}}) that will be replaced with the 
+        iteration number and filter name. Diagnostic plots will also be saved according to this pattern.
+    filters : str, optional
+        Light curve filters to fit. If the observed light curve does not contain one or more of these filters, the 
+        posteriors of the remaining filters will be combined and used in place of the missing ones. Default: {FILTERS}.
+    force : bool, optional
+        Redo the fit (both iterations) even if results are already stored in `outfile`. Default: False.
+    force_second : bool, optional
+        Redo only the second iteration of the fit, even if the results are already stored in `outfile`. Default: False.
+    do_diagnostics : bool, optional
+        Produce and save some diagnostic plots. Default: True.
+    iterations : int, optional
+        The number of iterations after tuning. Default: {ITERATIONS:d}
+    walkers : int, optional
+        The number of cores and walkers used. Default: {WALKERS:d}
+    tuning : int, optional
+        The number of iterations used for tuning. Default: {TUNING:d}
+
+    Returns
+    -------
+    traces1, traces2 : list
+        Lists of the PyMC3 trace objects for each filter for the first and second fitting iterations, respectively.
+    parameters : list
+        List of Theano variables in the PyMC3 model.
+    """
+    t = select_event_data(light_curve)
+    traces1 = []
+    for fltr in filters:
+        obs = t[t['FLT'] == fltr]
+        if not len(obs):
+            logging.warning(f'No {fltr}-band points. Skipping fit.')
+            continue
+        model1, parameters1 = setup_model1(obs, t['FLUXCAL'].max())
+        outfile1 = outfile.format('1' + fltr)
+        trace1 = sample_or_load_trace(model1, outfile1, force, iterations, walkers, tuning)
+        traces1.append(trace1)
+        if do_diagnostics:
+            diagnostics(obs, trace1, parameters1, outfile1)
+
+    x_priors, y_priors, old_posteriors = make_new_priors(traces1, parameters1)
+    if do_diagnostics:
+        plot_priors(x_priors, y_priors, old_posteriors, parameters1, outfile.format('priors.pdf'))
+    logging.info('Starting second iteration of fitting')
+
+    traces2 = []
+    for fltr in filters:
+        obs = t[t['FLT'] == fltr]
+        if not len(obs):
+            logging.warning(f'No {fltr}-band points. Skipping fit.')
+            continue
+        model2, parameters2 = setup_model2(obs, parameters1, x_priors, y_priors)
+        outfile2 = outfile.format('2' + fltr)
+        trace2 = sample_or_load_trace(model2, outfile2, force or force_second, iterations, walkers, tuning)
+        traces2.append(trace2)
+        if do_diagnostics:
+            diagnostics(obs, trace2, parameters2, outfile2)
+
+    return traces1, traces2, parameters2
+
+
 def plot_diagnostics():
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', type=str, help='Path to PyMC3 trace directory')
@@ -407,7 +587,7 @@ def plot_diagnostics():
     t_full = read_light_curve(snana_file)
     t = select_event_data(t_full)
     obs = t[t['FLT'] == fltr]
-    model, parameters = setup_model(obs, t['FLUXCAL'].max())
+    model, parameters = setup_model1(obs, t['FLUXCAL'].max())
     trace = pm.load_trace(args.filename, model)
     diagnostics(obs, trace, parameters, args.filename, args.show)
 
@@ -415,72 +595,32 @@ def plot_diagnostics():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
-    parser.add_argument('--filters', type=str, default='griz', help='Filters to fit (choose from griz)')
-    parser.add_argument('--iterations', type=int, default=10000, help='Number of steps after burn-in')
-    parser.add_argument('--tuning', type=int, default=25000, help='Number of burn-in steps')
-    parser.add_argument('--walkers', type=int, default=25, help='Number of walkers')
+    parser.add_argument('--filters', type=str, default=FILTERS, help='Filters to fit (choose from griz)')
+    parser.add_argument('--iterations', type=int, default=ITERATIONS, help='Number of steps after burn-in')
+    parser.add_argument('--tuning', type=int, default=TUNING, help='Number of burn-in steps')
+    parser.add_argument('--walkers', type=int, default=WALKERS, help='Number of walkers')
     parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
     parser.add_argument('--ignore-redshift', action='store_false', dest='require_redshift',
                         help='Fit the transient even though its redshift is not measured')
     parser.add_argument('-f', '--force', action='store_true', help='redo the fit even if the trace is already saved')
     parser.add_argument('-2', '--force-second', action='store_true',
                         help='redo only the second iteration of fitting even if the trace is already saved')
+    parser.add_argument('--no-plots', action='store_false', dest='plots', help='Save some diagnostic plots')
     args = parser.parse_args()
 
-    pdf = PdfPages('lc_fits.pdf')
+    pdf = PdfPages('lc_fits.pdf', keep_empty=False)
     for filename in args.filenames:
         basename = os.path.basename(filename).split('.')[0]
         outfile = os.path.join(args.output_dir, basename + '_{}')
-        t_full = read_light_curve(filename)
-        t = select_event_data(t_full)
-        if t.meta['REDSHIFT'] <= 0. and args.require_redshift:
+        light_curve = read_light_curve(filename)
+        if light_curve.meta['REDSHIFT'] <= 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
-        max_flux = t['FLUXCAL'].max()
-        fig, axes = plt.subplots(2, 2, sharex=True)
-        fig.text(0.5, 0.95, f'{basename} ($z={t.meta["REDSHIFT"]:.3f}$)', ha='center', va='bottom', size='large')
-        traces = []
-        for fltr, ax in zip(args.filters, axes.flatten()):
-            obs = t[t['FLT'] == fltr]
-            if not len(obs):
-                logging.warning(f'No {fltr}-band points. Skipping fit.')
-                continue
-            model, parameters = setup_model(obs, max_flux)
-            outfile1 = outfile.format('1' + fltr)
-            if not os.path.exists(outfile1) or args.force:
-                logging.info(f'Starting {fltr}-band fit, first iteration')
-                trace = run_mcmc(model, args.iterations, args.tuning, args.walkers)
-                pm.save_trace(trace, outfile1, overwrite=True)
-                diagnostics(obs, trace, parameters, outfile1)
-            else:
-                trace = pm.load_trace(outfile1, model)
-                logging.info(f'Loaded {fltr}-band trace from {outfile1}')
-            traces.append(trace)
-            plot_model_lcs(obs, trace, parameters, size=10, ax=ax, fltr=fltr, ls=':')
-
-        x_priors, y_priors, prior_fig = make_new_priors(traces, parameters)
-        prior_fig.savefig(os.path.join(args.output_dir, basename + '_priors.pdf'))
-        plt.close(prior_fig)
-        logging.info('Starting second iteration of fitting')
-
-        for fltr, ax in zip(args.filters, axes.flatten()):
-            obs = t[t['FLT'] == fltr]
-            if not len(obs):
-                logging.warning(f'No {fltr}-band points. Skipping fit.')
-                continue
-            new_model, new_params = setup_new_model(obs, parameters, x_priors, y_priors)
-            outfile2 = outfile.format('2' + fltr)
-            if not os.path.exists(outfile2) or args.force or args.force_second:
-                logging.info(f'Starting {fltr}-band fit, second iteration')
-                trace = run_mcmc(new_model, args.iterations, args.tuning, args.walkers)
-                pm.save_trace(trace, outfile2, overwrite=True)
-                diagnostics(obs, trace, new_params, outfile2)
-            else:
-                logging.info(f'Loaded {fltr}-band trace from {outfile2}')
-                trace = pm.load_trace(outfile2, new_model)
-            plot_model_lcs(obs, trace, new_params, size=10, ax=ax, fltr=fltr)
-
-        fig.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
-        fig.savefig(os.path.join(args.output_dir, basename + '_final.pdf'))
-        pdf.savefig(fig)
-        plt.close(fig)
+        traces1, traces2, parameters = two_iteration_mcmc(light_curve, outfile, filters=args.filters, force=args.force,
+                                                          force_second=args.force_second, do_diagnostics=args.plots,
+                                                          iterations=args.iterations, walkers=args.walkers,
+                                                          tuning=args.tuning)
+        if args.plots:
+            fig = plot_final_fits(light_curve, traces1, traces2, parameters, outfile.format('final.pdf'), args.filters)
+            pdf.savefig(fig)
+            plt.close(fig)
     pdf.close()

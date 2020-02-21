@@ -3,6 +3,9 @@ from astropy.table import Table
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
 meta_columns = ['filename', 'type', 'MWEBV', 'redshift']
+# Default time range to use in fitting
+PHASE_MIN = -50.
+PHASE_MAX = 180.
 
 
 def read_light_curve(filename):
@@ -68,8 +71,8 @@ def cut_outliers(t, nsigma):
     return t_cut
 
 
-def select_event_data(t, phase_min=-50., phase_max=180., nsigma=None):
-    """
+def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
+    f"""
     Select data only from the period containing the peak flux, with outliers cut.
 
     Parameters
@@ -77,7 +80,8 @@ def select_event_data(t, phase_min=-50., phase_max=180., nsigma=None):
     t : astropy.table.Table
         Astropy table containing the light curve data.
     phase_min, phase_max : float, optional
-        Include only points within [`phase_min`, `phase_max`] days of SEARCH_PEAKMJD (inclusive). Default: [-50., 180.].
+        Include only points within [`phase_min`, `phase_max`) days of SEARCH_PEAKMJD.
+        Default: [{PHASE_MIN:.0f}, {PHASE_MAX:.0f}).
     nsigma : float, optional
         Determines at what value (flux < nsigma * mad_std) to reject outlier data points. Default: no rejection.
 
@@ -86,7 +90,7 @@ def select_event_data(t, phase_min=-50., phase_max=180., nsigma=None):
     t_event : astropy.table.Table
         Table containing the reduced light curve data from the period containing the peak flux.
     """
-    t_event = t[(t['PHASE'] >= phase_min) & (t['PHASE'] <= phase_max)]
+    t_event = t[(t['PHASE'] >= phase_min) & (t['PHASE'] < phase_max)]
     if nsigma is not None:
         t_event = cut_outliers(t_event, nsigma)
     return t_event

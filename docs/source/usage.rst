@@ -21,10 +21,14 @@ For more advanced use cases, you can import the module and use some version of t
 .. code-block:: python
 
     from superphot import util, extract_features, classify
+    from glob import glob
+    from os import path
 
     # Fit the model to the data. Do this for each file.
-    light_curve = util.read_light_curve('light_curve_file.dat')
-    # TODO: this is way too messy to write down, refactor it
+    for filename in glob('light_curves/*.dat'):
+        outfile = path.join('stored_models/', path.basename(filename).split('.')[0] + '_{}')
+        light_curve = util.read_light_curve(filename)  # may need to write your own parser
+        fit_model.two_iteration_mcmc(light_curve, outfile)
 
     # Extract features
     data_table = extract_features.compile_data_table('input_table.txt')

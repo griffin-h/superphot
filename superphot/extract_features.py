@@ -11,7 +11,7 @@ from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from .util import read_light_curve, select_event_data, filter_colors, meta_columns
-from .fit_model import setup_model, produce_lc, sample_posterior
+from .fit_model import setup_model1, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
@@ -45,7 +45,7 @@ def load_trace(file, trace_path='.', version='2'):
         tracefile_filter = tracefile.format(version, fltr)
         if os.path.exists(tracefile_filter):
             obs = t[t['FLT'] == fltr]
-            model, varnames = setup_model(obs, max_flux)
+            model, varnames = setup_model1(obs, max_flux)
             trace = pm.load_trace(tracefile_filter, model)
             trace_values = np.transpose([trace.get_values(var) for var in varnames])
             lst.append(trace_values)
