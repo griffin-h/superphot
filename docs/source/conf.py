@@ -54,6 +54,14 @@ plot_html_show_formats = False
 autosummary_generate = True
 numpydoc_show_class_members = False
 
+
+def autodoc_skip_member_handler(app, what, name, obj, skip, options):
+    return name in ['main', 'plot_diagnostics', 'plot_confusion_matrix_from_file'] or name.startswith('_')
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', autodoc_skip_member_handler)
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
