@@ -294,7 +294,7 @@ def setup_model2(obs, parameters, x_priors, y_priors):
 
 
 def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
-    f"""
+    """
     Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.
 
     If the MCMC has already been run, read and return the existing trace (unless `force=True`).
@@ -308,11 +308,11 @@ def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, 
     force : bool, optional
         Resample the model even if `trace_file` already exists.
     iterations : int, optional
-        The number of iterations after tuning. Default: {ITERATIONS:d}
+        The number of iterations after tuning.
     walkers : int, optional
-        The number of cores and walkers used. Default: {WALKERS:d}
+        The number of cores and walkers used.
     tuning : int, optional
-        The number of iterations used for tuning. Default: {TUNING:d}
+        The number of iterations used for tuning.
 
     Returns
     -------
@@ -384,7 +384,7 @@ def sample_posterior(trace, rand_num):
 
 def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None, phase_min=PHASE_MIN,
                    phase_max=PHASE_MAX):
-    f"""
+    """
     Plot sample light curves from a fit compared to the observations.
 
     Parameters
@@ -404,7 +404,7 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
     ls : str, optional
         Line style for the model light curves. Default: solid line.
     phase_min, phase_max : float, optional
-        Time range over which to plot the light curves. Default: [-{PHASE_MIN:.0f}, {PHASE_MAX:.0f})
+        Time range over which to plot the light curves.
     """
     x = np.arange(phase_min, phase_max)
     trace_values = np.transpose([trace.get_values(var) for var in parameters])[np.newaxis, :, :]
@@ -430,7 +430,7 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
 
 
 def plot_final_fits(t, traces1, traces2, parameters, outfile=None, filters=FILTERS):
-    f"""
+    """
     Make a four-panel plot showing sample light curves from each of the two fitting iterations compared to observations.
 
     Parameters
@@ -444,7 +444,7 @@ def plot_final_fits(t, traces1, traces2, parameters, outfile=None, filters=FILTE
     outfile : str, optional
         Filename to which to save the plot. If None, display the plot instead of saving it.
     filters : str, optional
-        Filters corresponding to the traces in `trace1` and `trace2`. Default: {FILTERS}.
+        Filters corresponding to the traces in `trace1` and `trace2`.
 
     Returns
     -------
@@ -505,7 +505,7 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
 
 def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force_second=False, do_diagnostics=True,
                        iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
-    f"""
+    """
     Fit the model to the observed light curve. Then combine the posteriors for each filter and use that as the new prior
     for a second iteration of fitting.
 
@@ -518,7 +518,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
         iteration number and filter name. Diagnostic plots will also be saved according to this pattern.
     filters : str, optional
         Light curve filters to fit. If the observed light curve does not contain one or more of these filters, the 
-        posteriors of the remaining filters will be combined and used in place of the missing ones. Default: {FILTERS}.
+        posteriors of the remaining filters will be combined and used in place of the missing ones.
     force : bool, optional
         Redo the fit (both iterations) even if results are already stored in `outfile`. Default: False.
     force_second : bool, optional
@@ -526,11 +526,11 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
     do_diagnostics : bool, optional
         Produce and save some diagnostic plots. Default: True.
     iterations : int, optional
-        The number of iterations after tuning. Default: {ITERATIONS:d}
+        The number of iterations after tuning.
     walkers : int, optional
-        The number of cores and walkers used. Default: {WALKERS:d}
+        The number of cores and walkers used.
     tuning : int, optional
-        The number of iterations used for tuning. Default: {TUNING:d}
+        The number of iterations used for tuning.
 
     Returns
     -------

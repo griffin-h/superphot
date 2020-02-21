@@ -72,7 +72,7 @@ def cut_outliers(t, nsigma):
 
 
 def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
-    f"""
+    """
     Select data only from the period containing the peak flux, with outliers cut.
 
     Parameters
@@ -81,7 +81,6 @@ def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
         Astropy table containing the light curve data.
     phase_min, phase_max : float, optional
         Include only points within [`phase_min`, `phase_max`) days of SEARCH_PEAKMJD.
-        Default: [{PHASE_MIN:.0f}, {PHASE_MAX:.0f}).
     nsigma : float, optional
         Determines at what value (flux < nsigma * mad_std) to reject outlier data points. Default: no rejection.
 
