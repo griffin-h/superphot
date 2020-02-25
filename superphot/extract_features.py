@@ -10,6 +10,7 @@ import logging
 from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
+from tqdm import trange
 from .util import read_light_curve, select_event_data, filter_colors, meta_columns, select_labeled_events
 from .fit_model import setup_model1, produce_lc, sample_posterior
 
@@ -82,7 +83,7 @@ def flux_to_luminosity(row, R_V=3.1):
     return flux2lum
 
 
-def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True, reconstruct=False):
+def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True):
     """
     Run a principal component analysis on a list of light curves and return a list of their principal components.
 
@@ -96,8 +97,6 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
         The number of principal components to calculate. Default: 6.
     whiten : bool, optional
         Whiten the input data before calculating the principal components. Default: True.
-    reconstruct : bool, optional
-        Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow). Default: False.
 
     Returns
     -------
@@ -125,8 +124,6 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     coefficients = np.array(coefficients)
     reconstructed = np.array(reconstructed)
     plot_principal_components(pcas)
-    if reconstruct:
-        plot_pca_reconstruction(light_curves, reconstructed, coefficients)
 
     return coefficients, reconstructed
 
@@ -241,7 +238,7 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None):
     """
     with PdfPages('pca_reconstruction.pdf') as pdf:
         ax = plt.axes()
-        for i in range(models.shape[1]):
+        for i in trange(models.shape[1], desc='PCA reconstruction'):
             for j, fltr in enumerate('griz'):
                 c = filter_colors[fltr]
                 ax.plot(models[j, i], color=c)
@@ -324,8 +321,10 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
             models_to_fit = good_models[:, ~t_good.mask['type']]
         else:
             models_to_fit = good_models
-        coefficients, reconstructed = get_principal_components(good_models, models_to_fit, reconstruct=reconstruct)
+        coefficients, reconstructed = get_principal_components(good_models, models_to_fit)
         logging.info('PCA finished')
+        if reconstruct:
+            plot_pca_reconstruction(good_models, reconstructed, coefficients)
         features = np.dstack([peakmags, coefficients])
     else:
         t_good, features = select_good_events(t, params_mag[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
