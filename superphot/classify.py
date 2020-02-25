@@ -7,7 +7,7 @@ from astropy.table import Table, unique
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import scale
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 import warnings
 with warnings.catch_warnings():
@@ -309,13 +309,16 @@ def main():
 
     logging.info('started classify.py')
     test_data = load_data(args.test_data)
-    test_data['features'] = scale(test_data['features'])
-    validation_data = select_labeled_events(test_data)
     if args.train_data is None:
-        train_data = validation_data
+        train_data = test_data
     else:
         train_data = load_data(args.train_data)
-        train_data = select_labeled_events(train_data)
+    train_data = select_labeled_events(train_data)
+    scaler = StandardScaler(copy=False)
+    scaler.fit_transform(train_data['features'])
+    scaler.transform(test_data['features'])
+    validation_data = select_labeled_events(test_data)
+
     clf, sampler = train_classifier(train_data, n_est=args.estimators, depth=args.max_depth, max_feat=args.max_feat,
                                     n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
     logging.info('classifier trained')
