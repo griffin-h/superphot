@@ -8,10 +8,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import scale
-from sklearn.utils import safe_indexing, check_random_state
-from imblearn.over_sampling.base import BaseOverSampler
-from imblearn.utils import Substitution, _docstring
-from imblearn.over_sampling import SMOTE
+from sklearn.utils import check_random_state
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore', FutureWarning)
+    from imblearn.over_sampling.base import BaseOverSampler
+    from imblearn.utils._docstring import Substitution, _random_state_docstring
+    from imblearn.over_sampling import SMOTE
 from .util import meta_columns, select_labeled_events
 import itertools
 from tqdm import tqdm
@@ -60,7 +63,7 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap=
 
 @Substitution(
     sampling_strategy=BaseOverSampler._sampling_strategy_docstring.replace('dict or callable', 'dict, callable or int'),
-    random_state=_docstring._random_state_docstring)
+    random_state=_random_state_docstring)
 class MultivariateGaussian(BaseOverSampler):
     """Class to perform over-sampling using a multivariate Gaussian (``numpy.random.multivariate_normal``).
 
@@ -92,12 +95,11 @@ class MultivariateGaussian(BaseOverSampler):
         y_resampled = y.copy()
 
         for class_sample, n_samples in self.sampling_strategy_.items():
-            target_class_indices = np.flatnonzero(y == class_sample)
+            X_class = X[y == class_sample]
             if self.samples_per_class is not None:
-                n_samples = self.samples_per_class - len(target_class_indices)
+                n_samples = self.samples_per_class - X_class.shape[0]
             if n_samples <= 0:
                 continue
-            X_class = safe_indexing(X, target_class_indices)
 
             mean = np.mean(X_class, axis=0)
             cov = np.cov(X_class, rowvar=False)
