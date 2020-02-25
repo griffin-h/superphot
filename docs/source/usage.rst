@@ -35,7 +35,7 @@ For more advanced use cases, you can import the module and use some version of t
     test_data = extract_features.extract_features(data_table, 'stored_models/')
 
     # Train the classifier
-    train_data = test_data[~test_data['type'].mask]
+    train_data = util.select_labeled_events(test_data)
     clf, sampler = classify.train_classifier(train_data)
 
     # Do the classification

@@ -10,7 +10,7 @@ import logging
 from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
-from .util import read_light_curve, select_event_data, filter_colors, meta_columns
+from .util import read_light_curve, select_event_data, filter_colors, meta_columns, select_labeled_events
 from .fit_model import setup_model1, produce_lc, sample_posterior
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -320,8 +320,11 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         t_good, good_models = select_good_events(t, models)
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        coefficients, reconstructed = get_principal_components(good_models, good_models[:, ~t_good['type'].mask],
-                                                               reconstruct=reconstruct)
+        if t_good.has_masked_values:
+            models_to_fit = good_models[:, ~t_good.mask['type']]
+        else:
+            models_to_fit = good_models
+        coefficients, reconstructed = get_principal_components(good_models, models_to_fit, reconstruct=reconstruct)
         logging.info('PCA finished')
         features = np.dstack([peakmags, coefficients])
     else:
@@ -329,7 +332,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
     t_good['params'] = np.moveaxis(params_mag, 1, 0)
     t_good['features'] = np.hstack(features)
 
-    train_data = t_good[~t_good['type'].mask].group_by('type')
+    train_data = select_labeled_events(t_good).group_by('type')
     plot_parameters(train_data)
     if use_pca:
         plot_features(train_data, {0, 2})
@@ -369,13 +372,13 @@ def compile_data_table(filename):
     required_cols = ['MWEBV', 'redshift']
     missing_cols = [col for col in required_cols if col not in t_input.colnames]
     if missing_cols:
-        t_meta = Table(names=required_cols, dtype=[float, float], masked=True)
+        t_meta = Table(names=required_cols, dtype=[float, float])
         for lc_file in t_input['filename']:
             t = read_light_curve(lc_file)
             t_meta.add_row([t.meta[col.upper()] for col in required_cols])
         t_final = hstack([t_input, t_meta[missing_cols]])
     else:
-        t_final = Table(t_input, masked=True)
+        t_final = t_input
     t_final = t_final[t_final['redshift'] > 0.]
     t_final['MWEBV'].format = '%.4f'
     t_final['redshift'].format = '%.4f'

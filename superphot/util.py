@@ -93,3 +93,8 @@ def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
     if nsigma is not None:
         t_event = cut_outliers(t_event, nsigma)
     return t_event
+
+
+def select_labeled_events(t, key='type'):
+    """Returns rows from a table where the column `key` is not masked."""
+    return t[~t.mask[key]] if t.has_masked_values else t.copy()

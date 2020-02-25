@@ -12,7 +12,7 @@ from sklearn.utils import safe_indexing, check_random_state
 from imblearn.over_sampling.base import BaseOverSampler
 from imblearn.utils import Substitution, _docstring
 from imblearn.over_sampling import SMOTE
-from .util import meta_columns
+from .util import meta_columns, select_labeled_events
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -233,7 +233,7 @@ def load_data(basename):
     stored = np.load(f'{basename}.npz')
     data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
     for col in data_table.colnames:
-        if isinstance(data_table[col].filled()[0], str):
+        if data_table[col].dtype.type is np.str_:
             data_table[col].fill_value = ''
     data_table['features'] = stored['features']
     logging.info(f'data loaded from {basename}.txt and {basename}.npz')
@@ -308,11 +308,12 @@ def main():
     logging.info('started classify.py')
     test_data = load_data(args.test_data)
     test_data['features'] = scale(test_data['features'])
-    validation_data = test_data[~test_data['type'].mask]
+    validation_data = select_labeled_events(test_data)
     if args.train_data is None:
         train_data = validation_data
     else:
         train_data = load_data(args.train_data)
+        train_data = select_labeled_events(train_data)
     clf, sampler = train_classifier(train_data, n_est=args.estimators, depth=args.max_depth, max_feat=args.max_feat,
                                     n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
     logging.info('classifier trained')
