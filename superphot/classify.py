@@ -222,6 +222,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
     saveto : str, optional
         Save the plot to this filename. If None, the plot is displayed and not saved.
     """
+    results = select_labeled_events(results)
     if classes is None:
         classes = np.unique(results['type'])
     predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
