@@ -247,7 +247,9 @@ def load_data(meta_file, data_file=None):
     for col in data_table.colnames:
         if data_table[col].dtype.type is np.str_:
             data_table[col].fill_value = ''
-    data_table['features'] = stored['features']
+    for key in stored:
+        if key != 'ndraws':
+            data_table[key] = stored[key]
     logging.info(f'data loaded from {meta_file} and {data_file}')
     return data_table
 

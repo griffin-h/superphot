@@ -137,7 +137,7 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     return coefficients, reconstructed
 
 
-def plot_parameters(train_data):
+def plot_parameters(train_data, saveto=None):
     """
     Plot histograms of the model parameters stored in train_data['params']. The plot will be saved to parameters.pdf.
 
@@ -145,6 +145,8 @@ def plot_parameters(train_data):
     ----------
     train_data : astropy.table.Table
         Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
+    saveto : str, optional
+        Filename to which to save the plot. If None, display the plot instead of saving it.
     """
     fig, axarr = plt.subplots(4, 6, figsize=(11, 8.5), sharex='col')
     for sntype, group in zip(train_data.groups.keys['type'], train_data.groups):
@@ -155,14 +157,16 @@ def plot_parameters(train_data):
                 axarr[i, j].hist(feature, label=sntype, range=histrange, density=True, histtype='step')
                 axarr[i, j].set_yticks([])
     axarr[0, 3].legend(loc='lower center', bbox_to_anchor=(0., 1.), ncol=5)
-    varnames = ['Amplitude (mag)', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
+    varnames = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
     for i, var in enumerate(varnames):
         axarr[-1, i].set_xlabel(var)
     for i, filt in enumerate('griz'):
         axarr[i, 0].set_ylabel(filt, rotation=0)
-    axarr[-1, 0].invert_xaxis()
     fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0., hspace=0.)
-    fig.savefig('parameters.pdf')
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
     plt.close(fig)
 
 
@@ -187,7 +191,7 @@ def plot_principal_components(pcas):
     fig.savefig('principal_components.pdf')
 
 
-def plot_features(train_data, classids_to_autoscale=None):
+def plot_features(train_data, saveto=None, classids_to_autoscale=None):
     """
     Plot histograms of the features to be used for classification. The plot will be saved to features{classids}.pdf,
     where classids is a concatenation of the integers passed in `classids_to_autoscale`.
@@ -196,6 +200,8 @@ def plot_features(train_data, classids_to_autoscale=None):
     ----------
     train_data : astropy.table.Table
         Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
+    saveto : str, optional
+        Filename to which to save the plot. If None, display the plot instead of saving it.
     classids_to_autoscale : set
         Set of classification IDs (integers corresponding to the supernova types) that the histogram axes should be
         autoscaled to. Some classes have a much wider dynamic range of features than others, making it difficult to plot
@@ -217,16 +223,16 @@ def plot_features(train_data, classids_to_autoscale=None):
             ax.autoscale(False)
             histrange = np.percentile(feature, (5, 95))
             ax.hist(feature, label=group['type'][0], range=histrange, density=True, histtype='step', color='C'+str(i))
-    axarr[0, 3].legend(loc='lower center', bbox_to_anchor=(0.5, 1.), ncol=5)
-    axarr[-1, 0].set_xlabel('Peak Magnitude')
+    axarr[0, ncols // 2].legend(loc='lower center', bbox_to_anchor=(0.5, 1.), ncol=5)
     axarr[-1, 0].invert_xaxis()
-    for i in range(1, axarr.shape[1]):
-        axarr[-1, i].set_xlabel('PC' + str(i))
     for i, filt in enumerate('griz'):
         axarr[i, 0].set_ylabel(filt, rotation=0)
         axarr[i, 0].set_yticks([])
-    fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0.)
-    fig.savefig('features{}.pdf'.format(''.join(str(i) for i in classids_to_autoscale)))
+    fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0., hspace=0.)
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
     plt.close(fig)
 
 
@@ -318,10 +324,10 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         np.savez_compressed('params.npz', params=params, ndraws=ndraws)
         logging.info(f'posteriors sampled from {stored_models}, saved to data_table.txt & params.npz')
 
-    flux2lum = np.concatenate([np.tile(flux_to_luminosity(row), (ndraws, 1)) for row in t]).T
-    params[:, :, 0] *= flux2lum
-    params_mag = params.copy()
-    params_mag[:, :, 0] = zero_point - 2.5 * np.log10(params_mag[:, :, 0])  # convert amplitude to magnitude
+    t = t[np.repeat(range(len(t)), ndraws)]
+    t.meta['ndraws'] = ndraws
+    t['params'] = np.moveaxis(params, 1, 0)
+    params[:, :, 0] *= np.vstack([flux_to_luminosity(row) for row in t]).T
     if use_pca:
         time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
@@ -338,15 +344,9 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
             plot_pca_reconstruction(good_models, reconstructed, coefficients)
         features = np.dstack([peakmags, coefficients])
     else:
-        t_good, features = select_good_events(t, params_mag[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
-    t_good['params'] = np.moveaxis(params_mag, 1, 0)
+        params[:, :, 0] = zero_point - 2.5 * np.log10(params[:, :, 0])  # convert amplitude to magnitude
+        t_good, features = select_good_events(t, params[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
     t_good['features'] = np.hstack(features)
-
-    train_data = select_labeled_events(t_good).group_by('type')
-    plot_parameters(train_data)
-    if use_pca:
-        plot_features(train_data, {0, 2})
-        plot_features(train_data, {1, 3, 4})
     return t_good
 
 
@@ -356,24 +356,25 @@ def select_good_events(t, data):
 
     Parameters
     ----------
-    t : astropy.table.Table, length=nevents
-        Original data table with one row for each event.
-    data : array-like, shape=(nfilt, nevents * ndraws, ...)
+    t : astropy.table.Table
+        Original data table. Must have `t.meta['ndraws']` to indicate now many draws it contains for each event.
+    data : array-like, shape=(nfilt, len(t), ...)
         Numpy array containing the data upon which finiteness will be judged.
 
     Returns
     -------
     t_good : astropy.table.Table
-        Data table with n rows for each good event, where n is determined by the shape of `data`.
+        Data table containing only the good events.
     good_data : array-like
         Numpy array containing only the data for good events.
     """
-    good = np.isfinite(data).all(axis=(0, 2))
-    ndraws = data.shape[1] // len(t)
-    i_good, = np.where(good.reshape(-1, ndraws).all(axis=1))
-    t_good = t[np.repeat(i_good, ndraws)]
-    t_good.meta['ndraws'] = ndraws
-    good_data = data[:, good]
+    finite_values = np.isfinite(data)
+    finite_draws = finite_values.all(axis=(0, 2))
+    events_with_finite_draws = finite_draws.reshape(-1, t.meta['ndraws'])
+    finite_events = events_with_finite_draws.all(axis=1)
+    draws_from_finite_events = np.repeat(finite_events, t.meta['ndraws'])
+    t_good = t[draws_from_finite_events]
+    good_data = data[:, draws_from_finite_events]
     return t_good, good_data
 
 
@@ -399,7 +400,7 @@ def save_data(t, basename):
     t.sort('filename')
     save_table = t[meta_columns][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
-    np.savez_compressed(f'{basename}.npz', features=t['features'], ndraws=t.meta['ndraws'])
+    np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], ndraws=t.meta['ndraws'])
     logging.info(f'data saved to {basename}.txt and {basename}.npz')
 
 
@@ -423,4 +424,8 @@ def main():
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
                                  reconstruct=args.reconstruct, stored_pcas=args.pcas)
     save_data(test_data, args.output)
+    train_data = select_labeled_events(test_data).group_by('type')
+    plot_parameters(train_data, args.output + '_parameters.pdf')
+    plot_features(train_data, args.output + '_features02.pdf', {0, 2})
+    plot_features(train_data, args.output + '_features134.pdf', {1, 3, 4})
     logging.info('finished extract_features.py')
