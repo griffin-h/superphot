@@ -3,9 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-from astropy.table import Table, unique
+from astropy.table import Table
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
@@ -113,46 +112,31 @@ class MultivariateGaussian(BaseOverSampler):
         return X_resampled, y_resampled
 
 
-def train_classifier(data, n_est=100, depth=None, max_feat=5, n_jobs=-1, sampler_type='mvg', random_state=None):
+def fit_predict(clf, sampler, train_data, test_data):
     """
-    Initialize and train a random forest classifier. Balance the classes before training by oversampling.
+    Train a random forest classifier on `train_data` and use it to classify `test_data`. Balance the classes before
+    training by oversampling.
 
     Parameters
     ----------
-    data : astropy.table.Table
-        Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
-    n_est : int, optional
-        The number of trees in the forest. Default: 100.
-    depth : int, optional
-        The maxiumum depth of a tree. If None, the tree will have all pure leaves.
-    max_feat : int, optional
-        The maximum number of features used before making a split. If None, use all features.
-    n_jobs : int, optional
-        The number of jobs to run in parallel for the classifier. If -1, use all available processors.
-    sampler_type : str, optional
-        The type of resampler to use. Current choices are 'mvg' (multivariate Gaussian; default) or 'smote' (synthetic
-        minority oversampling technique).
-    random_state : int, optional
-        A seed for the random number generators used in the classifier and resampler.
-
-    Returns
-    -------
     clf : sklearn.emsemble.RandomForestClassifier
         A random forest classifier trained from the classified transients.
     sampler : imblearn.over_sampling.base.BaseOverSampler
         A resampler used to balance the training sample.
+    train_data : astropy.table.Table
+        Astropy table containing the training data. Must have a 'features' column and a 'type' column.
+    test_data : astropy.table.Table
+        Astropy table containing the test data. Must have a 'features' column.
+
+    Returns
+    -------
+    p_class : numpy.array
+        Classification probabilities for each of the supernovae in `test_features`.
     """
-    clf = RandomForestClassifier(n_estimators=n_est, max_depth=depth, class_weight='balanced',
-                                 criterion='entropy', max_features=max_feat, n_jobs=n_jobs, random_state=random_state)
-    if sampler_type == 'mvg':
-        sampler = MultivariateGaussian(sampling_strategy=1000, random_state=random_state)
-    elif sampler_type == 'smote':
-        sampler = SMOTE(random_state=random_state)
-    else:
-        raise NotImplementedError(f'{sampler_type} is not a recognized sampler type')
-    features_resamp, labels_resamp = sampler.fit_resample(data['features'], data['type'])
+    features_resamp, labels_resamp = sampler.fit_resample(train_data['features'], train_data['type'])
     clf.fit(features_resamp, labels_resamp)
-    return clf, sampler
+    p_class = clf.predict_proba(test_data['features'])
+    return p_class
 
 
 def mean_axis0(x, axis=0):
@@ -181,10 +165,9 @@ def aggregate_probabilities(table):
     return results
 
 
-def validate_classifier(clf, sampler, data):
+def validate_classifier(clf, sampler, train_data, test_data=None):
     """
-    Validate the performance of a machine-learning classifier using leave-one-out cross-validation. The results are
-    plotted as a confusion matrix, which is saved as a PDF.
+    Validate the performance of a machine-learning classifier using leave-one-out cross-validation.
 
     Parameters
     ----------
@@ -192,18 +175,24 @@ def validate_classifier(clf, sampler, data):
         The classifier to validate.
     sampler : imblearn.over_sampling.SMOTE
         First resample the data using this sampler.
-    data : astropy.table.Table
-        Astropy table containing the training data. Must have a 'features' column and a 'label' (integers) column.
+    train_data : astropy.table.Table
+        Astropy table containing the training data. Must have a 'features' column and a 'type' column.
+    test_data : astropy.table.Table, optional
+        Astropy table containing the test data. Must have a 'features' column to which to apply the trained classifier.
+        If None, use the training data itself for validation.
+
+    Returns
+    -------
+    p_class : numpy.array
+        Classification probabilities for each of the supernovae in `test_features`.
     """
-    kf = KFold(len(unique(data, keys=meta_columns, silent=True)))
-    p_class = np.empty((len(data), len(clf.classes_)))
-    pbar = tqdm(desc='Cross-validation', total=kf.n_splits)
-    for train_index, test_index in kf.split(data):
-        features_resamp, labels_resamp = sampler.fit_resample(data['features'][train_index], data['type'][train_index])
-        clf.fit(features_resamp, labels_resamp)
-        p_class[test_index] = clf.predict_proba(data['features'][test_index])
-        pbar.update()
-    pbar.close()
+    if test_data is None:
+        test_data = train_data
+    p_class = fit_predict(clf, sampler, train_data, test_data)
+    for filename in tqdm(train_data['filename'], desc='Cross-validation'):
+        train_index = train_data['filename'] != filename
+        test_index = test_data['filename'] == filename
+        p_class[test_index] = fit_predict(clf, sampler, train_data[train_index], test_data[test_index])
     return p_class
 
 
@@ -294,16 +283,18 @@ def main():
                                              'By default, use all classified supernovae in the test data.')
     parser.add_argument('--estimators', type=int, default=100,
                         help='Number of estimators (trees) in the random forest classifier.')
+    parser.add_argument('--criterion', default='entropy', choices=['gini', 'entropy'],
+                        help='The function to measure the quality of a split in the random forest classifier.')
     parser.add_argument('--max-depth', type=int, help='Maximum depth of a tree in the random forest classifier. '
                         'By default, the tree will have all pure leaves.')
-    parser.add_argument('--max-feat', type=int, default=5,
+    parser.add_argument('--max-features', type=int, default=5,
                         help='Maximum number of features in the decision tree before making a split.')
     parser.add_argument('--jobs', type=int, default=-1, help='Number of jobs to run in parallel for the classifier. '
                         'By default, use all available processors.')
     parser.add_argument('--sampler', choices=['mvg', 'smote'], default='mvg', help='The resampling algorithm to use. '
                         'Current choices are "mvg" (multivariate Gaussian; default) or "smote" (synthetic minority '
                         'oversampling technique).')
-    parser.add_argument('--seed', type=int, help='Seed for the random number generator (use for reproducibility).')
+    parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
     parser.add_argument('--pmin', type=float, default=0.,
                         help='Minimum confidence to be included in the confusion matrix.')
     args = parser.parse_args()
@@ -320,15 +311,20 @@ def main():
     scaler.transform(test_data['features'])
     validation_data = select_labeled_events(test_data)
 
-    clf, sampler = train_classifier(train_data, n_est=args.estimators, depth=args.max_depth, max_feat=args.max_feat,
-                                    n_jobs=args.jobs, sampler_type=args.sampler, random_state=args.seed)
-    logging.info('classifier trained')
+    clf = RandomForestClassifier(n_estimators=args.estimators, criterion=args.criterion, max_depth=args.max_depth,
+                                 max_features=args.max_features, n_jobs=args.jobs, random_state=args.random_state)
+    if args.sampler == 'mvg':
+        sampler = MultivariateGaussian(sampling_strategy=1000, random_state=args.random_state)
+    elif args.sampler == 'smote':
+        sampler = SMOTE(random_state=args.random_state)
+    else:
+        raise NotImplementedError(f'{args.sampler} is not a recognized sampler type')
 
-    test_data['probabilities'] = clf.predict_proba(test_data['features'])
+    test_data['probabilities'] = fit_predict(clf, sampler, train_data, test_data)
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')
 
-    validation_data['probabilities'] = validate_classifier(clf, sampler, validation_data)
+    validation_data['probabilities'] = validate_classifier(clf, sampler, train_data, validation_data)
     write_results(validation_data, clf.classes_, 'validation_full.txt')
     results_validate = aggregate_probabilities(validation_data)
     write_results(results_validate, clf.classes_, 'validation.txt')

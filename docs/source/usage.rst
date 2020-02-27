@@ -33,13 +33,14 @@ For more advanced use cases, you can import the module and use some version of t
     # Extract features
     data_table = extract_features.compile_data_table('input_table.txt')
     test_data = extract_features.extract_features(data_table, 'stored_models/')
-
-    # Train the classifier
     train_data = util.select_labeled_events(test_data)
-    clf, sampler = classify.train_classifier(train_data)
+
+    # Initialize the classifier and resampler (can adjust hyperparameters here)
+    clf = classify.RandomForestClassifier(criterion='entropy', max_features=5)
+    sampler = classify.MultivariateGaussian(sampling_strategy=1000)
 
     # Do the classification
-    test_data['probabilities'] = clf.predict_proba(test_data['features'])
+    test_data['probabilities'] = classify.fit_predict(clf, sampler, train_data, test_data)
     results = classify.aggregate_probabilities(test_data)
 
     # Validate the classifier
