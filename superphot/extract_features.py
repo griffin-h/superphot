@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA
 from tqdm import trange
 from .util import read_light_curve, select_event_data, filter_colors, meta_columns, select_labeled_events
 from .fit_model import setup_model1, produce_lc, sample_posterior
+import pickle
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
@@ -83,7 +84,7 @@ def flux_to_luminosity(row, R_V=3.1):
     return flux2lum
 
 
-def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True):
+def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True, stored_pcas=None):
     """
     Run a principal component analysis on a list of light curves and return a list of their principal components.
 
@@ -97,6 +98,8 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
         The number of principal components to calculate. Default: 6.
     whiten : bool, optional
         Whiten the input data before calculating the principal components. Default: True.
+    stored_pcas : str, optional
+        Path to pickled PCA objects. Default: create and fit new PCA objects.
 
     Returns
     -------
@@ -106,15 +109,18 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     if light_curves_fit is None:
         light_curves_fit = light_curves
 
-    pcas = []
+    if stored_pcas is None:
+        pcas = [PCA(n_components, whiten=whiten) for _ in light_curves_fit]
+    else:
+        with open(stored_pcas, 'rb') as f:
+            pcas = pickle.load(f)
     reconstructed = []
     coefficients = []
 
-    for lc_filter, lc_filter_fit in zip(light_curves, light_curves_fit):
-        pca = PCA(n_components, whiten=whiten)
-        pcas.append(pca)
-
-        coeffs_fit = pca.fit_transform(lc_filter_fit)
+    for lc_filter, lc_filter_fit, pca in zip(light_curves, light_curves_fit, pcas):
+        if stored_pcas is None:
+            pca.fit(lc_filter_fit)
+        coeffs_fit = pca.transform(lc_filter_fit)
         reconst = pca.inverse_transform(coeffs_fit)
         reconstructed.append(reconst)
 
@@ -124,6 +130,9 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     coefficients = np.array(coefficients)
     reconstructed = np.array(reconstructed)
     plot_principal_components(pcas)
+    if stored_pcas is None:
+        with open('pca.pickle', 'wb') as f:
+            pickle.dump(pcas, f)
 
     return coefficients, reconstructed
 
@@ -250,7 +259,7 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None):
             ax.clear()
 
 
-def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True, reconstruct=False):
+def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True, reconstruct=False, stored_pcas=None):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -271,6 +280,8 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         Otherwise, use the model parameters directly.
     reconstruct : bool, optional
         Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow). Default: False.
+    stored_pcas : str, optional
+        Path to pickled PCA objects. Default: create and fit new PCA objects.
 
     Returns
     -------
@@ -321,7 +332,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
             models_to_fit = good_models[:, ~t_good.mask['type']]
         else:
             models_to_fit = good_models
-        coefficients, reconstructed = get_principal_components(good_models, models_to_fit)
+        coefficients, reconstructed = get_principal_components(good_models, models_to_fit, stored_pcas=stored_pcas)
         logging.info('PCA finished')
         if reconstruct:
             plot_pca_reconstruction(good_models, reconstructed, coefficients)
@@ -399,6 +410,7 @@ def main():
                                               'or Numpy file containing stored model parameters/LCs')
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
                                                                ' Set to 0 to use the mean of the LC parameters.')
+    parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
                         help='Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow)')
@@ -409,6 +421,6 @@ def main():
     logging.info('started extract_features.py')
     data_table = compile_data_table(args.input_table)
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
-                                 reconstruct=args.reconstruct)
+                                 reconstruct=args.reconstruct, stored_pcas=args.pcas)
     save_data(test_data, args.output)
     logging.info('finished extract_features.py')
