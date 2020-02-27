@@ -220,15 +220,35 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
     plot_confusion_matrix(cnf_matrix, classes, filename=saveto)
 
 
-def load_data(basename):
-    t = Table.read(f'{basename}.txt', format='ascii', fill_values=('', ''))
-    stored = np.load(f'{basename}.npz')
+def load_data(meta_file, data_file=None):
+    """
+    Read input from a text file (the metadata table) and a Numpy file (the features) and return as an Astropy table.
+
+    Parameters
+    ----------
+    meta_file : str
+        Filename of the input metadata table. Must in an ASCII format readable by Astropy.
+    data_file : str, optional
+        Filename where the features are saved. Must be in Numpy binary format. If None, replace the extension of
+        `meta_file` with .npz.
+
+    Returns
+    -------
+    data_table : astropy.table.Table
+        Table containing the metadata along with a 'features' column.
+    """
+    if data_file is None:
+        meta_file_parts = meta_file.split('.')
+        meta_file_parts[-1] = 'npz'
+        data_file = '.'.join(meta_file_parts)
+    t = Table.read(meta_file, format='ascii', fill_values=('', ''))
+    stored = np.load(data_file)
     data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
     for col in data_table.colnames:
         if data_table[col].dtype.type is np.str_:
             data_table[col].fill_value = ''
     data_table['features'] = stored['features']
-    logging.info(f'data loaded from {basename}.txt and {basename}.npz')
+    logging.info(f'data loaded from {meta_file} and {data_file}')
     return data_table
 
 
@@ -278,8 +298,8 @@ def plot_confusion_matrix_from_file():
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('test_data', help='Filename (without extension) of the test data table and features.')
-    parser.add_argument('--train-data', help='Filename (without extension) of the training data and features.'
+    parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
+    parser.add_argument('--train-data', help='Filename of the metadata table for the training set.'
                                              'By default, use all classified supernovae in the test data.')
     parser.add_argument('--estimators', type=int, default=100,
                         help='Number of estimators (trees) in the random forest classifier.')
