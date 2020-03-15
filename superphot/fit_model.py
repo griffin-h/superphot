@@ -482,7 +482,7 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
     show : bool, optional
         If True, show the plots instead of saving them.
     """
-    f1 = pm.traceplot(trace, textsize=6, figsize=(6., 7.)).flat[0].get_figure()
+    f1 = pm.traceplot(trace, figsize=(6., 7.)).flat[0].get_figure()
     f2 = pm.pairplot(trace, kind='hexbin', textsize=6, figsize=(6., 6.)).flat[0].get_figure()
     f3 = pm.plot_posterior(trace, textsize=6, figsize=(6., 4.)).flat[0].get_figure()
     summary = pm.summary(trace)
