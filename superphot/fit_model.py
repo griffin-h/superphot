@@ -158,9 +158,9 @@ def setup_model1(obs, max_flux=None):
     model : pymc3.Model
         PyMC3 model object for the input data. Use this to run the MCMC.
     """
-    obs_time = obs['PHASE'].filled().data
-    obs_flux = obs['FLUXCAL'].filled().data
-    obs_unc = obs['FLUXCALERR'].filled().data
+    obs_time = obs['PHASE'].data
+    obs_flux = obs['FLUXCAL'].data
+    obs_unc = obs['FLUXCALERR'].data
     if max_flux is None:
         max_flux = obs_flux.max()
     if max_flux <= 0.01:
@@ -275,9 +275,9 @@ def setup_model2(obs, parameters, x_priors, y_priors):
     model : pymc3.Model
         PyMC3 model object for the input data. Use this to run the MCMC.
     """
-    obs_time = obs['PHASE'].filled().data
-    obs_flux = obs['FLUXCAL'].filled().data
-    obs_unc = obs['FLUXCALERR'].filled().data
+    obs_time = obs['PHASE'].data
+    obs_flux = obs['FLUXCAL'].data
+    obs_unc = obs['FLUXCALERR'].data
 
     with pm.Model() as model:
         new_params = []
