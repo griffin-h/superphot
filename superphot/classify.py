@@ -24,16 +24,38 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
 
-def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap='Blues', filename=None):
+def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', purity=False, title=None,
+                          xlabel='Predicted Label', ylabel='True Label'):
     """
-    This function prints and plots the confusion matrix.
-    From tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+    Plot a confusion matrix with each cell labeled by its fraction and absolute number.
+
+    Based on tutorial: https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+
+    Parameters
+    ----------
+    confusion_matrix : array-like
+        The confusion matrix as a square array of integers.
+    classes : list
+        List of class labels for the axes of the confusion matrix.
+    ndraws : int, optional
+        If `ndraws > 0`, divide each cell in the matrix by `ndraws` before plotting and note this in the title.
+    cmap : str, optional
+        Name of a Matplotlib colormap to color the matrix.
+    purity : bool, optional
+        If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
+    title : str, optional
+        Text to go above the plot. Default: "Confusion Matrix ($N = `confusion_matrix.sum()`$)".
+    xlabel, ylabel : str, optional
+        Labels for the x- and y-axes. Default: "True Label" and "Predicted Label".
     """
     if ndraws:
         confusion_matrix = confusion_matrix / ndraws
-    n_per_class = confusion_matrix.sum(axis=1)
-    cm = confusion_matrix / n_per_class[:, np.newaxis]
-    plt.figure(figsize=(6., 6.))
+    n_per_true_class = confusion_matrix.sum(axis=1)
+    n_per_pred_class = confusion_matrix.sum(axis=0)
+    if purity:
+        cm = confusion_matrix / n_per_pred_class[np.newaxis, :]
+    else:
+        cm = confusion_matrix / n_per_true_class[:, np.newaxis]
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
     if title is not None:
         plt.title(title)
@@ -41,10 +63,10 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap=
         plt.title('Confusion Matrix ($N={:.0f}\\times{:d}$)'.format(confusion_matrix.sum(), ndraws))
     else:
         plt.title('Confusion Matrix ($N={:d}$)'.format(confusion_matrix.sum()))
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_class)])
-    plt.ylim(4.5, -0.5)
+    nclasses = len(classes)
+    plt.xticks(range(nclasses), ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_pred_class)])
+    plt.yticks(range(nclasses), ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_true_class)])
+    plt.ylim(nclasses - 0.5, -0.5)
 
     thresh = cm.max() / 2.
     cell_label = '{:.2f}\n({:.1f})' if ndraws > 1 else '{:.2f}\n({:.0f})'
@@ -53,13 +75,9 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, title=None, cmap=
                  horizontalalignment="center", verticalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.tight_layout()
-    if filename is None:
-        plt.show()
-    else:
-        plt.savefig(filename)
 
 
 @Substitution(
@@ -198,7 +216,7 @@ def validate_classifier(clf, sampler, train_data, test_data=None):
     return p_class
 
 
-def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
+def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=False):
     """
     Given a data table with classification probabilities, calculate and plot the confusion matrix.
 
@@ -212,6 +230,8 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
         Minimum confidence to be included in the confusion matrix. Default: include all samples.
     saveto : str, optional
         Save the plot to this filename. If None, the plot is displayed and not saved.
+    purity : bool, optional
+        If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
     """
     results = select_labeled_events(results)
     if classes is None:
@@ -219,7 +239,12 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None):
     predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
     include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
-    plot_confusion_matrix(cnf_matrix, classes, filename=saveto)
+    fig = plt.figure(figsize=(len(classes) + 1., len(classes) + 1.))
+    plot_confusion_matrix(cnf_matrix, classes, purity=purity, title='Purity' if purity else 'Completeness')
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
 
 
 def load_data(meta_file, data_file=None):
@@ -294,10 +319,11 @@ def plot_confusion_matrix_from_file():
     parser.add_argument('--pmin', type=float, default=0.,
                         help='Minimum confidence to be included in the confusion matrix.')
     parser.add_argument('--saveto', type=str, help='If provided, save the confusion matrix to this file.')
+    parser.add_argument('--purity', action='store_true', help='Aggregate by column instead of by row.')
     args = parser.parse_args()
 
     results = load_results(args.filename)
-    make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto)
+    make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto, purity=args.purity)
 
 
 def main():
