@@ -1,4 +1,8 @@
 astropy
+matplotlib
+numpy
+scipy
+theano
 pymc3
 scikit-learn
 imbalanced-learn
