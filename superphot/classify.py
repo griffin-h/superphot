@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import logging
 from astropy.table import Table
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
@@ -303,16 +305,9 @@ def main():
     parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
     parser.add_argument('--train-data', help='Filename of the metadata table for the training set.'
                                              'By default, use all classified supernovae in the test data.')
-    parser.add_argument('--estimators', type=int, default=100,
-                        help='Number of estimators (trees) in the random forest classifier.')
-    parser.add_argument('--criterion', default='entropy', choices=['gini', 'entropy'],
-                        help='The function to measure the quality of a split in the random forest classifier.')
-    parser.add_argument('--max-depth', type=int, help='Maximum depth of a tree in the random forest classifier. '
-                        'By default, the tree will have all pure leaves.')
-    parser.add_argument('--max-features', type=int, default=5,
-                        help='Maximum number of features in the decision tree before making a split.')
-    parser.add_argument('--jobs', type=int, default=-1, help='Number of jobs to run in parallel for the classifier. '
-                        'By default, use all available processors.')
+    parser.add_argument('--classifier', choices=['rf', 'svm', 'mlp'], default='rf', help='The classification algorithm '
+                        'to use. Current choices are "rf" (random forest; default), "svm" (support vector machine), or '
+                        '"mlp" (multilayer perceptron).')
     parser.add_argument('--sampler', choices=['mvg', 'smote'], default='mvg', help='The resampling algorithm to use. '
                         'Current choices are "mvg" (multivariate Gaussian; default) or "smote" (synthetic minority '
                         'oversampling technique).')
@@ -333,8 +328,15 @@ def main():
     scaler.transform(test_data['features'])
     validation_data = select_labeled_events(test_data)
 
-    clf = RandomForestClassifier(n_estimators=args.estimators, criterion=args.criterion, max_depth=args.max_depth,
-                                 max_features=args.max_features, n_jobs=args.jobs, random_state=args.random_state)
+    if args.classifier == 'rf':
+        clf = RandomForestClassifier(criterion='entropy', max_features=5, n_jobs=-1, random_state=args.random_state)
+    elif args.classifier == 'svm':
+        clf = SVC(C=1000, gamma=0.1, probability=True, random_state=args.random_state)
+    elif args.classifier == 'mlp':
+        clf = MLPClassifier(hidden_layer_sizes=(10, 5), alpha=1e-5, early_stopping=True, random_state=args.random_state)
+    else:
+        raise NotImplementedError(f'{args.classifier} is not a recognized classifier type')
+
     if args.sampler == 'mvg':
         sampler = MultivariateGaussian(sampling_strategy=1000, random_state=args.random_state)
     elif args.sampler == 'smote':
