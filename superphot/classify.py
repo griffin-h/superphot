@@ -20,6 +20,7 @@ from .util import meta_columns, select_labeled_events
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
+from superphot.extract_features import plot_histograms
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
@@ -282,7 +283,9 @@ def load_data(meta_file, data_file=None):
         if data_table[col].dtype.type is np.str_:
             data_table[col].fill_value = ''
     for key in stored:
-        if key != 'ndraws':
+        if key in ['ndraws', 'paramnames', 'featnames']:
+            data_table.meta[key] = stored[key]
+        else:
             data_table[key] = stored[key]
     logging.info(f'data loaded from {meta_file} and {data_file}')
     return data_table
@@ -351,6 +354,7 @@ def main():
 
     logging.info('started classify.py')
     test_data = load_data(args.test_data)
+    test_data['feats'] = test_data['features'].reshape(*test_data['params'].shape[:2], -1)  # unscaled features for plot
     if args.train_data is None:
         train_data = test_data
     else:
@@ -378,6 +382,12 @@ def main():
         raise NotImplementedError(f'{args.sampler} is not a recognized sampler type')
 
     test_data['probabilities'] = fit_predict(clf, sampler, train_data, test_data)
+    test_data['prediction'] = clf.classes_[test_data['probabilities'].argmax(axis=1)]
+    plot_histograms(test_data, 'params', 'prediction', varnames=test_data.meta['paramnames'],
+                    saveto='phot_class_parameters.pdf')
+    plot_histograms(test_data, 'feats', 'prediction', varnames=test_data.meta['featnames'],
+                    no_autoscale=['SLSN', 'SNIIn'], saveto='phot_class_features.pdf')
+
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')
 

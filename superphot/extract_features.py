@@ -129,40 +129,72 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
 
     coefficients = np.array(coefficients)
     reconstructed = np.array(reconstructed)
-    plot_principal_components(pcas)
+
     if stored_pcas is None:
         with open('pca.pickle', 'wb') as f:
             pickle.dump(pcas, f)
 
-    return coefficients, reconstructed
+    return coefficients, reconstructed, pcas
 
 
-def plot_parameters(train_data, saveto=None):
+def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames='griz', no_autoscale=(), saveto=None):
     """
-    Plot histograms of the model parameters stored in train_data['params']. The plot will be saved to parameters.pdf.
+    Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.
 
     Parameters
     ----------
-    train_data : astropy.table.Table
-        Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
+    data_table : astropy.table.Table
+        Data table containing the columns `colname` and `groupby` for each supernova.
+    colname : str
+        Column name of `data_table` to plot (e.g., 'params' or 'features').
+    class_kwd : str, optional
+        Column name of `data_table` to group by before plotting (e.g., 'type' or 'prediction'). Default: 'type'.
+    varnames : iterable, optional
+        Parameter names to list on the x-axes of the plot. Default: no labels.
+    rownames : iterable, optional
+        Labels for the leftmost y-axes. Default: 'g', 'r', 'i', 'z'.
+    no_autoscale : tuple or list, optional
+        Class names not to use in calculating the axis limits. Default: include all.
     saveto : str, optional
-        Filename to which to save the plot. If None, display the plot instead of saving it.
+        Filename to which to save the plot. Default: display the plot instead of saving it.
     """
-    fig, axarr = plt.subplots(4, 6, figsize=(11, 8.5), sharex='col')
-    for sntype, group in zip(train_data.groups.keys['type'], train_data.groups):
-        for i in range(4):
-            for j in range(6):
-                feature = group['params'][:, i, j]
-                histrange = np.percentile(feature, (5, 95))
-                axarr[i, j].hist(feature, label=sntype, range=histrange, density=True, histtype='step')
-                axarr[i, j].set_yticks([])
-    axarr[0, 3].legend(loc='lower center', bbox_to_anchor=(0., 1.), ncol=5)
-    varnames = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
-    for i, var in enumerate(varnames):
-        axarr[-1, i].set_xlabel(var)
-    for i, filt in enumerate('griz'):
-        axarr[i, 0].set_ylabel(filt, rotation=0)
-    fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0., hspace=0.)
+    _, nrows, ncols = data_table[colname].shape
+    if class_kwd:
+        data_table = select_labeled_events(data_table, key=class_kwd).group_by(class_kwd)
+        data_table.groups.keys['patch'] = None
+    else:
+        data_table = data_table.group_by(np.ones(len(data_table)))
+    ngroups = len(data_table.groups)
+    fig, axarr = plt.subplots(nrows, ncols, sharex='col')
+    for j in range(ncols):
+        xlims = []
+        for i in range(nrows):
+            ylims = []
+            for k in range(ngroups):
+                histdata = data_table.groups[k][colname][:, i, j]
+                histrange = np.percentile(histdata, (5., 95.))
+                n, b, p = axarr[i, j].hist(histdata, range=histrange, density=True, histtype='step')
+                if class_kwd:
+                    data_table.groups.keys['patch'][k] = p[0]
+                if not class_kwd or data_table.groups.keys[class_kwd][k] not in no_autoscale:
+                    xlims.append(b)
+                    ylims.append(n)
+            axarr[i, j].set_ylim(0., 1.05 * np.max(ylims))
+            axarr[i, j].set_yticks([])
+        xmin, xmax = np.percentile(xlims, (0., 100.))
+        axarr[-1, j].set_xlim(1.05 * xmin - 0.05 * xmax, 1.05 * xmax - 0.05 * xmin)
+        axarr[-1, j].xaxis.set_major_locator(plt.MaxNLocator(2))
+    if class_kwd:
+        fig.legend(data_table.groups.keys['patch'], data_table.groups.keys[class_kwd], loc='upper center', ncol=ngroups,
+                   title={'type': 'Spectroscopic Class', 'prediction': 'Photometric Class'}.get(class_kwd, class_kwd))
+    for ax, var in zip(axarr[-1], varnames):
+        ax.set_xlabel(var, size='small')
+        ax.tick_params(labelsize='small')
+        if 'mag' in var.lower():
+            ax.invert_xaxis()
+    for ax, filt in zip(axarr[:, 0], rownames):
+        ax.set_ylabel(filt, rotation=0, va='center')
+    fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.9 if class_kwd else 1.))
     if saveto is None:
         plt.show()
     else:
@@ -170,7 +202,7 @@ def plot_parameters(train_data, saveto=None):
     plt.close(fig)
 
 
-def plot_principal_components(pcas):
+def plot_principal_components(pcas, time=None):
     """
     Plot the principal components being used to extract features from the model light curves. The plot will be saved to
     principal_components.pdf.
@@ -179,61 +211,25 @@ def plot_principal_components(pcas):
     ----------
     pcas : list
         List of the PCA objects for each filter, after fitting.
+    time : array-like, optional
+        Times (x-values) to plot the principal components against.
     """
     nrows = int(pcas[0].n_components ** 0.5)
     ncols = int(np.ceil(pcas[0].n_components / nrows))
     fig, axes = plt.subplots(nrows, ncols, sharex=True)
+    if time is None:
+        time = np.arange(pcas[0].n_features_)
+    else:
+        for ax in axes[-1]:
+            ax.set_xlabel('Phase')
+    lines = []
     for pca, fltr in zip(pcas, 'griz'):
         for pc, ax in zip(pca.components_, axes.flatten()):
-            ax.plot(pc, color=filter_colors[fltr], label=fltr)
-    axes[0, 0].legend()
-    fig.tight_layout()
+            p = ax.plot(time, pc, color=filter_colors[fltr], label=fltr)
+        lines += p
+    fig.legend(lines, 'griz', ncol=4, loc='upper center')
+    fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.95))
     fig.savefig('principal_components.pdf')
-
-
-def plot_features(train_data, saveto=None, classids_to_autoscale=None):
-    """
-    Plot histograms of the features to be used for classification. The plot will be saved to features{classids}.pdf,
-    where classids is a concatenation of the integers passed in `classids_to_autoscale`.
-
-    Parameters
-    ----------
-    train_data : astropy.table.Table
-        Data table containing the columns 'type' and 'params' for each supernova. Must have been grouped by 'type'.
-    saveto : str, optional
-        Filename to which to save the plot. If None, display the plot instead of saving it.
-    classids_to_autoscale : set
-        Set of classification IDs (integers corresponding to the supernova types) that the histogram axes should be
-        autoscaled to. Some classes have a much wider dynamic range of features than others, making it difficult to plot
-        all histograms on the same axes.
-    """
-    if classids_to_autoscale is None:
-        classids_to_autoscale = set(range(len(train_data.groups)))
-    ncols = int(np.ceil(train_data['features'].shape[1] / 4))
-    fig, axarr = plt.subplots(4, ncols, figsize=(11, 8.5), sharex='col')
-    for i in classids_to_autoscale:
-        group = train_data.groups[i]
-        for ax, feature in zip(axarr.flatten(), group['features'].T):
-            histrange = np.percentile(feature, (5, 95))
-            ax.hist(feature, label=group['type'][0], range=histrange, density=True, histtype='step', color='C'+str(i))
-            ax.set_yticks([])
-    for i in set(range(len(train_data.groups))) - set(classids_to_autoscale):
-        group = train_data.groups[i]
-        for ax, feature in zip(axarr.flatten(), group['features'].T):
-            ax.autoscale(False)
-            histrange = np.percentile(feature, (5, 95))
-            ax.hist(feature, label=group['type'][0], range=histrange, density=True, histtype='step', color='C'+str(i))
-    axarr[0, ncols // 2].legend(loc='lower center', bbox_to_anchor=(0.5, 1.), ncol=5)
-    axarr[-1, 0].invert_xaxis()
-    for i, filt in enumerate('griz'):
-        axarr[i, 0].set_ylabel(filt, rotation=0)
-        axarr[i, 0].set_yticks([])
-    fig.subplots_adjust(left=0.03, right=0.99, bottom=0.08, top=0.95, wspace=0., hspace=0.)
-    if saveto is None:
-        plt.show()
-    else:
-        fig.savefig(saveto)
-    plt.close(fig)
 
 
 def plot_pca_reconstruction(models, reconstructed, coefficients=None):
@@ -301,7 +297,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         ndraws = stored.get('ndraws', ndraws)
 
     if 'params' in stored:
-        params = stored['params']
+        params = np.moveaxis(stored['params'], 0, 1)
         logging.info(f'parameters read from {stored_models}')
     else:
         params = []
@@ -327,6 +323,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
     t = t[np.repeat(range(len(t)), ndraws)]
     t.meta['ndraws'] = ndraws
     t['params'] = np.moveaxis(params, 1, 0)
+    t.meta['paramnames'] = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
     params[:, :, 0] *= np.vstack([flux_to_luminosity(row) for row in t]).T
     if use_pca:
         time = np.linspace(0., 300., 1000)
@@ -338,14 +335,18 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
             models_to_fit = good_models[:, ~t_good.mask['type']]
         else:
             models_to_fit = good_models
-        coefficients, reconstructed = get_principal_components(good_models, models_to_fit, stored_pcas=stored_pcas)
+        coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
+                                                                     stored_pcas=stored_pcas)
+        plot_principal_components(pcas, time)
         logging.info('PCA finished')
         if reconstruct:
             plot_pca_reconstruction(good_models, reconstructed, coefficients)
         features = np.dstack([peakmags, coefficients])
+        t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
         params[:, :, 0] = zero_point - 2.5 * np.log10(params[:, :, 0])  # convert amplitude to magnitude
         t_good, features = select_good_events(t, params[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
+        t_good.meta['featnames'] = ['Amplitude (mag)', 'Plateau Slope', 'Plateau Duration', 'Rise Time', 'Fall Time']
     t_good['features'] = np.hstack(features)
     return t_good
 
@@ -400,7 +401,8 @@ def save_data(t, basename):
     t.sort('filename')
     save_table = t[meta_columns][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
-    np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], ndraws=t.meta['ndraws'])
+    np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], ndraws=t.meta['ndraws'],
+                        paramnames=t.meta['paramnames'], featnames=t.meta['featnames'])
     logging.info(f'data saved to {basename}.txt and {basename}.npz')
 
 
@@ -424,8 +426,8 @@ def main():
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
                                  reconstruct=args.reconstruct, stored_pcas=args.pcas)
     save_data(test_data, args.output)
-    train_data = select_labeled_events(test_data).group_by('type')
-    plot_parameters(train_data, args.output + '_parameters.pdf')
-    plot_features(train_data, args.output + '_features02.pdf', {0, 2})
-    plot_features(train_data, args.output + '_features134.pdf', {1, 3, 4})
+    test_data['feats'] = test_data['features'].reshape(*test_data['params'].shape[:2], -1)
+    plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], saveto=args.output + '_parameters.pdf')
+    plot_histograms(test_data, 'feats', varnames=test_data.meta['featnames'],
+                    no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
     logging.info('finished extract_features.py')
