@@ -247,6 +247,7 @@ def plot_priors(x_priors, y_priors, old_posteriors, parameters, saveto=None):
             ax.plot(x, y_filt, color=filter_colors[flt], lw=1, ls=':')
         ax.plot(x, y_comb, color='gray')
         ax.set_xlabel(param.name)
+        ax.set_yticks([])
     fig.tight_layout()
     if saveto:
         fig.savefig(saveto)
@@ -413,11 +414,9 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
     if ax is None:
         ax = plt.axes()
     color = filter_colors.get(fltr)
-    ax.plot(x, y, 'k', alpha=0.1, color=color, ls=ls)
+    ax.plot(x, y, 'k', alpha=0.2, color=color, ls=ls)
     ax.errorbar(obs['PHASE'], obs['FLUXCAL'], obs['FLUXCALERR'], fmt='o', color=color)
-    ax.set_xlabel('Phase')
-    ax.set_ylabel('Flux')
-    ax.set_xlim(phase_min, phase_max)
+    ax.set_xlim(phase_min - 9., phase_max + 9.)
     if fltr:
         ax.text(0.95, 0.95, fltr, transform=ax.transAxes, ha='right', va='top')
 
@@ -458,7 +457,13 @@ def plot_final_fits(t, traces1, traces2, parameters, outfile=None, filters=FILTE
         obs = t[t['FLT'] == fltr]
         plot_model_lcs(obs, trace1, parameters, size=10, ax=ax, fltr=fltr, ls=':')
         plot_model_lcs(obs, trace2, parameters, size=10, ax=ax, fltr=fltr)
-    fig.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.95))
+        ax.set_ylabel('Flux')
+    for ax in axes[-1]:
+        ax.set_xlabel('Phase')
+    for ax in axes[:, -1]:
+        ax.yaxis.set_ticks_position('right')
+        ax.yaxis.set_label_position('right')
+    fig.tight_layout(w_pad=0, h_pad=0, rect=(0, 0, 1, 0.97))
     if outfile:
         fig.savefig(outfile)
     else:
@@ -547,7 +552,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
             logging.warning(f'No {fltr}-band points. Skipping fit.')
             continue
         model1, parameters1 = setup_model1(obs, t['FLUXCAL'].max())
-        outfile1 = outfile.format('1' + fltr)
+        outfile1 = outfile.format('_1' + fltr)
         trace1 = sample_or_load_trace(model1, outfile1, force, iterations, walkers, tuning)
         traces1.append(trace1)
         if do_diagnostics:
@@ -555,7 +560,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
 
     x_priors, y_priors, old_posteriors = make_new_priors(traces1, parameters1)
     if do_diagnostics:
-        plot_priors(x_priors, y_priors, old_posteriors, parameters1, outfile.format('priors.pdf'))
+        plot_priors(x_priors, y_priors, old_posteriors, parameters1, outfile.format('_priors.pdf'))
     logging.info('Starting second iteration of fitting')
 
     traces2 = []
@@ -565,7 +570,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
             logging.warning(f'No {fltr}-band points. Skipping fit.')
             continue
         model2, parameters2 = setup_model2(obs, parameters1, x_priors, y_priors)
-        outfile2 = outfile.format('2' + fltr)
+        outfile2 = outfile.format('_2' + fltr)
         trace2 = sample_or_load_trace(model2, outfile2, force or force_second, iterations, walkers, tuning)
         traces2.append(trace2)
         if do_diagnostics:
@@ -611,7 +616,7 @@ def main():
     pdf = PdfPages('lc_fits.pdf', keep_empty=False)
     for filename in args.filenames:
         basename = os.path.basename(filename).split('.')[0]
-        outfile = os.path.join(args.output_dir, basename + '_{}')
+        outfile = os.path.join(args.output_dir, basename + '{}')
         light_curve = read_light_curve(filename)
         if light_curve.meta['REDSHIFT'] <= 0. and args.require_redshift:
             raise ValueError('Skipping file with no redshift ' + filename)
@@ -620,7 +625,7 @@ def main():
                                                           iterations=args.iterations, walkers=args.walkers,
                                                           tuning=args.tuning)
         if args.plots:
-            fig = plot_final_fits(light_curve, traces1, traces2, parameters, outfile.format('final.pdf'), args.filters)
+            fig = plot_final_fits(light_curve, traces1, traces2, parameters, outfile.format('.pdf'), args.filters)
             pdf.savefig(fig)
             plt.close(fig)
     pdf.close()

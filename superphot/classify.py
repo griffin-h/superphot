@@ -25,7 +25,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S
 
 
 def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', purity=False, title=None,
-                          xlabel='Predicted Label', ylabel='True Label'):
+                          xlabel='Predicted Label', ylabel='True Label', ax=None):
     """
     Plot a confusion matrix with each cell labeled by its fraction and absolute number.
 
@@ -47,6 +47,8 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', pur
         Text to go above the plot. Default: "Confusion Matrix ($N = `confusion_matrix.sum()`$)".
     xlabel, ylabel : str, optional
         Labels for the x- and y-axes. Default: "True Label" and "Predicted Label".
+    ax : matplotlib.pyplot.axes, optional
+        Axis on which to plot the confusion matrix. Default: new axis.
     """
     if ndraws:
         confusion_matrix = confusion_matrix / ndraws
@@ -56,28 +58,32 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', pur
         cm = confusion_matrix / n_per_pred_class[np.newaxis, :]
     else:
         cm = confusion_matrix / n_per_true_class[:, np.newaxis]
-    plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
+    if ax is None:
+        ax = plt.axes()
+    ax.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
     if title is not None:
-        plt.title(title)
+        ax.set_title(title)
     elif ndraws:
-        plt.title('Confusion Matrix ($N={:.0f}\\times{:d}$)'.format(confusion_matrix.sum(), ndraws))
+        ax.set_title('Confusion Matrix ($N={:.0f}\\times{:d}$)'.format(confusion_matrix.sum(), ndraws))
     else:
-        plt.title('Confusion Matrix ($N={:d}$)'.format(confusion_matrix.sum()))
+        ax.set_title('Confusion Matrix ($N={:d}$)'.format(confusion_matrix.sum()))
     nclasses = len(classes)
-    plt.xticks(range(nclasses), ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_pred_class)])
-    plt.yticks(range(nclasses), ['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_true_class)])
-    plt.ylim(nclasses - 0.5, -0.5)
+    ax.set_xticks(range(nclasses))
+    ax.set_yticks(range(nclasses))
+    ax.set_xticklabels(['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_pred_class)])
+    ax.set_yticklabels(['{}\n({:.0f})'.format(label, n) for label, n in zip(classes, n_per_true_class)])
+    ax.set_xticks([], minor=True)
+    ax.set_yticks([], minor=True)
+    ax.set_ylim(nclasses - 0.5, -0.5)
 
     thresh = cm.max() / 2.
     cell_label = '{:.2f}\n({:.1f})' if ndraws > 1 else '{:.2f}\n({:.0f})'
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, cell_label.format(cm[i, j], confusion_matrix[i, j]),
-                 horizontalalignment="center", verticalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+        ax.text(j, i, cell_label.format(cm[i, j], confusion_matrix[i, j]), ha="center", va="center",
+                color="white" if cm[i, j] > thresh else "black")
 
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.tight_layout()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
 
 @Substitution(
@@ -241,6 +247,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
     fig = plt.figure(figsize=(len(classes) + 1., len(classes) + 1.))
     plot_confusion_matrix(cnf_matrix, classes, purity=purity, title='Purity' if purity else 'Completeness')
+    fig.tight_layout()
     if saveto is None:
         plt.show()
     else:

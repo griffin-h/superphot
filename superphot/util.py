@@ -1,11 +1,15 @@
 from astropy.stats import mad_std
 from astropy.table import Table
+import matplotlib.pyplot as plt
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000'}
 meta_columns = ['filename', 'type', 'MWEBV', 'redshift']
 # Default time range to use in fitting
 PHASE_MIN = -50.
 PHASE_MAX = 180.
+
+plt.rcParams['xtick.minor.visible'] = True
+plt.rcParams['ytick.minor.visible'] = True
 
 
 def read_light_curve(filename):
