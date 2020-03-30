@@ -57,17 +57,19 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', pur
     n_per_pred_class = confusion_matrix.sum(axis=0)
     if purity:
         cm = confusion_matrix / n_per_pred_class[np.newaxis, :]
+        title_word = 'Purity'
     else:
         cm = confusion_matrix / n_per_true_class[:, np.newaxis]
+        title_word = 'Completeness'
     if ax is None:
         ax = plt.axes()
     ax.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
     if title is not None:
         ax.set_title(title)
     elif ndraws:
-        ax.set_title('Confusion Matrix ($N={:.0f}\\times{:d}$)'.format(confusion_matrix.sum(), ndraws))
+        ax.set_title('{} ($N={:.0f}\\times{:d}$)'.format(title_word, confusion_matrix.sum(), ndraws))
     else:
-        ax.set_title('Confusion Matrix ($N={:d}$)'.format(confusion_matrix.sum()))
+        ax.set_title('{} ($N={:d}$)'.format(title_word, confusion_matrix.sum()))
     nclasses = len(classes)
     ax.set_xticks(range(nclasses))
     ax.set_yticks(range(nclasses))
@@ -247,7 +249,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
     include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
     fig = plt.figure(figsize=(len(classes) + 1., len(classes) + 1.))
-    plot_confusion_matrix(cnf_matrix, classes, purity=purity, title='Purity' if purity else 'Completeness')
+    plot_confusion_matrix(cnf_matrix, classes, purity=purity)
     fig.tight_layout()
     if saveto is None:
         plt.show()
