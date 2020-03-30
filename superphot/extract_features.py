@@ -20,7 +20,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S
 
 def load_trace(file, trace_path='.', version='2'):
     """
-    Read the stored PyMC3 traces into a 3-D array with shape (nfilters, nsteps, nparams).
+    Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).
 
     Parameters
     ----------
@@ -33,12 +33,12 @@ def load_trace(file, trace_path='.', version='2'):
 
     Returns
     -------
-    lst : numpy.array
-        PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
+    trace_values : numpy.array
+        PyMC3 trace stored as 3-D array with shape (nsteps, nfilters, nparams).
     """
     basename = os.path.basename(file)
     tracefile = os.path.join(trace_path, basename.replace('.snana.dat', '_{}{}'))
-    lst = []
+    trace_values = []
     t_full = read_light_curve(file)
     t = select_event_data(t_full)
     max_flux = t['FLUXCAL'].max()
@@ -49,17 +49,16 @@ def load_trace(file, trace_path='.', version='2'):
             obs = t[t['FLT'] == fltr]
             model, varnames = setup_model1(obs, max_flux)
             trace = pm.load_trace(tracefile_filter, model)
-            trace_values = np.transpose([trace.get_values(var) for var in varnames])
-            lst.append(trace_values)
+            trace_values.append([trace.get_values(var) for var in varnames])
         else:
             logging.warning(f"No such file or directory: '{tracefile_filter}'")
             missing_filters.append(fltr)
     if len(missing_filters) == 4:
         raise FileNotFoundError(f"No traces found for {basename}")
     for fltr in missing_filters:
-        lst.insert('griz'.index(fltr), np.mean(lst, axis=0))
-    lst = np.array(lst)
-    return lst
+        trace_values.insert('griz'.index(fltr), np.mean(trace_values, axis=0))
+    trace_values = np.moveaxis(trace_values, 2, 0)
+    return trace_values
 
 
 def flux_to_luminosity(row, R_V=3.1):
@@ -106,29 +105,24 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     principal_components : array-like
         A list of the principal components for each of the input light curves.
     """
+    filt_range = range(light_curves.shape[1])
     if light_curves_fit is None:
         light_curves_fit = light_curves
 
     if stored_pcas is None:
-        pcas = [PCA(n_components, whiten=whiten) for _ in light_curves_fit]
+        pcas = [PCA(n_components, whiten=whiten) for _ in filt_range]
     else:
         with open(stored_pcas, 'rb') as f:
             pcas = pickle.load(f)
-    reconstructed = []
-    coefficients = []
+    reconstructed = np.empty_like(light_curves_fit)
+    coefficients = np.empty(light_curves.shape[:-1] + (n_components,))
 
-    for lc_filter, lc_filter_fit, pca in zip(light_curves, light_curves_fit, pcas):
+    for i in filt_range:
         if stored_pcas is None:
-            pca.fit(lc_filter_fit)
-        coeffs_fit = pca.transform(lc_filter_fit)
-        reconst = pca.inverse_transform(coeffs_fit)
-        reconstructed.append(reconst)
-
-        coeffs = pca.transform(lc_filter)
-        coefficients.append(coeffs)
-
-    coefficients = np.array(coefficients)
-    reconstructed = np.array(reconstructed)
+            pcas[i].fit(light_curves_fit[:, i])
+        coeffs_fit = pcas[i].transform(light_curves_fit[:, i])
+        reconstructed[:, i] = pcas[i].inverse_transform(coeffs_fit)
+        coefficients[:, i] = pcas[i].transform(light_curves[:, i])
 
     if stored_pcas is None:
         with open('pca.pickle', 'wb') as f:
@@ -240,11 +234,11 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None):
     Parameters
     ----------
     models : array-like
-        A 3-D array of model light curves with shape (nfilters, ntransients, ntimes)
+        A 3-D array of model light curves with shape (ntransients, nfilters, ntimes)
     reconstructed : array-like
-        A 3-D array of reconstructed light curves with shape (nfilters, ntransients, ntimes)
+        A 3-D array of reconstructed light curves with shape (ntransients, nfilters, ntimes)
     coefficients : array-like, optional
-        A 3-D array of the principal component coefficients with shape (nfilters, ntransients, ncomponents). If given,
+        A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
         the coefficients will be printed at the top right of each plot.
     """
     with PdfPages('pca_reconstruction.pdf') as pdf:
@@ -297,7 +291,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         ndraws = stored.get('ndraws', ndraws)
 
     if 'params' in stored:
-        params = np.moveaxis(stored['params'], 0, 1)
+        params = stored['params']
         logging.info(f'parameters read from {stored_models}')
     else:
         params = []
@@ -313,18 +307,18 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
             if ndraws:
                 params.append(sample_posterior(trace, ndraws))
             else:  # ndraws == 0 means take the average
-                params.append(trace.mean(axis=1)[:, np.newaxis])
+                params.append(trace.mean(axis=0)[np.newaxis])
                 ndraws = 1
-        params = np.hstack(params)
+        params = np.vstack(params)
         t.remove_rows(bad_rows)  # excluding rows that have not been fit
         np.savez_compressed('params.npz', params=params, ndraws=ndraws)
         logging.info(f'posteriors sampled from {stored_models}, saved to data_table.txt & params.npz')
 
     t = t[np.repeat(range(len(t)), ndraws)]
     t.meta['ndraws'] = ndraws
-    t['params'] = np.moveaxis(params, 1, 0)
+    t['params'] = params
     t.meta['paramnames'] = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
-    params[:, :, 0] *= np.vstack([flux_to_luminosity(row) for row in t]).T
+    params[:, :, 0] *= np.vstack([flux_to_luminosity(row) for row in t])
     if use_pca:
         time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
@@ -332,7 +326,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
         if t_good.has_masked_values:
-            models_to_fit = good_models[:, ~t_good.mask['type']]
+            models_to_fit = good_models[~t_good.mask['type']]
         else:
             models_to_fit = good_models
         coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
@@ -347,7 +341,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         params[:, :, 0] = zero_point - 2.5 * np.log10(params[:, :, 0])  # convert amplitude to magnitude
         t_good, features = select_good_events(t, params[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
         t_good.meta['featnames'] = ['Amplitude (mag)', 'Plateau Slope', 'Plateau Duration', 'Rise Time', 'Fall Time']
-    t_good['features'] = np.hstack(features)
+    t_good['features'] = features
     return t_good
 
 
@@ -370,12 +364,12 @@ def select_good_events(t, data):
         Numpy array containing only the data for good events.
     """
     finite_values = np.isfinite(data)
-    finite_draws = finite_values.all(axis=(0, 2))
+    finite_draws = finite_values.all(axis=(1, 2))
     events_with_finite_draws = finite_draws.reshape(-1, t.meta['ndraws'])
     finite_events = events_with_finite_draws.all(axis=1)
     draws_from_finite_events = np.repeat(finite_events, t.meta['ndraws'])
     t_good = t[draws_from_finite_events]
-    good_data = data[:, draws_from_finite_events]
+    good_data = data[draws_from_finite_events]
     return t_good, good_data
 
 
@@ -426,8 +420,7 @@ def main():
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
                                  reconstruct=args.reconstruct, stored_pcas=args.pcas)
     save_data(test_data, args.output)
-    test_data['feats'] = test_data['features'].reshape(*test_data['params'].shape[:2], -1)
     plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], saveto=args.output + '_parameters.pdf')
-    plot_histograms(test_data, 'feats', varnames=test_data.meta['featnames'],
+    plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'],
                     no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
     logging.info('finished extract_features.py')

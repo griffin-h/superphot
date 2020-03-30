@@ -141,7 +141,7 @@ class MultivariateGaussian(BaseOverSampler):
         return X_resampled, y_resampled
 
 
-def fit_predict(clf, sampler, train_data, test_data):
+def fit_predict(clf, sampler, train_data, test_data, scaler=StandardScaler()):
     """
     Train a random forest classifier on `train_data` and use it to classify `test_data`. Balance the classes before
     training by oversampling.
@@ -156,15 +156,19 @@ def fit_predict(clf, sampler, train_data, test_data):
         Astropy table containing the training data. Must have a 'features' column and a 'type' column.
     test_data : astropy.table.Table
         Astropy table containing the test data. Must have a 'features' column.
+    scaler : sklearn.preprocessing.StandardScaler
+        Scikit-learn scaler to apply to the features before training and classification. Default: mean = 0, var = 1.
 
     Returns
     -------
     p_class : numpy.array
         Classification probabilities for each of the supernovae in `test_features`.
     """
-    features_resamp, labels_resamp = sampler.fit_resample(train_data['features'], train_data['type'])
+    train_features = scaler.fit_transform(train_data['features'].reshape(len(train_data), -1))
+    test_features = scaler.transform(test_data['features'].reshape(len(test_data), -1))
+    features_resamp, labels_resamp = sampler.fit_resample(train_features, train_data['type'])
     clf.fit(features_resamp, labels_resamp)
-    p_class = clf.predict_proba(test_data['features'])
+    p_class = clf.predict_proba(test_features)
     return p_class
 
 
@@ -356,15 +360,11 @@ def main():
 
     logging.info('started classify.py')
     test_data = load_data(args.test_data)
-    test_data['feats'] = test_data['features'].reshape(*test_data['params'].shape[:2], -1)  # unscaled features for plot
     if args.train_data is None:
         train_data = test_data
     else:
         train_data = load_data(args.train_data)
     train_data = select_labeled_events(train_data)
-    scaler = StandardScaler(copy=False)
-    scaler.fit_transform(train_data['features'])
-    scaler.transform(test_data['features'])
     validation_data = select_labeled_events(test_data)
 
     if args.classifier == 'rf':
@@ -387,7 +387,7 @@ def main():
     test_data['prediction'] = clf.classes_[test_data['probabilities'].argmax(axis=1)]
     plot_histograms(test_data, 'params', 'prediction', varnames=test_data.meta['paramnames'],
                     saveto='phot_class_parameters.pdf')
-    plot_histograms(test_data, 'feats', 'prediction', varnames=test_data.meta['featnames'],
+    plot_histograms(test_data, 'features', 'prediction', varnames=test_data.meta['featnames'],
                     no_autoscale=['SLSN', 'SNIIn'], saveto='phot_class_features.pdf')
 
     results = aggregate_probabilities(test_data)

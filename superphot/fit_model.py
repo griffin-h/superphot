@@ -341,20 +341,20 @@ def produce_lc(time, trace, align_to_t0=False):
     time : numpy.array
         Range of times (in days, with respect to PEAKMJD) over which the model should be calculated.
     trace : numpy.array
-        PyMC3 trace stored as 3-D array with shape (nfilters, nsteps, nparams).
+        PyMC3 trace stored as an array, with parameters as the last dimension.
     align_to_t0 : bool, optional
         Interpret `time` as days with respect to t_0 instead of PEAKMJD.
 
     Returns
     -------
     lc : numpy.array
-        Model light curves. Shape = (len(trace) * nwalkers, nfilters, len(time)).
+        Model light curves. Time is the last dimension.
     """
     tt.config.compute_test_value = 'ignore'
-    mytensor = tt.TensorType('float64', (False, False, True))
-    parameters = [mytensor() for _ in range(6)]
+    mytensor = tt.TensorType('float64', (False,) * (trace.ndim - 1) + (True,))
+    parameters = [mytensor() for _ in range(trace.shape[-1])]
     flux = flux_model(time, *parameters)
-    param_values = {param: values[:, :, np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, 2, 0))}
+    param_values = {param: values[..., np.newaxis] for param, values in zip(parameters, np.moveaxis(trace, -1, 0))}
     if align_to_t0:
         param_values[parameters[3]] = np.zeros_like(param_values[parameters[3]])
     lc = flux.eval(param_values)
@@ -367,19 +367,19 @@ def sample_posterior(trace, rand_num):
 
     Parameters
     ----------
-    trace : numpy.ndarray, shape=(nfilters, nsteps, nparams)
+    trace : numpy.ndarray, shape=(nsteps, nfilters, nparams)
         PyMC3 trace stored as 3-D array with shape .
     rand_num : int
         The number of light curves randomly extracted from the MCMC run.
 
     Returns
     -------
-    trace_rand : numpy.ndarray, shape=(nfilters, rand_num, nparams)
+    trace_rand : numpy.ndarray, shape=(rand_num, nfilters, nparams)
         3-D array containing a random sampling of parameters for each filter.
 
     """
-    i_rand = np.random.randint(trace.shape[1], size=rand_num)
-    trace_rand = trace[:, i_rand]
+    i_rand = np.random.randint(trace.shape[0], size=rand_num)
+    trace_rand = trace[i_rand]
     return trace_rand
 
 
@@ -408,9 +408,9 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
         Time range over which to plot the light curves.
     """
     x = np.arange(phase_min, phase_max)
-    trace_values = np.transpose([trace.get_values(var) for var in parameters])[np.newaxis, :, :]
+    trace_values = np.transpose([trace.get_values(var) for var in parameters])
     params = sample_posterior(trace_values, size)
-    y = produce_lc(x, params)[0].T
+    y = produce_lc(x, params).T
     if ax is None:
         ax = plt.axes()
     color = filter_colors.get(fltr)
