@@ -26,7 +26,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S
 
 
 def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', purity=False, title=None,
-                          xlabel='Predicted Label', ylabel='True Label', ax=None):
+                          xlabel='Photometric Classification', ylabel='Spectroscopic Classification', ax=None):
     """
     Plot a confusion matrix with each cell labeled by its fraction and absolute number.
 
@@ -252,7 +252,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
     predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
     include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
-    fig = plt.figure(figsize=(len(classes) + 1., len(classes) + 1.))
+    fig = plt.figure(figsize=(len(classes),) * 2)
     plot_confusion_matrix(cnf_matrix, classes, purity=purity)
     fig.tight_layout()
     if saveto is None:
