@@ -312,7 +312,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         params = np.vstack(params)
         t.remove_rows(bad_rows)  # excluding rows that have not been fit
         np.savez_compressed('params.npz', params=params, ndraws=ndraws)
-        logging.info(f'posteriors sampled from {stored_models}, saved to data_table.txt & params.npz')
+        logging.info(f'posteriors sampled from {stored_models}, saved to params.npz')
 
     t = t[np.repeat(range(len(t)), ndraws)]
     t.meta['ndraws'] = ndraws
@@ -385,7 +385,11 @@ def compile_data_table(filename):
         t_final = hstack([t_input, t_meta[missing_cols]])
     else:
         t_final = t_input
-    t_final = t_final[t_final['redshift'] > 0.]
+    good_redshift = t_final['redshift'] > 0.
+    if not good_redshift.all():
+        logging.warning('excluding files with redshifts <= 0')
+        t_final[~good_redshift].pprint(max_lines=-1)
+    t_final = t_final[good_redshift]
     t_final['MWEBV'].format = '%.4f'
     t_final['redshift'].format = '%.4f'
     return t_final

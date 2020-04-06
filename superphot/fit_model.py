@@ -605,8 +605,7 @@ def main():
     parser.add_argument('--tuning', type=int, default=TUNING, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=WALKERS, help='Number of walkers')
     parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
-    parser.add_argument('--ignore-redshift', action='store_false', dest='require_redshift',
-                        help='Fit the transient even though its redshift is not measured')
+    parser.add_argument('--zmin', type=float, help='Do not fit the transient if redshift <= zmin in the header')
     parser.add_argument('-f', '--force', action='store_true', help='redo the fit even if the trace is already saved')
     parser.add_argument('-2', '--force-second', action='store_true',
                         help='redo only the second iteration of fitting even if the trace is already saved')
@@ -618,8 +617,8 @@ def main():
         basename = os.path.basename(filename).split('.')[0]
         outfile = os.path.join(args.output_dir, basename + '{}')
         light_curve = read_light_curve(filename)
-        if light_curve.meta['REDSHIFT'] <= 0. and args.require_redshift:
-            raise ValueError('Skipping file with no redshift ' + filename)
+        if args.zmin is not None and light_curve.meta['REDSHIFT'] <= args.zmin:
+            raise ValueError(f'Skipping file with redshift {light_curve.meta["REDSHIFT"]}: {filename}')
         traces1, traces2, parameters = two_iteration_mcmc(light_curve, outfile, filters=args.filters, force=args.force,
                                                           force_second=args.force_second, do_diagnostics=args.plots,
                                                           iterations=args.iterations, walkers=args.walkers,
