@@ -325,7 +325,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         t_good, good_models = select_good_events(t, models)
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        if t_good.has_masked_values:
+        if t_good.has_masked_values and 'type' in t_good.colnames:
             models_to_fit = good_models[~t_good.mask['type']]
         else:
             models_to_fit = good_models
@@ -393,7 +393,7 @@ def compile_data_table(filename):
 
 def save_data(t, basename):
     t.sort('filename')
-    save_table = t[meta_columns][::t.meta['ndraws']]
+    save_table = t[[col for col in meta_columns if col in t.colnames]][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
     np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], ndraws=t.meta['ndraws'],
                         paramnames=t.meta['paramnames'], featnames=t.meta['featnames'])
@@ -420,7 +420,9 @@ def main():
     test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
                                  reconstruct=args.reconstruct, stored_pcas=args.pcas)
     save_data(test_data, args.output)
-    plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], saveto=args.output + '_parameters.pdf')
-    plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'],
-                    no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
+    if 'type' in test_data.colnames:
+        plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'],
+                        saveto=args.output + '_parameters.pdf')
+        plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'],
+                        no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
     logging.info('finished extract_features.py')
