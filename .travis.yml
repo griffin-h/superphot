@@ -1,0 +1,26 @@
+# .travis.yml
+
+language: python
+python:
+  - 3.6
+cache:
+  directories:
+    - $HOME/.cache/pip
+    - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
+
+env:
+  global:
+    # Doctr deploy key for YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
+    - secure: "aukDirf6/r3mHmbRj3mCjHkH7Ng+EJGW2gjgrNDjcvG/pxogCStY3s/c1jiTcfbsrrUfnXxyjAk28ogISb/OADxU6wp8EjiEC5MEYod2FPrPr4Cgc1TyENAnpX+qg9TydBtKLg1RV4CvScdPiKoam1jCk3ArkSsUq8tyA4qG6L8emxtKYrU8t1rxCq4SD+BL1on4e1tWgUq9XznnBWVnlAOyu94kNiR67MbhzlXHehJJsdbijKHZ0UcGq62OPuO5b+2aXXFTEbaPHc0dagweLfUhmUdex20xCE+omljsOSLu19UUY6+wIU1GUJCqEdn9953K3APTwfvUd5Q+e8cMiJhAgq2Tt9Da5v35GjGO29cwHA215ku3PkzU8a9oqq25nmLuNeOyNqcSbG+ffUPY7g5RXsROlCcdzbSwEi7gzZM/2MCVQfVHbsT2tD7HEzH6/5gYFrd1gN/ZmSLVGTuYEZFtmsGJjsbAMrgxQi/migVtaylSCsIoMUkF1mwQYkP74khLnWclXedei4pOxItlBBzzJC5E69wB4/A72Vs7zhpfnU3YkAJ21+wtDhbF/Bbc+SaXp+ZluqTmAUHAFxsr9/s2F640cm6W8BBNP7iJ1FcOVa4tINUWXUu8HVVqb41pdtqwKQBkkqEjJhIMumliort2tGzsFy9LmsdrfLxzcak="
+
+install:
+  # Install this package and the packages listed in requirements.txt.
+  - pip install .
+  # Install extra requirements for running tests and building docs.
+  - pip install -r requirements-dev.txt
+
+script:
+  - set -e  # If any of the following steps fail, just stop at that point.
+  - make -C docs html  # Build the documentation.
+  - pip install doctr
+  - doctr deploy --built-docs docs/build/html .  # Publish the documentation.
