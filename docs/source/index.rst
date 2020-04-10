@@ -16,3 +16,4 @@ In Villar et al. (`2019 <https://ui.adsabs.harvard.edu/abs/2019ApJ...884...83V/a
    installation
    usage
    api
+   release-history
