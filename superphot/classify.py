@@ -45,7 +45,7 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', pur
     purity : bool, optional
         If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
     title : str, optional
-        Text to go above the plot. Default: "Confusion Matrix ($N = `confusion_matrix.sum()`$)".
+        Text to go above the plot. Default: "Confusion Matrix (`N = confusion_matrix.sum()`)".
     xlabel, ylabel : str, optional
         Labels for the x- and y-axes. Default: "True Label" and "Predicted Label".
     ax : matplotlib.pyplot.axes, optional
