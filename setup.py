@@ -36,7 +36,7 @@ setuptools.setup(
     name="superphot",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    author="Frederick Dauphin & Griffin Hosseinzadeh",
+    author="Griffin Hosseinzadeh & Frederick Dauphin",
     author_email="griffin.hosseinzadeh@cfa.harvard.edu",
     description="Photometric classification of supernovae",
     long_description=long_description,

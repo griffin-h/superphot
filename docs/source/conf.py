@@ -76,8 +76,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Superphot'
-copyright = '2020, Frederick Dauphin & Griffin Hosseinzadeh'
-author = 'Frederick Dauphin & Griffin Hosseinzadeh'
+copyright = '2020, Griffin Hosseinzadeh & Frederick Dauphin'
+author = 'Griffin Hosseinzadeh & Frederick Dauphin'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
