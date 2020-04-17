@@ -12,20 +12,31 @@ from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
 from .util import read_light_curve, select_event_data, filter_colors, meta_columns, select_labeled_events
+from .util import has_labeled_events, subplots_layout
 from .fit_model import setup_model1, produce_lc, sample_posterior
 import pickle
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
+# using WavelengthMean from the SVO Filter Profile Service http://svo2.cab.inta-csic.es/theory/fps/
+R_FILTERS = {'g': 3.57585511, 'r': 2.54033913, 'i': 1.88284171, 'z': 1.49033933, 'y': 1.24431944,  # Pan-STARRS filters
+             'U': 4.78442941, 'B': 4.05870021, 'V': 3.02182672, 'R': 2.34507832, 'I': 1.69396924}  # Bessell filters
 
-def load_trace(file, trace_path='.', version='2'):
+
+def load_trace(file, filters, trace_path='.', version='2'):
     """
     Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).
+
+    Assumes the traces are stored in a directory `basename_vf`, where `basename` is `file` up to the first '.', `v` is
+    `version`, and `f` is an element of `filters`.
 
     Parameters
     ----------
     file : str
         Filename of the original SNANA data file.
+    filters : iterable
+        Filters for which to load traces. If one or more filters are not found, the posteriors of the remaining filters
+        will be combined and used in place of the missing ones.
     trace_path : str, optional
         Directory where the PyMC3 trace data is stored. Default: current directory.
     version : str, optional
@@ -36,14 +47,14 @@ def load_trace(file, trace_path='.', version='2'):
     trace_values : numpy.array
         PyMC3 trace stored as 3-D array with shape (nsteps, nfilters, nparams).
     """
-    basename = os.path.basename(file)
-    tracefile = os.path.join(trace_path, basename.replace('.snana.dat', '_{}{}'))
+    basename = os.path.basename(file).split('.')[0]
+    tracefile = os.path.join(trace_path, basename) + '_{}{}'
     trace_values = []
     t_full = read_light_curve(file)
     t = select_event_data(t_full)
     max_flux = t['FLUXCAL'].max()
     missing_filters = []
-    for fltr in 'griz':
+    for fltr in filters:
         tracefile_filter = tracefile.format(version, fltr)
         if os.path.exists(tracefile_filter):
             obs = t[t['FLT'] == fltr]
@@ -53,15 +64,15 @@ def load_trace(file, trace_path='.', version='2'):
         else:
             logging.warning(f"No such file or directory: '{tracefile_filter}'")
             missing_filters.append(fltr)
-    if len(missing_filters) == 4:
+    if len(missing_filters) == len(filters):
         raise FileNotFoundError(f"No traces found for {basename}")
     for fltr in missing_filters:
-        trace_values.insert('griz'.index(fltr), np.mean(trace_values, axis=0))
+        trace_values.insert(filters.index(fltr), np.mean(trace_values, axis=0))
     trace_values = np.moveaxis(trace_values, 2, 0)
     return trace_values
 
 
-def flux_to_luminosity(row, R_V=3.1):
+def flux_to_luminosity(row, R_filter):
     """
     Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.
 
@@ -69,17 +80,17 @@ def flux_to_luminosity(row, R_V=3.1):
     ----------
     row : astropy.table.row.Row
         Astropy table row for a given transient, containing columns 'MWEBV' and 'redshift'.
-    R_V : float
-        Ratio of total to selective extinction, i.e., A_V = row['MWEBV'] * R_V. Default: 3.1
+    R_filter : list
+        Ratios of A_filter to `row['MWEBV']` for each of the filters used. This determines the length of the output.
 
     Returns
     -------
     flux2lum : numpy.ndarray
-        Array of flux-to-luminosity conversion factors for the filters g, r, i, and z.
+        Array of flux-to-luminosity conversion factors for each filter.
     """
-    A_coeffs = row['MWEBV'] * R_V * np.array([1.16269427, 0.87191851, 0.66551667, 0.42906714])  # g, r, i, z
+    A_coeffs = row['MWEBV'] * np.array(R_filter)
     dist = cosmo.luminosity_distance(row['redshift']).to('dapc').value
-    flux2lum = 10. ** (A_coeffs / 2.5) * dist ** 2. * (1. + row['redshift'])
+    flux2lum = 10. ** (A_coeffs / 2.5) * 4. * np.pi * dist ** 2. * (1. + row['redshift'])
     return flux2lum
 
 
@@ -131,7 +142,7 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     return coefficients, reconstructed, pcas
 
 
-def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames='griz', no_autoscale=(), saveto=None):
+def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames=(), no_autoscale=(), saveto=None):
     """
     Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.
 
@@ -146,7 +157,7 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
     varnames : iterable, optional
         Parameter names to list on the x-axes of the plot. Default: no labels.
     rownames : iterable, optional
-        Labels for the leftmost y-axes. Default: 'g', 'r', 'i', 'z'.
+        Labels for the leftmost y-axes.
     no_autoscale : tuple or list, optional
         Class names not to use in calculating the axis limits. Default: include all.
     saveto : str, optional
@@ -159,7 +170,7 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
     else:
         data_table = data_table.group_by(np.ones(len(data_table)))
     ngroups = len(data_table.groups)
-    fig, axarr = plt.subplots(nrows, ncols, sharex='col')
+    fig, axarr = plt.subplots(nrows, ncols, sharex='col', squeeze=False)
     for j in range(ncols):
         xlims = []
         for i in range(nrows):
@@ -196,7 +207,7 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
     plt.close(fig)
 
 
-def plot_principal_components(pcas, time=None):
+def plot_principal_components(pcas, time=None, filters=None):
     """
     Plot the principal components being used to extract features from the model light curves. The plot will be saved to
     principal_components.pdf.
@@ -207,26 +218,29 @@ def plot_principal_components(pcas, time=None):
         List of the PCA objects for each filter, after fitting.
     time : array-like, optional
         Times (x-values) to plot the principal components against.
+    filters : iterable, optional
+        Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.
     """
-    nrows = int(pcas[0].n_components ** 0.5)
-    ncols = int(np.ceil(pcas[0].n_components / nrows))
-    fig, axes = plt.subplots(nrows, ncols, sharex=True)
+    nrows, ncols = subplots_layout(pcas[0].n_components)
+    fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
     if time is None:
         time = np.arange(pcas[0].n_features_)
     else:
         for ax in axes[-1]:
             ax.set_xlabel('Phase')
     lines = []
-    for pca, fltr in zip(pcas, 'griz'):
-        for pc, ax in zip(pca.components_, axes.flatten()):
-            p = ax.plot(time, pc, color=filter_colors[fltr], label=fltr)
+    if filters is None:
+        filters = [f'Filter {i+1:d}' for i in range(len(pcas))]
+    for pca, fltr in zip(pcas, filters):
+        for pc, ax in zip(pca.components_, axes.flat):
+            p = ax.plot(time, pc, color=filter_colors.get(fltr), label=fltr)
         lines += p
-    fig.legend(lines, 'griz', ncol=4, loc='upper center')
+    fig.legend(lines, filters, ncol=len(filters), loc='upper center')
     fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.95))
     fig.savefig('principal_components.pdf')
 
 
-def plot_pca_reconstruction(models, reconstructed, coefficients=None):
+def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=None):
     """
     Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
     These are saved as a multi-page PDF called pdf_reconstruction.pdf.
@@ -240,22 +254,27 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None):
     coefficients : array-like, optional
         A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
         the coefficients will be printed at the top right of each plot.
+    filters : iterable, optional
+        Names of the filters corresponding to the PCA objects. Only used for coloring the lines.
     """
+    if filters is None:
+        filters = [f'Filter {i+1:d}' for i in range(models.shape[1])]
     with PdfPages('pca_reconstruction.pdf') as pdf:
         ax = plt.axes()
-        for i in trange(models.shape[1], desc='PCA reconstruction'):
-            for j, fltr in enumerate('griz'):
-                c = filter_colors[fltr]
-                ax.plot(models[j, i], color=c)
-                ax.plot(reconstructed[j, i], ls=':', color=c)
+        for i in trange(models.shape[0], desc='PCA reconstruction'):
+            for j in range(models.shape[1]):
+                c = filter_colors.get(filters[j])
+                ax.plot(models[i, j], color=c)
+                ax.plot(reconstructed[i, j], ls=':', color=c)
             if coefficients is not None:
                 with np.printoptions(precision=2):
-                    ax.text(0.99, 0.99, str(coefficients[:, i]), va='top', ha='right', transform=ax.transAxes)
+                    ax.text(0.99, 0.99, str(coefficients[i]), va='top', ha='right', transform=ax.transAxes)
             pdf.savefig()
             ax.clear()
 
 
-def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True, reconstruct=False, stored_pcas=None):
+def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_point=27.5, use_pca=True, reconstruct=False,
+                     stored_pcas=None):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -267,8 +286,15 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
     stored_models : str
         If a directory, look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
         If a Numpy file, read the parameters from this file.
+    filters : iterable
+        Filters for which to extract features. If `stored_models` is a directory, these should be the last characters
+        of the subdirectories in which the traces are stored. Ignored if models are read from a Numpy file.
+    R_filters : dict, optional
+        Ratios of total to selective extinction for `filters`. This package includes the values for common filters
+        (see `superphot.extract_features.R_FILTERS`). Use this argument to override those default values or to include
+        additional filters.
     ndraws : int, optional
-        Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read fron Numpy file.
+        Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read from a Numpy file.
     zero_point : float, optional
         Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.
     use_pca : bool, optional
@@ -284,10 +310,20 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
+    R_filter = []
+    for fltr in filters:
+        if R_filters is not None and fltr in R_filters:
+            R_filter.append(R_filter[fltr])
+        elif fltr in R_FILTERS:
+            R_filter.append(R_FILTERS[fltr])
+        else:
+            raise ValueError(f'Unrecognized filter {fltr}. Please specify the extinction correction using `R_filters`.')
+
     if os.path.isdir(stored_models):
         stored = {}
     else:
         stored = np.load(stored_models)
+        filters = stored.get('filters', filters)
         ndraws = stored.get('ndraws', ndraws)
 
     if 'params' in stored:
@@ -298,7 +334,7 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
         bad_rows = []
         for i, filename in enumerate(t['filename']):
             try:
-                trace = load_trace(filename, trace_path=stored_models)
+                trace = load_trace(filename, filters, trace_path=stored_models)
                 logging.info(f'loaded trace from {filename}')
             except FileNotFoundError as e:
                 bad_rows.append(i)
@@ -311,30 +347,31 @@ def extract_features(t, stored_models, ndraws=10, zero_point=27.5, use_pca=True,
                 ndraws = 1
         params = np.vstack(params)
         t.remove_rows(bad_rows)  # excluding rows that have not been fit
-        np.savez_compressed('params.npz', params=params, ndraws=ndraws)
+        np.savez_compressed('params.npz', params=params, filters=list(filters), ndraws=ndraws)
         logging.info(f'posteriors sampled from {stored_models}, saved to params.npz')
 
     t = t[np.repeat(range(len(t)), ndraws)]
+    t.meta['filters'] = list(filters)
     t.meta['ndraws'] = ndraws
     t['params'] = params
     t.meta['paramnames'] = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
-    params[:, :, 0] *= np.vstack([flux_to_luminosity(row) for row in t])
+    params[:, :, 0] *= np.vstack([flux_to_luminosity(row, R_filter) for row in t])
     if use_pca:
         time = np.linspace(0., 300., 1000)
         models = produce_lc(time, params, align_to_t0=True)
         t_good, good_models = select_good_events(t, models)
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        if t_good.has_masked_values and 'type' in t_good.colnames:
+        if has_labeled_events(t_good):
             models_to_fit = good_models[~t_good.mask['type']]
         else:
             models_to_fit = good_models
         coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
                                                                      stored_pcas=stored_pcas)
-        plot_principal_components(pcas, time)
+        plot_principal_components(pcas, time, filters)
         logging.info('PCA finished')
         if reconstruct:
-            plot_pca_reconstruction(good_models, reconstructed, coefficients)
+            plot_pca_reconstruction(good_models, reconstructed, coefficients, filters)
         features = np.dstack([peakmags, coefficients])
         t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
@@ -399,8 +436,8 @@ def save_data(t, basename):
     t.sort('filename')
     save_table = t[[col for col in meta_columns if col in t.colnames]][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
-    np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], ndraws=t.meta['ndraws'],
-                        paramnames=t.meta['paramnames'], featnames=t.meta['featnames'])
+    np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], filters=t.meta['filters'],
+                        ndraws=t.meta['ndraws'], paramnames=t.meta['paramnames'], featnames=t.meta['featnames'])
     logging.info(f'data saved to {basename}.txt and {basename}.npz')
 
 
@@ -409,6 +446,7 @@ def main():
     parser.add_argument('input_table', type=str, help='List of input SNANA files, or input data table')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
                                               'or Numpy file containing stored model parameters/LCs')
+    parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
                                                                ' Set to 0 to use the mean of the LC parameters.')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
@@ -421,12 +459,12 @@ def main():
 
     logging.info('started extract_features.py')
     data_table = compile_data_table(args.input_table)
-    test_data = extract_features(data_table, args.stored_models, args.ndraws, use_pca=args.use_pca,
+    test_data = extract_features(data_table, args.stored_models, args.filters, ndraws=args.ndraws, use_pca=args.use_pca,
                                  reconstruct=args.reconstruct, stored_pcas=args.pcas)
     save_data(test_data, args.output)
-    if 'type' in test_data.colnames:
-        plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'],
+    if has_labeled_events(test_data):
+        plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], rownames=args.filters,
                         saveto=args.output + '_parameters.pdf')
-        plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'],
+        plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'], rownames=args.filters,
                         no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
     logging.info('finished extract_features.py')

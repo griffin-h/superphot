@@ -99,6 +99,30 @@ def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
     return t_event
 
 
+def has_labeled_events(t, key='type'):
+    """Returns True if a table has unmasked values in the column `key`"""
+    return t.has_masked_values and key in t.colnames and not t.mask[key].all()
+
+
 def select_labeled_events(t, key='type'):
     """Returns rows from a table where the column `key` is not masked."""
-    return t[~t.mask[key]] if t.has_masked_values else t.copy()
+    return t[~t.mask[key]] if has_labeled_events(t, key) else t.copy()
+
+
+def subplots_layout(n):
+    """
+    Calculate the number of rows and columns for a multi-panel plot, staying as close to a square as possible.
+
+    Parameters
+    ----------
+    n : int
+        The number of subplots required.
+
+    Returns
+    -------
+    nrows, ncols : int
+        The number of rows and columns in the layout.
+    """
+    nrows = round(n ** 0.5)
+    ncols = -(-n // nrows)
+    return nrows, ncols

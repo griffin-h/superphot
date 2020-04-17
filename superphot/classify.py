@@ -289,7 +289,7 @@ def load_data(meta_file, data_file=None):
         if data_table[col].dtype.type is np.str_:
             data_table[col].fill_value = ''
     for key in stored:
-        if key in ['ndraws', 'paramnames', 'featnames']:
+        if key in ['filters', 'ndraws', 'paramnames', 'featnames']:
             data_table.meta[key] = stored[key]
         else:
             data_table[key] = stored[key]
@@ -386,9 +386,10 @@ def main():
     test_data['probabilities'] = fit_predict(clf, sampler, train_data, test_data)
     test_data['prediction'] = clf.classes_[test_data['probabilities'].argmax(axis=1)]
     plot_histograms(test_data, 'params', 'prediction', varnames=test_data.meta['paramnames'],
-                    saveto='phot_class_parameters.pdf')
+                    rownames=test_data.meta['filters'], saveto='phot_class_parameters.pdf')
     plot_histograms(test_data, 'features', 'prediction', varnames=test_data.meta['featnames'],
-                    no_autoscale=['SLSN', 'SNIIn'], saveto='phot_class_features.pdf')
+                    rownames=test_data.meta['filters'], no_autoscale=['SLSN', 'SNIIn'],
+                    saveto='phot_class_features.pdf')
 
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')

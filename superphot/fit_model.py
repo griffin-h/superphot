@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import pymc3 as pm
 import theano.tensor as tt
-from .util import read_light_curve, select_event_data, filter_colors, PHASE_MIN, PHASE_MAX
+from .util import read_light_curve, select_event_data, filter_colors, PHASE_MIN, PHASE_MAX, subplots_layout
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import gaussian_kde
@@ -13,7 +13,6 @@ import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 # Default fitting parameters
-FILTERS = 'griz'
 ITERATIONS = 10000
 TUNING = 25000
 WALKERS = 25
@@ -191,8 +190,8 @@ def make_new_priors(traces, parameters, res=100):
 
     Parameters
     ----------
-    traces : list
-        List of MultiTrace objects for each filter.
+    traces : dict
+        Dictionary of MultiTrace objects for each filter.
     parameters : list
         List of Theano variables for which to combine the posteriors. (Only names of the parameters are used.)
     res : int, optional
@@ -205,14 +204,14 @@ def make_new_priors(traces, parameters, res=100):
     y_priors : list
         List of Numpy arrays containing the y-values of the new priors.
     old_posteriors : list
-        List of Numpy arrays containing the y-values of the old posteriors.
+        List of dictionaries containing the y-values of the old posteriors for each filter.
     """
     x_priors = []
     y_priors = []
     old_posteriors = []
     for param in parameters:
-        trace_values = [trace[param.name] for trace in traces]
-        combined_trace = np.concatenate(trace_values)
+        trace_values = {fltr: trace[param.name] for fltr, trace in traces.items()}
+        combined_trace = np.concatenate(list(trace_values.values()))
         x = np.linspace(combined_trace.min(), combined_trace.max(), res)
         y_comb = gaussian_kde(combined_trace)(x)
         x_priors.append(x)
@@ -232,19 +231,20 @@ def plot_priors(x_priors, y_priors, old_posteriors, parameters, saveto=None):
     y_priors : list
         List of Numpy arrays containing the y-values of the new priors.
     old_posteriors : list
-        List of Numpy arrays containing the y-values of the old posteriors.
+        List of dictionaries containing the y-values of the old posteriors for each filter.
     parameters : list
         List of Theano variables for which to combine the posteriors.
     saveto : str, optional
         Filename to which to save the plot. If None, display the plot instead of saving it.
     """
-    fig, axarr = plt.subplots(len(parameters) // 3 + bool(len(parameters) % 3), 3)
-    for param, x, y_comb, trace_values, ax in zip(parameters, x_priors, y_priors, old_posteriors, axarr.flatten()):
+    nrows, ncols = subplots_layout(len(parameters))
+    fig, axarr = plt.subplots(nrows, ncols, squeeze=False)
+    for param, x, y_comb, trace_values, ax in zip(parameters, x_priors, y_priors, old_posteriors, axarr.flat):
         y_orig = np.exp(param.distribution.logp(x).eval())
         ax.plot(x, y_orig, color='gray', lw=1, ls='--')
-        for flt, trace_flt in zip('griz', trace_values):
+        for flt, trace_flt in trace_values.items():
             y_filt = gaussian_kde(trace_flt)(x)
-            ax.plot(x, y_filt, color=filter_colors[flt], lw=1, ls=':')
+            ax.plot(x, y_filt, color=filter_colors.get(flt), lw=1, ls=':')
         ax.plot(x, y_comb, color='gray')
         ax.set_xlabel(param.name)
         ax.set_yticks([])
@@ -428,7 +428,7 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
         ax.set_ylim(ymin - 0.08 * height, ymax + 0.08 * height)
 
 
-def plot_final_fits(t, traces1, traces2, parameters, outfile=None, filters=FILTERS):
+def plot_final_fits(t, traces1, traces2, parameters, outfile=None):
     """
     Make a four-panel plot showing sample light curves from each of the two fitting iterations compared to observations.
 
@@ -436,27 +436,26 @@ def plot_final_fits(t, traces1, traces2, parameters, outfile=None, filters=FILTE
     ----------
     t : astropy.table.Table
         Astropy table containing the observed light curve.
-    traces1, traces2 : list
-        Lists of the trace objects (for each filter) from which to generate the model light curves.
+    traces1, traces2 : dict
+        Dictionaries of the trace objects (for each filter) from which to generate the model light curves.
     parameters : list
         List of Theano variables in the PyMC3 model.
     outfile : str, optional
         Filename to which to save the plot. If None, display the plot instead of saving it.
-    filters : str, optional
-        Filters corresponding to the traces in `trace1` and `trace2`.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
         Figure object for the plot (can be added to a multipage PDF).
     """
-    fig, axes = plt.subplots(2, 2, sharex=True)
+    nrows, ncols = subplots_layout(len(traces1))
+    fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
     basename = os.path.splitext(os.path.basename(outfile))[0]
     fig.text(0.5, 0.95, basename, ha='center', va='bottom', size='large')
-    for fltr, trace1, trace2, ax in zip(filters, traces1, traces2, axes.flatten()):
+    for fltr, ax in zip(traces1, axes.flat):
         obs = t[t['FLT'] == fltr]
-        plot_model_lcs(obs, trace1, parameters, size=10, ax=ax, fltr=fltr, ls=':')
-        plot_model_lcs(obs, trace2, parameters, size=10, ax=ax, fltr=fltr)
+        plot_model_lcs(obs, traces1[fltr], parameters, size=10, ax=ax, fltr=fltr, ls=':')
+        plot_model_lcs(obs, traces2[fltr], parameters, size=10, ax=ax, fltr=fltr)
         ax.set_ylabel('Flux')
     for ax in axes[-1]:
         ax.set_xlabel('Phase')
@@ -488,7 +487,7 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
         If True, show the plots instead of saving them.
     """
     f1 = pm.traceplot(trace, figsize=(6., 7.)).flat[0].get_figure()
-    f2 = pm.pairplot(trace, kind='hexbin', textsize=6, figsize=(6., 6.)).flat[0].get_figure()
+    f2 = pm.pairplot(trace, kind='hexbin', contour=False, textsize=6, figsize=(6., 6.))[-1, 0].get_figure()
     f3 = pm.plot_posterior(trace, textsize=6, figsize=(6., 4.)).flat[0].get_figure()
     summary = pm.summary(trace)
 
@@ -508,7 +507,7 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
         plt.close('all')
 
 
-def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force_second=False, do_diagnostics=True,
+def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_second=False, do_diagnostics=True,
                        iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
     """
     Fit the model to the observed light curve. Then combine the posteriors for each filter and use that as the new prior
@@ -522,8 +521,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
         Path where the trace will be stored. This should include a blank field ({{}}) that will be replaced with the 
         iteration number and filter name. Diagnostic plots will also be saved according to this pattern.
     filters : str, optional
-        Light curve filters to fit. If the observed light curve does not contain one or more of these filters, the 
-        posteriors of the remaining filters will be combined and used in place of the missing ones.
+        Light curve filters to fit. Default: all filters in `light_curve`.
     force : bool, optional
         Redo the fit (both iterations) even if results are already stored in `outfile`. Default: False.
     force_second : bool, optional
@@ -539,13 +537,21 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
 
     Returns
     -------
-    traces1, traces2 : list
-        Lists of the PyMC3 trace objects for each filter for the first and second fitting iterations, respectively.
+    traces1, traces2 : dict
+        Dictionaries of the PyMC3 trace objects for each filter for the first and second fitting iterations.
     parameters : list
         List of Theano variables in the PyMC3 model.
     """
     t = select_event_data(light_curve)
-    traces1 = []
+    traces1 = {}
+    lc_filters = set(t['FLT'])
+    if filters is None:
+        filters_to_fit = lc_filters
+    else:
+        filters_to_fit = lc_filters & set(filters)
+    if not filters_to_fit:
+        raise ValueError(f'None of the requested filters ({"".join(filters)}) '
+                         f'are in your light curve ({"".join(lc_filters)})')
     for fltr in filters:
         obs = t[t['FLT'] == fltr]
         if not len(obs):
@@ -554,7 +560,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
         model1, parameters1 = setup_model1(obs, t['FLUXCAL'].max())
         outfile1 = outfile.format('_1' + fltr)
         trace1 = sample_or_load_trace(model1, outfile1, force, iterations, walkers, tuning)
-        traces1.append(trace1)
+        traces1[fltr] = trace1
         if do_diagnostics:
             diagnostics(obs, trace1, parameters1, outfile1)
 
@@ -563,7 +569,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
         plot_priors(x_priors, y_priors, old_posteriors, parameters1, outfile.format('_priors.pdf'))
     logging.info('Starting second iteration of fitting')
 
-    traces2 = []
+    traces2 = {}
     for fltr in filters:
         obs = t[t['FLT'] == fltr]
         if not len(obs):
@@ -572,7 +578,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=FILTERS, force=False, force
         model2, parameters2 = setup_model2(obs, parameters1, x_priors, y_priors)
         outfile2 = outfile.format('_2' + fltr)
         trace2 = sample_or_load_trace(model2, outfile2, force or force_second, iterations, walkers, tuning)
-        traces2.append(trace2)
+        traces2[fltr] = trace2
         if do_diagnostics:
             diagnostics(obs, trace2, parameters2, outfile2)
 
@@ -600,7 +606,7 @@ def plot_diagnostics():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
-    parser.add_argument('--filters', type=str, default=FILTERS, help='Filters to fit (choose from griz)')
+    parser.add_argument('--filters', type=str, help='Subset of filters to fit')
     parser.add_argument('--iterations', type=int, default=ITERATIONS, help='Number of steps after burn-in')
     parser.add_argument('--tuning', type=int, default=TUNING, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=WALKERS, help='Number of walkers')
@@ -624,7 +630,7 @@ def main():
                                                           iterations=args.iterations, walkers=args.walkers,
                                                           tuning=args.tuning)
         if args.plots:
-            fig = plot_final_fits(light_curve, traces1, traces2, parameters, outfile.format('.pdf'), args.filters)
+            fig = plot_final_fits(light_curve, traces1, traces2, parameters, outfile.format('.pdf'))
             pdf.savefig(fig)
             plt.close(fig)
     pdf.close()
