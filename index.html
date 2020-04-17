@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Superphot Documentation &mdash; Superphot 0.1.0 documentation</title>
+  <title>Superphot Documentation &mdash; Superphot 0.1.0.post1+gaa6d707 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.0.post1+gaa6d707
               </div>
             
           
@@ -158,7 +158,7 @@
             
   <div class="section" id="superphot-documentation">
 <h1>Superphot Documentation<a class="headerlink" href="#superphot-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Superphot is an open-source Python package for photometric classification of supernovae, based on the method of Villar et al. (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2019ApJ...884...83V/abstract">2019</a>). To apply this method, you must have the full <em>griz</em> light curve and redshift (e.g., from the host galaxy) for each transient. As such, Superphot is designed for use by time-domain surveys to retrospectively classify transients that were not observed spectroscopically, not for real-time classification.</p>
+<p>Superphot is an open-source Python package for photometric classification of supernovae, based on the method of Villar et al. (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2019ApJ...884...83V/abstract">2019</a>). To apply this method, you must have the redshift (e.g., from the host galaxy) and Milky Way extinction for each transient. Superphot is optimized for use by time-domain surveys to retrospectively classify transients that were not observed spectroscopically, not for real-time classification.</p>
 <p>In Villar et al. (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2019ApJ...884...83V/abstract">2019</a>) and Dauphin et al. (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020AAS...23527618D/abstract">2020</a>), we trained the classifier on a sample of ~500 spectroscopically classified supernovae from the <a class="reference external" href="https://panstarrs.stsci.edu">Pan-STARRS1</a> Medium Deep Survey, and then applied it to an additional ~3000 transients with host galaxy redshifts. This trained classifier is included in the package, but users will most likely want to train on their own survey data for better performance.</p>
 <div class="toctree-wrapper compound">
 <ul>

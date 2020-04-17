@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post1+gaa6d707 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.0.post1+gaa6d707
               </div>
             
           
@@ -421,7 +421,7 @@ from <cite>clf.predict_proba</cite> (column name = ‘probabilities’).</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.extract_features">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">reconstruct</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.extract_features" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">R_filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">reconstruct</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.extract_features" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
 light curves in each filter.</p>
 <dl class="field-list simple">
@@ -432,7 +432,14 @@ light curves in each filter.</p>
 <dt><strong>stored_models</strong><span class="classifier">str</span></dt><dd><p>If a directory, look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
 If a Numpy file, read the parameters from this file.</p>
 </dd>
-<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read fron Numpy file.</p>
+<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to extract features. If <cite>stored_models</cite> is a directory, these should be the last characters
+of the subdirectories in which the traces are stored. Ignored if models are read from a Numpy file.</p>
+</dd>
+<dt><strong>R_filters</strong><span class="classifier">dict, optional</span></dt><dd><p>Ratios of total to selective extinction for <cite>filters</cite>. This package includes the values for common filters
+(see <cite>superphot.extract_features.R_FILTERS</cite>). Use this argument to override those default values or to include
+additional filters.</p>
+</dd>
+<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read from a Numpy file.</p>
 </dd>
 <dt><strong>zero_point</strong><span class="classifier">float, optional</span></dt><dd><p>Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.</p>
 </dd>
@@ -456,20 +463,20 @@ Otherwise, use the model parameters directly.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.flux_to_luminosity">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">flux_to_luminosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">R_V</span><span class="o">=</span><span class="default_value">3.1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#flux_to_luminosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.flux_to_luminosity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">flux_to_luminosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">R_filter</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#flux_to_luminosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.flux_to_luminosity" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>row</strong><span class="classifier">astropy.table.row.Row</span></dt><dd><p>Astropy table row for a given transient, containing columns ‘MWEBV’ and ‘redshift’.</p>
 </dd>
-<dt><strong>R_V</strong><span class="classifier">float</span></dt><dd><p>Ratio of total to selective extinction, i.e., A_V = row[‘MWEBV’] * R_V. Default: 3.1</p>
+<dt><strong>R_filter</strong><span class="classifier">list</span></dt><dd><p>Ratios of A_filter to <cite>row[‘MWEBV’]</cite> for each of the filters used. This determines the length of the output.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>flux2lum</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of flux-to-luminosity conversion factors for the filters g, r, i, and z.</p>
+<dt><strong>flux2lum</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of flux-to-luminosity conversion factors for each filter.</p>
 </dd>
 </dl>
 </dd>
@@ -506,12 +513,17 @@ Otherwise, use the model parameters directly.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.load_trace">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">trace_path</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">version</span><span class="o">=</span><span class="default_value">'2'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.load_trace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">trace_path</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">version</span><span class="o">=</span><span class="default_value">'2'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.load_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).</p>
+<p>Assumes the traces are stored in a directory <cite>basename_vf</cite>, where <cite>basename</cite> is <cite>file</cite> up to the first ‘.’, <cite>v</cite> is
+<cite>version</cite>, and <cite>f</cite> is an element of <cite>filters</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>file</strong><span class="classifier">str</span></dt><dd><p>Filename of the original SNANA data file.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to load traces. If one or more filters are not found, the posteriors of the remaining filters
+will be combined and used in place of the missing ones.</p>
 </dd>
 <dt><strong>trace_path</strong><span class="classifier">str, optional</span></dt><dd><p>Directory where the PyMC3 trace data is stored. Default: current directory.</p>
 </dd>
@@ -530,7 +542,7 @@ Otherwise, use the model parameters directly.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.plot_histograms">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">varnames</span><span class="o">=</span><span class="default_value"></span></em>, <em class="sig-param"><span class="n">rownames</span><span class="o">=</span><span class="default_value">'griz'</span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value"></span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_histograms" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">varnames</span><span class="o">=</span><span class="default_value"></span></em>, <em class="sig-param"><span class="n">rownames</span><span class="o">=</span><span class="default_value"></span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value"></span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_histograms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a grid of histograms of the column <cite>colname</cite> of <cite>data_table</cite>, grouped by the column <cite>groupby</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -543,7 +555,7 @@ Otherwise, use the model parameters directly.</p>
 </dd>
 <dt><strong>varnames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Parameter names to list on the x-axes of the plot. Default: no labels.</p>
 </dd>
-<dt><strong>rownames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Labels for the leftmost y-axes. Default: ‘g’, ‘r’, ‘i’, ‘z’.</p>
+<dt><strong>rownames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Labels for the leftmost y-axes.</p>
 </dd>
 <dt><strong>no_autoscale</strong><span class="classifier">tuple or list, optional</span></dt><dd><p>Class names not to use in calculating the axis limits. Default: include all.</p>
 </dd>
@@ -556,7 +568,7 @@ Otherwise, use the model parameters directly.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.plot_pca_reconstruction">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
 These are saved as a multi-page PDF called pdf_reconstruction.pdf.</p>
 <dl class="field-list simple">
@@ -569,6 +581,8 @@ These are saved as a multi-page PDF called pdf_reconstruction.pdf.</p>
 <dt><strong>coefficients</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
 the coefficients will be printed at the top right of each plot.</p>
 </dd>
+<dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring the lines.</p>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -576,7 +590,7 @@ the coefficients will be printed at the top right of each plot.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.plot_principal_components">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_principal_components" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_principal_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the principal components being used to extract features from the model light curves. The plot will be saved to
 principal_components.pdf.</p>
 <dl class="field-list simple">
@@ -585,6 +599,8 @@ principal_components.pdf.</p>
 <dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>List of the PCA objects for each filter, after fitting.</p>
 </dd>
 <dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>Times (x-values) to plot the principal components against.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.</p>
 </dd>
 </dl>
 </dd>
@@ -764,7 +780,7 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>traces</strong><span class="classifier">list</span></dt><dd><p>List of MultiTrace objects for each filter.</p>
+<dt><strong>traces</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of MultiTrace objects for each filter.</p>
 </dd>
 <dt><strong>parameters</strong><span class="classifier">list</span></dt><dd><p>List of Theano variables for which to combine the posteriors. (Only names of the parameters are used.)</p>
 </dd>
@@ -778,7 +794,7 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd>
 <dt><strong>y_priors</strong><span class="classifier">list</span></dt><dd><p>List of Numpy arrays containing the y-values of the new priors.</p>
 </dd>
-<dt><strong>old_posteriors</strong><span class="classifier">list</span></dt><dd><p>List of Numpy arrays containing the y-values of the old posteriors.</p>
+<dt><strong>old_posteriors</strong><span class="classifier">list</span></dt><dd><p>List of dictionaries containing the y-values of the old posteriors for each filter.</p>
 </dd>
 </dl>
 </dd>
@@ -787,20 +803,18 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 
 <dl class="py function">
 <dt id="superphot.fit_model.plot_final_fits">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">plot_final_fits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">traces1</span></em>, <em class="sig-param"><span class="n">traces2</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">outfile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">'griz'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#plot_final_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.plot_final_fits" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">plot_final_fits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">traces1</span></em>, <em class="sig-param"><span class="n">traces2</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">outfile</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#plot_final_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.plot_final_fits" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make a four-panel plot showing sample light curves from each of the two fitting iterations compared to observations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the observed light curve.</p>
 </dd>
-<dt><strong>traces1, traces2</strong><span class="classifier">list</span></dt><dd><p>Lists of the trace objects (for each filter) from which to generate the model light curves.</p>
+<dt><strong>traces1, traces2</strong><span class="classifier">dict</span></dt><dd><p>Dictionaries of the trace objects (for each filter) from which to generate the model light curves.</p>
 </dd>
 <dt><strong>parameters</strong><span class="classifier">list</span></dt><dd><p>List of Theano variables in the PyMC3 model.</p>
 </dd>
 <dt><strong>outfile</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. If None, display the plot instead of saving it.</p>
-</dd>
-<dt><strong>filters</strong><span class="classifier">str, optional</span></dt><dd><p>Filters corresponding to the traces in <cite>trace1</cite> and <cite>trace2</cite>.</p>
 </dd>
 </dl>
 </dd>
@@ -852,7 +866,7 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd>
 <dt><strong>y_priors</strong><span class="classifier">list</span></dt><dd><p>List of Numpy arrays containing the y-values of the new priors.</p>
 </dd>
-<dt><strong>old_posteriors</strong><span class="classifier">list</span></dt><dd><p>List of Numpy arrays containing the y-values of the old posteriors.</p>
+<dt><strong>old_posteriors</strong><span class="classifier">list</span></dt><dd><p>List of dictionaries containing the y-values of the old posteriors for each filter.</p>
 </dd>
 <dt><strong>parameters</strong><span class="classifier">list</span></dt><dd><p>List of Theano variables for which to combine the posteriors.</p>
 </dd>
@@ -991,7 +1005,7 @@ the input table is used, even though it does not contain all the filters.</p>
 
 <dl class="py function">
 <dt id="superphot.fit_model.two_iteration_mcmc">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">two_iteration_mcmc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curve</span></em>, <em class="sig-param"><span class="n">outfile</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">'griz'</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force_second</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_diagnostics</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#two_iteration_mcmc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.two_iteration_mcmc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">two_iteration_mcmc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curve</span></em>, <em class="sig-param"><span class="n">outfile</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force_second</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_diagnostics</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#two_iteration_mcmc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.two_iteration_mcmc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model to the observed light curve. Then combine the posteriors for each filter and use that as the new prior
 for a second iteration of fitting.</p>
 <dl class="field-list simple">
@@ -1002,8 +1016,7 @@ for a second iteration of fitting.</p>
 <dt><strong>outfile</strong><span class="classifier">str</span></dt><dd><p>Path where the trace will be stored. This should include a blank field ({{}}) that will be replaced with the 
 iteration number and filter name. Diagnostic plots will also be saved according to this pattern.</p>
 </dd>
-<dt><strong>filters</strong><span class="classifier">str, optional</span></dt><dd><p>Light curve filters to fit. If the observed light curve does not contain one or more of these filters, the 
-posteriors of the remaining filters will be combined and used in place of the missing ones.</p>
+<dt><strong>filters</strong><span class="classifier">str, optional</span></dt><dd><p>Light curve filters to fit. Default: all filters in <cite>light_curve</cite>.</p>
 </dd>
 <dt><strong>force</strong><span class="classifier">bool, optional</span></dt><dd><p>Redo the fit (both iterations) even if results are already stored in <cite>outfile</cite>. Default: False.</p>
 </dd>
@@ -1021,7 +1034,7 @@ posteriors of the remaining filters will be combined and used in place of the mi
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>traces1, traces2</strong><span class="classifier">list</span></dt><dd><p>Lists of the PyMC3 trace objects for each filter for the first and second fitting iterations, respectively.</p>
+<dt><strong>traces1, traces2</strong><span class="classifier">dict</span></dt><dd><p>Dictionaries of the PyMC3 trace objects for each filter for the first and second fitting iterations.</p>
 </dd>
 <dt><strong>parameters</strong><span class="classifier">list</span></dt><dd><p>List of Theano variables in the PyMC3 model.</p>
 </dd>
@@ -1053,6 +1066,12 @@ posteriors of the remaining filters will be combined and used in place of the mi
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.util.has_labeled_events">
+<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">has_labeled_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'type'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#has_labeled_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.has_labeled_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if a table has unmasked values in the column <cite>key</cite></p>
 </dd></dl>
 
 <dl class="py function">
@@ -1103,6 +1122,26 @@ posteriors of the remaining filters will be combined and used in place of the mi
 <dt id="superphot.util.select_labeled_events">
 <code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">select_labeled_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'type'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#select_labeled_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.select_labeled_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns rows from a table where the column <cite>key</cite> is not masked.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.util.subplots_layout">
+<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">subplots_layout</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#subplots_layout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.subplots_layout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the number of rows and columns for a multi-panel plot, staying as close to a square as possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>n</strong><span class="classifier">int</span></dt><dd><p>The number of subplots required.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>nrows, ncols</strong><span class="classifier">int</span></dt><dd><p>The number of rows and columns in the layout.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

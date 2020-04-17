@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.util &mdash; Superphot 0.1.0 documentation</title>
+  <title>superphot.util &mdash; Superphot 0.1.0.post1+gaa6d707 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.0.post1+gaa6d707
               </div>
             
           
@@ -255,9 +255,33 @@
     <span class="k">return</span> <span class="n">t_event</span></div>
 
 
+<div class="viewcode-block" id="has_labeled_events"><a class="viewcode-back" href="../../api.html#superphot.util.has_labeled_events">[docs]</a><span class="k">def</span> <span class="nf">has_labeled_events</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if a table has unmasked values in the column `key`&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">has_masked_values</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">t</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+
+
 <div class="viewcode-block" id="select_labeled_events"><a class="viewcode-back" href="../../api.html#superphot.util.select_labeled_events">[docs]</a><span class="k">def</span> <span class="nf">select_labeled_events</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Returns rows from a table where the column `key` is not masked.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">t</span><span class="p">[</span><span class="o">~</span><span class="n">t</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">key</span><span class="p">]]</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">has_masked_values</span> <span class="k">else</span> <span class="n">t</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">t</span><span class="p">[</span><span class="o">~</span><span class="n">t</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">key</span><span class="p">]]</span> <span class="k">if</span> <span class="n">has_labeled_events</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="k">else</span> <span class="n">t</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="subplots_layout"><a class="viewcode-back" href="../../api.html#superphot.util.subplots_layout">[docs]</a><span class="k">def</span> <span class="nf">subplots_layout</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the number of rows and columns for a multi-panel plot, staying as close to a square as possible.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n : int</span>
+<span class="sd">        The number of subplots required.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    nrows, ncols : int</span>
+<span class="sd">        The number of rows and columns in the layout.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nrows</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">n</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">ncols</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="o">-</span><span class="n">n</span> <span class="o">//</span> <span class="n">nrows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span></div>
 </pre></div>
 
            </div>

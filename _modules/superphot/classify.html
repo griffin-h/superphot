@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.classify &mdash; Superphot 0.1.0 documentation</title>
+  <title>superphot.classify &mdash; Superphot 0.1.0.post1+gaa6d707 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.0.post1+gaa6d707
               </div>
             
           
@@ -445,7 +445,7 @@
         <span class="k">if</span> <span class="n">data_table</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">:</span>
             <span class="n">data_table</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">fill_value</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stored</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ndraws&#39;</span><span class="p">,</span> <span class="s1">&#39;paramnames&#39;</span><span class="p">,</span> <span class="s1">&#39;featnames&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;filters&#39;</span><span class="p">,</span> <span class="s1">&#39;ndraws&#39;</span><span class="p">,</span> <span class="s1">&#39;paramnames&#39;</span><span class="p">,</span> <span class="s1">&#39;featnames&#39;</span><span class="p">]:</span>
             <span class="n">data_table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stored</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data_table</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stored</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -542,9 +542,10 @@
     <span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fit_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">sampler</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">)</span>
     <span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">[</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
     <span class="n">plot_histograms</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="s1">&#39;prediction&#39;</span><span class="p">,</span> <span class="n">varnames</span><span class="o">=</span><span class="n">test_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;paramnames&#39;</span><span class="p">],</span>
-                    <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_parameters.pdf&#39;</span><span class="p">)</span>
+                    <span class="n">rownames</span><span class="o">=</span><span class="n">test_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;filters&#39;</span><span class="p">],</span> <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_parameters.pdf&#39;</span><span class="p">)</span>
     <span class="n">plot_histograms</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="s1">&#39;features&#39;</span><span class="p">,</span> <span class="s1">&#39;prediction&#39;</span><span class="p">,</span> <span class="n">varnames</span><span class="o">=</span><span class="n">test_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;featnames&#39;</span><span class="p">],</span>
-                    <span class="n">no_autoscale</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SLSN&#39;</span><span class="p">,</span> <span class="s1">&#39;SNIIn&#39;</span><span class="p">],</span> <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_features.pdf&#39;</span><span class="p">)</span>
+                    <span class="n">rownames</span><span class="o">=</span><span class="n">test_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;filters&#39;</span><span class="p">],</span> <span class="n">no_autoscale</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SLSN&#39;</span><span class="p">,</span> <span class="s1">&#39;SNIIn&#39;</span><span class="p">],</span>
+                    <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_features.pdf&#39;</span><span class="p">)</span>
 
     <span class="n">results</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
     <span class="n">write_results</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;results.txt&#39;</span><span class="p">)</span>
