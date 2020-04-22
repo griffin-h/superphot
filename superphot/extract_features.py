@@ -373,7 +373,7 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         plot_principal_components(pcas, time, filters)
         logging.info('PCA finished')
         if reconstruct:
-            plot_pca_reconstruction(good_models, reconstructed, coefficients, filters)
+            plot_pca_reconstruction(models_to_fit, reconstructed, coefficients, filters)
         features = np.dstack([peakmags, coefficients])
         t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
