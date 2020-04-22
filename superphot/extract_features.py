@@ -300,16 +300,25 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
     use_pca : bool, optional
         Use the peak absolute magnitudes and principal components of the light curve as the features (default).
         Otherwise, use the model parameters directly.
-    reconstruct : bool, optional
-        Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow). Default: False.
     stored_pcas : str, optional
         Path to pickled PCA objects. Default: create and fit new PCA objects.
+    save_pca_to : str, optional
+        Plot and save the principal components to this file. Default: skip this step.
+    save_reconstruction_to : str, optional
+        Plot and save the reconstructed light curves to this file (slow). Default: skip this step.
 
     Returns
     -------
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
+    if os.path.isdir(stored_models):
+        stored = {}
+    else:
+        stored = np.load(stored_models)
+        filters = stored.get('filters', filters)
+        ndraws = stored.get('ndraws', ndraws)
+
     R_filter = []
     for fltr in filters:
         if R_filters is not None and fltr in R_filters:
@@ -318,13 +327,6 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
             R_filter.append(R_FILTERS[fltr])
         else:
             raise ValueError(f'Unrecognized filter {fltr}. Please specify the extinction correction using `R_filters`.')
-
-    if os.path.isdir(stored_models):
-        stored = {}
-    else:
-        stored = np.load(stored_models)
-        filters = stored.get('filters', filters)
-        ndraws = stored.get('ndraws', ndraws)
 
     if 'params' in stored:
         params = stored['params']
