@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post2+g99723bd documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post5+gcc3b57c documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post2+g99723bd
+                0.1.0.post5+gcc3b57c
               </div>
             
           
@@ -421,7 +421,7 @@ from <cite>clf.predict_proba</cite> (column name = ‘probabilities’).</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.extract_features">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">R_filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">reconstruct</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.extract_features" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">R_filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.extract_features" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
 light curves in each filter.</p>
 <dl class="field-list simple">
@@ -446,9 +446,11 @@ additional filters.</p>
 <dt><strong>use_pca</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the peak absolute magnitudes and principal components of the light curve as the features (default).
 Otherwise, use the model parameters directly.</p>
 </dd>
-<dt><strong>reconstruct</strong><span class="classifier">bool, optional</span></dt><dd><p>Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow). Default: False.</p>
-</dd>
 <dt><strong>stored_pcas</strong><span class="classifier">str, optional</span></dt><dd><p>Path to pickled PCA objects. Default: create and fit new PCA objects.</p>
+</dd>
+<dt><strong>save_pca_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the principal components to this file. Default: skip this step.</p>
+</dd>
+<dt><strong>save_reconstruction_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the reconstructed light curves to this file (slow). Default: skip this step.</p>
 </dd>
 </dl>
 </dd>
@@ -568,9 +570,9 @@ will be combined and used in place of the missing ones.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.plot_pca_reconstruction">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
-These are saved as a multi-page PDF called pdf_reconstruction.pdf.</p>
+These are saved as a multipage PDF.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
@@ -583,6 +585,8 @@ the coefficients will be printed at the top right of each plot.</p>
 </dd>
 <dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring the lines.</p>
 </dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename for the output file. Default: pca_reconstruction.pdf.</p>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -590,9 +594,8 @@ the coefficients will be printed at the top right of each plot.</p>
 
 <dl class="py function">
 <dt id="superphot.extract_features.plot_principal_components">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_principal_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot the principal components being used to extract features from the model light curves. The plot will be saved to
-principal_components.pdf.</p>
+<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'principal_components.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_principal_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the principal components being used to extract features from the model light curves.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
@@ -601,6 +604,8 @@ principal_components.pdf.</p>
 <dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>Times (x-values) to plot the principal components against.</p>
 </dd>
 <dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: principal_components.pdf.</p>
 </dd>
 </dl>
 </dd>
