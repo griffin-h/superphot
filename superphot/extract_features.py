@@ -207,10 +207,9 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
     plt.close(fig)
 
 
-def plot_principal_components(pcas, time=None, filters=None):
+def plot_principal_components(pcas, time=None, filters=None, saveto='principal_components.pdf'):
     """
-    Plot the principal components being used to extract features from the model light curves. The plot will be saved to
-    principal_components.pdf.
+    Plot the principal components being used to extract features from the model light curves.
 
     Parameters
     ----------
@@ -220,6 +219,8 @@ def plot_principal_components(pcas, time=None, filters=None):
         Times (x-values) to plot the principal components against.
     filters : iterable, optional
         Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.
+    saveto : str, optional
+        Filename to which to save the plot. Default: principal_components.pdf.
     """
     nrows, ncols = subplots_layout(pcas[0].n_components)
     fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
@@ -237,13 +238,13 @@ def plot_principal_components(pcas, time=None, filters=None):
         lines += p
     fig.legend(lines, filters, ncol=len(filters), loc='upper center')
     fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.95))
-    fig.savefig('principal_components.pdf')
+    fig.savefig(saveto)
 
 
-def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=None):
+def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=None, saveto='pca_reconstruction.pdf'):
     """
     Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
-    These are saved as a multi-page PDF called pdf_reconstruction.pdf.
+    These are saved as a multipage PDF.
 
     Parameters
     ----------
@@ -256,10 +257,12 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=No
         the coefficients will be printed at the top right of each plot.
     filters : iterable, optional
         Names of the filters corresponding to the PCA objects. Only used for coloring the lines.
+    saveto : str, optional
+        Filename for the output file. Default: pca_reconstruction.pdf.
     """
     if filters is None:
         filters = [f'Filter {i+1:d}' for i in range(models.shape[1])]
-    with PdfPages('pca_reconstruction.pdf') as pdf:
+    with PdfPages(saveto) as pdf:
         ax = plt.axes()
         for i in trange(models.shape[0], desc='PCA reconstruction'):
             for j in range(models.shape[1]):
@@ -273,8 +276,8 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=No
             ax.clear()
 
 
-def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_point=27.5, use_pca=True, reconstruct=False,
-                     stored_pcas=None):
+def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_point=27.5, use_pca=True,
+                     stored_pcas=None, save_pca_to=None, save_reconstruction_to=None):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -370,10 +373,11 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
             models_to_fit = good_models
         coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
                                                                      stored_pcas=stored_pcas)
-        plot_principal_components(pcas, time, filters)
+        if save_pca_to is not None:
+            plot_principal_components(pcas, time, filters, save_pca_to)
         logging.info('PCA finished')
-        if reconstruct:
-            plot_pca_reconstruction(models_to_fit, reconstructed, coefficients, filters)
+        if save_reconstruction_to is not None:
+            plot_pca_reconstruction(models_to_fit, reconstructed, coefficients, filters, save_reconstruction_to)
         features = np.dstack([peakmags, coefficients])
         t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
@@ -454,15 +458,20 @@ def main():
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
-                        help='Plot and save the reconstructed light curves to pca_reconstruction.pdf (slow)')
+                        help='Plot and save the reconstructed light curves to {output}_reconstruction.pdf (slow)')
     parser.add_argument('--output', default='test_data',
                         help='Filename (without extension) to save the test data and features')
     args = parser.parse_args()
 
     logging.info('started extract_features.py')
     data_table = compile_data_table(args.input_table)
+    if args.reconstruct:
+        save_reconstruction_to = args.output + '_reconstruction.pdf'
+    else:
+        save_reconstruction_to = None
     test_data = extract_features(data_table, args.stored_models, args.filters, ndraws=args.ndraws, use_pca=args.use_pca,
-                                 reconstruct=args.reconstruct, stored_pcas=args.pcas)
+                                 stored_pcas=args.pcas, save_pca_to=args.output + '_pca.pdf',
+                                 save_reconstruction_to=save_reconstruction_to)
     save_data(test_data, args.output)
     if has_labeled_events(test_data):
         plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], rownames=args.filters,
