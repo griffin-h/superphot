@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.fit_model &mdash; Superphot 0.1.0.post7+g9593a37 documentation</title>
+  <title>superphot.fit_model &mdash; Superphot 0.1.0.post7+gedcafcb documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post7+g9593a37
+                0.1.0.post7+gedcafcb
               </div>
             
           
@@ -689,9 +689,6 @@
                          <span class="sa">f</span><span class="s1">&#39;are in your light curve (</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lc_filters</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">fltr</span> <span class="ow">in</span> <span class="n">filters_to_fit</span><span class="p">:</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;FLT&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">fltr</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No </span><span class="si">{</span><span class="n">fltr</span><span class="si">}</span><span class="s1">-band points. Skipping fit.&#39;</span><span class="p">)</span>
-            <span class="k">continue</span>
         <span class="n">model1</span><span class="p">,</span> <span class="n">parameters1</span> <span class="o">=</span> <span class="n">setup_model1</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s1">&#39;FLUXCAL&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
         <span class="n">outfile1</span> <span class="o">=</span> <span class="n">outfile</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;_1&#39;</span> <span class="o">+</span> <span class="n">fltr</span><span class="p">)</span>
         <span class="n">trace1</span> <span class="o">=</span> <span class="n">sample_or_load_trace</span><span class="p">(</span><span class="n">model1</span><span class="p">,</span> <span class="n">outfile1</span><span class="p">,</span> <span class="n">force</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">walkers</span><span class="p">,</span> <span class="n">tuning</span><span class="p">)</span>
@@ -705,11 +702,8 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Starting second iteration of fitting&#39;</span><span class="p">)</span>
 
     <span class="n">traces2</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">fltr</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">fltr</span> <span class="ow">in</span> <span class="n">filters_to_fit</span><span class="p">:</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;FLT&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">fltr</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No </span><span class="si">{</span><span class="n">fltr</span><span class="si">}</span><span class="s1">-band points. Skipping fit.&#39;</span><span class="p">)</span>
-            <span class="k">continue</span>
         <span class="n">model2</span><span class="p">,</span> <span class="n">parameters2</span> <span class="o">=</span> <span class="n">setup_model2</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">parameters1</span><span class="p">,</span> <span class="n">x_priors</span><span class="p">,</span> <span class="n">y_priors</span><span class="p">)</span>
         <span class="n">outfile2</span> <span class="o">=</span> <span class="n">outfile</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;_2&#39;</span> <span class="o">+</span> <span class="n">fltr</span><span class="p">)</span>
         <span class="n">trace2</span> <span class="o">=</span> <span class="n">sample_or_load_trace</span><span class="p">(</span><span class="n">model2</span><span class="p">,</span> <span class="n">outfile2</span><span class="p">,</span> <span class="n">force</span> <span class="ow">or</span> <span class="n">force_second</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">walkers</span><span class="p">,</span> <span class="n">tuning</span><span class="p">)</span>
