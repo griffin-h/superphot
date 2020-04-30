@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.extract_features &mdash; Superphot 0.1.0.post5+gcc3b57c documentation</title>
+  <title>superphot.extract_features &mdash; Superphot 0.1.0.post6+g7cf06cb documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post5+gcc3b57c
+                0.1.0.post6+g7cf06cb
               </div>
             
           
@@ -169,7 +169,7 @@
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">trange</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">read_light_curve</span><span class="p">,</span> <span class="n">select_event_data</span><span class="p">,</span> <span class="n">filter_colors</span><span class="p">,</span> <span class="n">meta_columns</span><span class="p">,</span> <span class="n">select_labeled_events</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">has_labeled_events</span><span class="p">,</span> <span class="n">subplots_layout</span>
-<span class="kn">from</span> <span class="nn">.fit_model</span> <span class="kn">import</span> <span class="n">setup_model1</span><span class="p">,</span> <span class="n">produce_lc</span><span class="p">,</span> <span class="n">sample_posterior</span>
+<span class="kn">from</span> <span class="nn">.fit_model</span> <span class="kn">import</span> <span class="n">setup_model1</span><span class="p">,</span> <span class="n">produce_lc</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
@@ -433,7 +433,7 @@
 
 
 <div class="viewcode-block" id="extract_features"><a class="viewcode-back" href="../../api.html#superphot.extract_features.extract_features">[docs]</a><span class="k">def</span> <span class="nf">extract_features</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">stored_models</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">R_filters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ndraws</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">zero_point</span><span class="o">=</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">use_pca</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                     <span class="n">stored_pcas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save_pca_to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save_reconstruction_to</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                     <span class="n">stored_pcas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save_pca_to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save_reconstruction_to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the</span>
 <span class="sd">    light curves in each filter.</span>
@@ -465,6 +465,8 @@
 <span class="sd">        Plot and save the principal components to this file. Default: skip this step.</span>
 <span class="sd">    save_reconstruction_to : str, optional</span>
 <span class="sd">        Plot and save the reconstructed light curves to this file (slow). Default: skip this step.</span>
+<span class="sd">    random_state : int, optional</span>
+<span class="sd">        Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -502,7 +504,8 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="n">ndraws</span><span class="p">:</span>
-                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample_posterior</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">ndraws</span><span class="p">))</span>
+                <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">ndraws</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>  <span class="c1"># ndraws == 0 means take the average</span>
                 <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
                 <span class="n">ndraws</span> <span class="o">=</span> <span class="mi">1</span>
@@ -615,6 +618,7 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--use-params&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_false&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;use_pca&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Use model parameters as features&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--reconstruct&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Plot and save the reconstructed light curves to </span><span class="si">{output}</span><span class="s1">_reconstruction.pdf (slow)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--random-state&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Seed for the random number generator (for reproducibility).&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;test_data&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename (without extension) to save the test data and features&#39;</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
@@ -627,7 +631,7 @@
         <span class="n">save_reconstruction_to</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">test_data</span> <span class="o">=</span> <span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">stored_models</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span> <span class="n">ndraws</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ndraws</span><span class="p">,</span> <span class="n">use_pca</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">use_pca</span><span class="p">,</span>
                                  <span class="n">stored_pcas</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">pcas</span><span class="p">,</span> <span class="n">save_pca_to</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output</span> <span class="o">+</span> <span class="s1">&#39;_pca.pdf&#39;</span><span class="p">,</span>
-                                 <span class="n">save_reconstruction_to</span><span class="o">=</span><span class="n">save_reconstruction_to</span><span class="p">)</span>
+                                 <span class="n">save_reconstruction_to</span><span class="o">=</span><span class="n">save_reconstruction_to</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
     <span class="n">save_data</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">has_labeled_events</span><span class="p">(</span><span class="n">test_data</span><span class="p">):</span>
         <span class="n">plot_histograms</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="n">varnames</span><span class="o">=</span><span class="n">test_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;paramnames&#39;</span><span class="p">],</span> <span class="n">rownames</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span>

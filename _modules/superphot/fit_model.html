@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.fit_model &mdash; Superphot 0.1.0.post5+gcc3b57c documentation</title>
+  <title>superphot.fit_model &mdash; Superphot 0.1.0.post6+g7cf06cb documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post5+gcc3b57c
+                0.1.0.post6+g7cf06cb
               </div>
             
           
@@ -517,28 +517,6 @@
     <span class="k">return</span> <span class="n">lc</span></div>
 
 
-<div class="viewcode-block" id="sample_posterior"><a class="viewcode-back" href="../../api.html#superphot.fit_model.sample_posterior">[docs]</a><span class="k">def</span> <span class="nf">sample_posterior</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">rand_num</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Randomly sample the parameters from the stored MCMC traces.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    trace : numpy.ndarray, shape=(nsteps, nfilters, nparams)</span>
-<span class="sd">        PyMC3 trace stored as 3-D array with shape .</span>
-<span class="sd">    rand_num : int</span>
-<span class="sd">        The number of light curves randomly extracted from the MCMC run.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    trace_rand : numpy.ndarray, shape=(rand_num, nfilters, nparams)</span>
-<span class="sd">        3-D array containing a random sampling of parameters for each filter.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">i_rand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">rand_num</span><span class="p">)</span>
-    <span class="n">trace_rand</span> <span class="o">=</span> <span class="n">trace</span><span class="p">[</span><span class="n">i_rand</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">trace_rand</span></div>
-
-
 <div class="viewcode-block" id="plot_model_lcs"><a class="viewcode-back" href="../../api.html#superphot.fit_model.plot_model_lcs">[docs]</a><span class="k">def</span> <span class="nf">plot_model_lcs</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fltr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phase_min</span><span class="o">=</span><span class="n">PHASE_MIN</span><span class="p">,</span>
                    <span class="n">phase_max</span><span class="o">=</span><span class="n">PHASE_MAX</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -565,7 +543,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">phase_min</span><span class="p">,</span> <span class="n">phase_max</span><span class="p">)</span>
     <span class="n">trace_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">trace</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">])</span>
-    <span class="n">params</span> <span class="o">=</span> <span class="n">sample_posterior</span><span class="p">(</span><span class="n">trace_values</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">trace_values</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
     <span class="n">y</span> <span class="o">=</span> <span class="n">produce_lc</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
     <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
