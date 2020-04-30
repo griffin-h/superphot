@@ -531,11 +531,8 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
     if not filters_to_fit:
         raise ValueError(f'None of the requested filters ({"".join(filters)}) '
                          f'are in your light curve ({"".join(lc_filters)})')
-    for fltr in filters:
+    for fltr in filters_to_fit:
         obs = t[t['FLT'] == fltr]
-        if not len(obs):
-            logging.warning(f'No {fltr}-band points. Skipping fit.')
-            continue
         model1, parameters1 = setup_model1(obs, t['FLUXCAL'].max())
         outfile1 = outfile.format('_1' + fltr)
         trace1 = sample_or_load_trace(model1, outfile1, force, iterations, walkers, tuning)
@@ -549,11 +546,8 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
     logging.info('Starting second iteration of fitting')
 
     traces2 = {}
-    for fltr in filters:
+    for fltr in filters_to_fit:
         obs = t[t['FLT'] == fltr]
-        if not len(obs):
-            logging.warning(f'No {fltr}-band points. Skipping fit.')
-            continue
         model2, parameters2 = setup_model2(obs, parameters1, x_priors, y_priors)
         outfile2 = outfile.format('_2' + fltr)
         trace2 = sample_or_load_trace(model2, outfile2, force or force_second, iterations, walkers, tuning)
