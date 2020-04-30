@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.fit_model &mdash; Superphot 0.1.0.post6+g7cf06cb documentation</title>
+  <title>superphot.fit_model &mdash; Superphot 0.1.0.post7+g9593a37 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post6+g7cf06cb
+                0.1.0.post7+g9593a37
               </div>
             
           
@@ -687,7 +687,7 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">filters_to_fit</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;None of the requested filters (</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span><span class="si">}</span><span class="s1">) &#39;</span>
                          <span class="sa">f</span><span class="s1">&#39;are in your light curve (</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lc_filters</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">fltr</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">fltr</span> <span class="ow">in</span> <span class="n">filters_to_fit</span><span class="p">:</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;FLT&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">fltr</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">):</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No </span><span class="si">{</span><span class="n">fltr</span><span class="si">}</span><span class="s1">-band points. Skipping fit.&#39;</span><span class="p">)</span>
