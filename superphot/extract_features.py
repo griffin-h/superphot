@@ -13,7 +13,7 @@ from sklearn.decomposition import PCA
 from tqdm import trange
 from .util import read_light_curve, select_event_data, filter_colors, meta_columns, select_labeled_events
 from .util import has_labeled_events, subplots_layout
-from .fit_model import setup_model1, produce_lc, sample_posterior
+from .fit_model import setup_model1, produce_lc
 import pickle
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -277,7 +277,7 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=No
 
 
 def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_point=27.5, use_pca=True,
-                     stored_pcas=None, save_pca_to=None, save_reconstruction_to=None):
+                     stored_pcas=None, save_pca_to=None, save_reconstruction_to=None, random_state=None):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -309,6 +309,8 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         Plot and save the principal components to this file. Default: skip this step.
     save_reconstruction_to : str, optional
         Plot and save the reconstructed light curves to this file (slow). Default: skip this step.
+    random_state : int, optional
+        Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.
 
     Returns
     -------
@@ -346,7 +348,8 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
                 logging.error(e)
                 continue
             if ndraws:
-                params.append(sample_posterior(trace, ndraws))
+                rng = np.random.default_rng(random_state)
+                params.append(rng.choice(trace, ndraws))
             else:  # ndraws == 0 means take the average
                 params.append(trace.mean(axis=0)[np.newaxis])
                 ndraws = 1
@@ -459,6 +462,7 @@ def main():
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
                         help='Plot and save the reconstructed light curves to {output}_reconstruction.pdf (slow)')
+    parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
     parser.add_argument('--output', default='test_data',
                         help='Filename (without extension) to save the test data and features')
     args = parser.parse_args()
@@ -471,7 +475,7 @@ def main():
         save_reconstruction_to = None
     test_data = extract_features(data_table, args.stored_models, args.filters, ndraws=args.ndraws, use_pca=args.use_pca,
                                  stored_pcas=args.pcas, save_pca_to=args.output + '_pca.pdf',
-                                 save_reconstruction_to=save_reconstruction_to)
+                                 save_reconstruction_to=save_reconstruction_to, random_state=args.random_state)
     save_data(test_data, args.output)
     if has_labeled_events(test_data):
         plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], rownames=args.filters,

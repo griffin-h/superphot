@@ -361,28 +361,6 @@ def produce_lc(time, trace, align_to_t0=False):
     return lc
 
 
-def sample_posterior(trace, rand_num):
-    """
-    Randomly sample the parameters from the stored MCMC traces.
-
-    Parameters
-    ----------
-    trace : numpy.ndarray, shape=(nsteps, nfilters, nparams)
-        PyMC3 trace stored as 3-D array with shape .
-    rand_num : int
-        The number of light curves randomly extracted from the MCMC run.
-
-    Returns
-    -------
-    trace_rand : numpy.ndarray, shape=(rand_num, nfilters, nparams)
-        3-D array containing a random sampling of parameters for each filter.
-
-    """
-    i_rand = np.random.randint(trace.shape[0], size=rand_num)
-    trace_rand = trace[i_rand]
-    return trace_rand
-
-
 def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None, phase_min=PHASE_MIN,
                    phase_max=PHASE_MAX):
     """
@@ -409,7 +387,8 @@ def plot_model_lcs(obs, trace, parameters, size=100, ax=None, fltr=None, ls=None
     """
     x = np.arange(phase_min, phase_max)
     trace_values = np.transpose([trace.get_values(var) for var in parameters])
-    params = sample_posterior(trace_values, size)
+    rng = np.random.default_rng()
+    params = rng.choice(trace_values, size)
     y = produce_lc(x, params).T
     if ax is None:
         ax = plt.axes()
