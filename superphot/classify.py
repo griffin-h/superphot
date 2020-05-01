@@ -355,7 +355,7 @@ def main():
                         help='Minimum confidence to be included in the confusion matrix.')
     args = parser.parse_args()
 
-    logging.info('started classify.py')
+    logging.info('started classification')
     test_data = load_data(args.test_data)
     if args.train_data is None:
         train_data = test_data
@@ -397,4 +397,4 @@ def main():
     write_results(results_validate, clf.classes_, 'validation.txt')
     make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
     logging.info('validation complete')
-    logging.info('finished classify.py')
+    logging.info('finished classification')
