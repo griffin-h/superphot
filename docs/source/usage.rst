@@ -20,19 +20,19 @@ For more advanced use cases, you can import the module and use some version of t
 
 .. code-block:: python
 
-    from superphot import util, extract_features, classify
+    from superphot import util, fit, extract, classify
     from glob import glob
     from os import path
 
     # Fit the model to the data. Do this for each file.
     for filename in glob('light_curves/*.dat'):
         outfile = path.join('stored_models/', path.basename(filename).split('.')[0] + '_{}')
-        light_curve = util.read_light_curve(filename)  # may need to write your own parser
-        fit_model.two_iteration_mcmc(light_curve, outfile)
+        light_curve = fit.read_light_curve(filename)  # may need to write your own parser
+        fit.two_iteration_mcmc(light_curve, outfile)
 
     # Extract features
-    data_table = extract_features.compile_data_table('input_table.txt')
-    test_data = extract_features.extract_features(data_table, 'stored_models/')
+    data_table = extract.compile_data_table('input_table.txt')
+    test_data = extract.extract_features(data_table, 'stored_models/')
     train_data = util.select_labeled_events(test_data)
 
     # Initialize the classifier and resampler (can adjust hyperparameters here)
@@ -84,7 +84,7 @@ Here is an example::
     OBS: 55452.6 g NULL  -2.915 10.422 nan -3.881
     ...
 
-Superphot includes a function that can parse data in this format (:func:`superphot.util.read_light_curve`).
+Superphot includes a function that can parse data in this format (:func:`superphot.fit.read_light_curve`).
 It should also be able to recognize a simple text format like this::
 
     # MWEBV: 0.0075

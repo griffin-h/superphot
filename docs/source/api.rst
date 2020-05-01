@@ -9,18 +9,18 @@ superphot.classify module
    :undoc-members:
    :show-inheritance:
 
-superphot.extract\_features module
+superphot.extract module
 ----------------------------------
 
-.. automodule:: superphot.extract_features
+.. automodule:: superphot.extract
    :members:
    :undoc-members:
    :show-inheritance:
 
-superphot.fit\_model module
+superphot.fit module
 ---------------------------
 
-.. automodule:: superphot.fit_model
+.. automodule:: superphot.fit
    :members:
    :undoc-members:
    :show-inheritance:

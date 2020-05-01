@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -16,11 +14,10 @@ with warnings.catch_warnings():
     from imblearn.over_sampling.base import BaseOverSampler
     from imblearn.utils._docstring import Substitution, _random_state_docstring
     from imblearn.over_sampling import SMOTE
-from .util import meta_columns, select_labeled_events
+from .util import meta_columns, select_labeled_events, plot_histograms
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
-from superphot.extract_features import plot_histograms
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 

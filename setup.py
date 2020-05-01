@@ -54,8 +54,8 @@ setuptools.setup(
     install_requires=requirements,
     entry_points={
         'console_scripts': [
-            'superphot-fit = superphot.fit_model:main',
-            'superphot-extract = superphot.extract_features:main',
+            'superphot-fit = superphot.fit:main',
+            'superphot-extract = superphot.extract:main',
             'superphot-classify = superphot.classify:main',
             'superphot-confuse = superphot.classify:plot_confusion_matrix_from_file',
         ],

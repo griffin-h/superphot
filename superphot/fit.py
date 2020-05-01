@@ -1,18 +1,19 @@
-#!/usr/bin/env python
-
 import os
 import argparse
 import numpy as np
 import pymc3 as pm
 import theano.tensor as tt
-from .util import read_light_curve, select_event_data, filter_colors, PHASE_MIN, PHASE_MAX, subplots_layout
+from .util import filter_colors, subplots_layout
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, median_absolute_deviation
+from astropy.table import Table
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 # Default fitting parameters
+PHASE_MIN = -50.
+PHASE_MAX = 180.
 ITERATIONS = 10000
 TUNING = 25000
 WALKERS = 25
@@ -484,6 +485,93 @@ def diagnostics(obs, trace, parameters, filename='.', show=False):
         f3.savefig(os.path.join(filename, 'posterior.pdf'))
         f4.savefig(os.path.join(filename, 'lightcurve.pdf'))
         plt.close('all')
+
+
+def read_light_curve(filename):
+    """
+    Read light curve data from a text file as an Astropy table. SNANA files are recognized.
+
+    Parameters
+    ----------
+    filename : str
+        Path to light curve data file.
+
+    Returns
+    -------
+    t : astropy.table.Table
+        Table of light curve data.
+    """
+    with open(filename) as f:
+        text = f.read()
+    data_lines = []
+    metadata = {}
+    for line in text.splitlines():
+        if ':' in line:
+            key, val = line.split(':')
+            if key in ['VARLIST', 'OBS']:
+                data_lines.append(val)
+            elif val:
+                key0 = key.strip('# ')
+                val0 = val.split()[0]
+                try:
+                    metadata[key0] = float(val0) if '.' in val0 else int(val0)
+                except ValueError:
+                    metadata[key0] = val0
+        else:
+            data_lines.append(line)
+    t = Table.read(data_lines, format='ascii', fill_values=[('NULL', '0'), ('nan', '0'), ('', '0')])
+    t.meta = metadata
+    if 'REDSHIFT_FINAL' in t.meta and 'REDSHIFT' not in t.meta:
+        t.meta['REDSHIFT'] = t.meta['REDSHIFT_FINAL']
+    if 'SEARCH_PEAKMJD' in t.meta and 'PHASE' not in t.colnames:
+        t['PHASE'] = t['MJD'] - t.meta['SEARCH_PEAKMJD']
+    return t
+
+
+def cut_outliers(t, nsigma):
+    """
+    Make an Astropy table containing only data that is below the cut off threshold.
+
+    Parameters
+    ----------
+    t : astropy.table.Table
+        Astropy table containing the light curve data.
+    nsigma : float
+        Determines at what value (flux < nsigma * mad_std) to cut outlier data points.
+
+    Returns
+    -------
+    t_cut : astropy.table.Table
+        Astropy table containing only data that is below the cut off threshold.
+
+    """
+    madstd = median_absolute_deviation(t['FLUXCAL'])
+    t_cut = t[t['FLUXCAL'] < nsigma * madstd]
+    return t_cut
+
+
+def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
+    """
+    Select data only from the period containing the peak flux, with outliers cut.
+
+    Parameters
+    ----------
+    t : astropy.table.Table
+        Astropy table containing the light curve data.
+    phase_min, phase_max : float, optional
+        Include only points within [`phase_min`, `phase_max`) days of SEARCH_PEAKMJD.
+    nsigma : float, optional
+        Determines at what value (flux < nsigma * mad_std) to reject outlier data points. Default: no rejection.
+
+    Returns
+    -------
+    t_event : astropy.table.Table
+        Table containing the reduced light curve data from the period containing the peak flux.
+    """
+    t_event = t[(t['PHASE'] >= phase_min) & (t['PHASE'] < phase_max)]
+    if nsigma is not None:
+        t_event = cut_outliers(t_event, nsigma)
+    return t_event
 
 
 def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_second=False, do_diagnostics=True,

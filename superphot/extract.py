@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -11,9 +9,8 @@ from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
-from .util import read_light_curve, filter_colors, meta_columns, select_labeled_events
-from .util import has_labeled_events, subplots_layout
-from .fit_model import produce_lc
+from .util import filter_colors, meta_columns, plot_histograms, has_labeled_events, subplots_layout
+from .fit import read_light_curve, produce_lc
 import pickle
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -132,71 +129,6 @@ def get_principal_components(light_curves, light_curves_fit=None, n_components=6
     return coefficients, reconstructed, pcas
 
 
-def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames=(), no_autoscale=(), saveto=None):
-    """
-    Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.
-
-    Parameters
-    ----------
-    data_table : astropy.table.Table
-        Data table containing the columns `colname` and `groupby` for each supernova.
-    colname : str
-        Column name of `data_table` to plot (e.g., 'params' or 'features').
-    class_kwd : str, optional
-        Column name of `data_table` to group by before plotting (e.g., 'type' or 'prediction'). Default: 'type'.
-    varnames : iterable, optional
-        Parameter names to list on the x-axes of the plot. Default: no labels.
-    rownames : iterable, optional
-        Labels for the leftmost y-axes.
-    no_autoscale : tuple or list, optional
-        Class names not to use in calculating the axis limits. Default: include all.
-    saveto : str, optional
-        Filename to which to save the plot. Default: display the plot instead of saving it.
-    """
-    _, nrows, ncols = data_table[colname].shape
-    if class_kwd:
-        data_table = select_labeled_events(data_table, key=class_kwd).group_by(class_kwd)
-        data_table.groups.keys['patch'] = None
-    else:
-        data_table = data_table.group_by(np.ones(len(data_table)))
-    ngroups = len(data_table.groups)
-    fig, axarr = plt.subplots(nrows, ncols, sharex='col', squeeze=False)
-    for j in range(ncols):
-        xlims = []
-        for i in range(nrows):
-            ylims = []
-            for k in range(ngroups):
-                histdata = data_table.groups[k][colname][:, i, j]
-                histrange = np.percentile(histdata, (5., 95.))
-                n, b, p = axarr[i, j].hist(histdata, range=histrange, density=True, histtype='step')
-                if class_kwd:
-                    data_table.groups.keys['patch'][k] = p[0]
-                if not class_kwd or data_table.groups.keys[class_kwd][k] not in no_autoscale:
-                    xlims.append(b)
-                    ylims.append(n)
-            axarr[i, j].set_ylim(0., 1.05 * np.max(ylims))
-            axarr[i, j].set_yticks([])
-        xmin, xmax = np.percentile(xlims, (0., 100.))
-        axarr[-1, j].set_xlim(1.05 * xmin - 0.05 * xmax, 1.05 * xmax - 0.05 * xmin)
-        axarr[-1, j].xaxis.set_major_locator(plt.MaxNLocator(2))
-    if class_kwd:
-        fig.legend(data_table.groups.keys['patch'], data_table.groups.keys[class_kwd], loc='upper center', ncol=ngroups,
-                   title={'type': 'Spectroscopic Class', 'prediction': 'Photometric Class'}.get(class_kwd, class_kwd))
-    for ax, var in zip(axarr[-1], varnames):
-        ax.set_xlabel(var, size='small')
-        ax.tick_params(labelsize='small')
-        if 'mag' in var.lower():
-            ax.invert_xaxis()
-    for ax, filt in zip(axarr[:, 0], rownames):
-        ax.set_ylabel(filt, rotation=0, va='center')
-    fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.9 if class_kwd else 1.))
-    if saveto is None:
-        plt.show()
-    else:
-        fig.savefig(saveto)
-    plt.close(fig)
-
-
 def plot_principal_components(pcas, time=None, filters=None, saveto='principal_components.pdf'):
     """
     Plot the principal components being used to extract features from the model light curves.
@@ -284,7 +216,7 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         of the subdirectories in which the traces are stored. Ignored if models are read from a Numpy file.
     R_filters : dict, optional
         Ratios of total to selective extinction for `filters`. This package includes the values for common filters
-        (see `superphot.extract_features.R_FILTERS`). Use this argument to override those default values or to include
+        (see `superphot.extract.R_FILTERS`). Use this argument to override those default values or to include
         additional filters.
     ndraws : int, optional
         Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read from a Numpy file.
@@ -458,7 +390,7 @@ def main():
                         help='Filename (without extension) to save the test data and features')
     args = parser.parse_args()
 
-    logging.info('started extract_features.py')
+    logging.info('started feature extraction')
     data_table = compile_data_table(args.input_table)
     if args.reconstruct:
         save_reconstruction_to = args.output + '_reconstruction.pdf'
@@ -473,4 +405,4 @@ def main():
                         saveto=args.output + '_parameters.pdf')
         plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'], rownames=args.filters,
                         no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
-    logging.info('finished extract_features.py')
+    logging.info('finished feature extraction')
