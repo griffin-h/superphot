@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-import pymc3 as pm
+from glob import glob
 import os
 import argparse
 import logging
@@ -11,9 +11,9 @@ from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
-from .util import read_light_curve, select_event_data, filter_colors, meta_columns, select_labeled_events
+from .util import read_light_curve, filter_colors, meta_columns, select_labeled_events
 from .util import has_labeled_events, subplots_layout
-from .fit_model import setup_model1, produce_lc
+from .fit_model import produce_lc
 import pickle
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -21,6 +21,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S
 # using WavelengthMean from the SVO Filter Profile Service http://svo2.cab.inta-csic.es/theory/fps/
 R_FILTERS = {'g': 3.57585511, 'r': 2.54033913, 'i': 1.88284171, 'z': 1.49033933, 'y': 1.24431944,  # Pan-STARRS filters
              'U': 4.78442941, 'B': 4.05870021, 'V': 3.02182672, 'R': 2.34507832, 'I': 1.69396924}  # Bessell filters
+PARAMNAMES = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
 
 
 def load_trace(file, filters, trace_path='.', version='2'):
@@ -50,17 +51,15 @@ def load_trace(file, filters, trace_path='.', version='2'):
     basename = os.path.basename(file).split('.')[0]
     tracefile = os.path.join(trace_path, basename) + '_{}{}'
     trace_values = []
-    t_full = read_light_curve(file)
-    t = select_event_data(t_full)
-    max_flux = t['FLUXCAL'].max()
     missing_filters = []
     for fltr in filters:
         tracefile_filter = tracefile.format(version, fltr)
         if os.path.exists(tracefile_filter):
-            obs = t[t['FLT'] == fltr]
-            model, varnames = setup_model1(obs, max_flux)
-            trace = pm.load_trace(tracefile_filter, model)
-            trace_values.append([trace.get_values(var) for var in varnames])
+            trace = []
+            for chain in glob(os.path.join(tracefile_filter, '*/samples.npz')):
+                chain_dict = np.load(chain)
+                trace.append([chain_dict[var] for var in PARAMNAMES])
+            trace_values.append(np.hstack(trace))
         else:
             logging.warning(f"No such file or directory: '{tracefile_filter}'")
             missing_filters.append(fltr)
@@ -362,7 +361,6 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
     t.meta['filters'] = list(filters)
     t.meta['ndraws'] = ndraws
     t['params'] = params
-    t.meta['paramnames'] = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
     params[:, :, 0] *= np.vstack([flux_to_luminosity(row, R_filter) for row in t])
     if use_pca:
         time = np.linspace(0., 300., 1000)
@@ -446,7 +444,7 @@ def save_data(t, basename):
     save_table = t[[col for col in meta_columns if col in t.colnames]][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
     np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], filters=t.meta['filters'],
-                        ndraws=t.meta['ndraws'], paramnames=t.meta['paramnames'], featnames=t.meta['featnames'])
+                        ndraws=t.meta['ndraws'], paramnames=PARAMNAMES, featnames=t.meta['featnames'])
     logging.info(f'data saved to {basename}.txt and {basename}.npz')
 
 
@@ -478,7 +476,7 @@ def main():
                                  save_reconstruction_to=save_reconstruction_to, random_state=args.random_state)
     save_data(test_data, args.output)
     if has_labeled_events(test_data):
-        plot_histograms(test_data, 'params', varnames=test_data.meta['paramnames'], rownames=args.filters,
+        plot_histograms(test_data, 'params', varnames=PARAMNAMES, rownames=args.filters,
                         saveto=args.output + '_parameters.pdf')
         plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'], rownames=args.filters,
                         no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
