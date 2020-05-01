@@ -122,7 +122,7 @@ Superphot writes all its outputs in Astropy's ``ascii.fixed_width_two_line`` for
 The file called ``input_table.txt`` above must have at least two columns: ``filename`` (referring to the light curve data file) and ``type`` (referring to the supernova classification).
 The ``filename`` column is used as the supernova identifier, so each filename must be unique (even if they are in different directories).
 The ``type`` column is used to train the classifier and can be left blank for supernovae not in the training set.
-If the required metadata are not in the light curve files, you must also include the columns ``id``, ``A_V``, and ``redshift``.
+If the required metadata are not in the light curve files, you must also include the columns ``MWEBV`` and ``redshift``.
 
 Superphot's feature extraction step saves the features in two separate files with the same base name (``test_data`` above) but different extensions.
 The ``test_data.txt`` file includes all the supernova metadata, which will be identical to ``input_table.txt`` unless stored model parameters are missing for any input supernovae.
