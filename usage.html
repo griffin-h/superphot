@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; Superphot 0.1.0.post7+gedcafcb documentation</title>
+  <title>Usage &mdash; Superphot 0.1.0.post12+g5551a6a documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post7+gedcafcb
+                0.1.0.post12+g5551a6a
               </div>
             
           
@@ -176,19 +176,19 @@ superphot-classify test_data
 </pre></div>
 </div>
 <p>For more advanced use cases, you can import the module and use some version of the following workflow:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">superphot</span> <span class="kn">import</span> <span class="n">util</span><span class="p">,</span> <span class="n">extract_features</span><span class="p">,</span> <span class="n">classify</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">superphot</span> <span class="kn">import</span> <span class="n">util</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">extract</span><span class="p">,</span> <span class="n">classify</span>
 <span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
 <span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
 
 <span class="c1"># Fit the model to the data. Do this for each file.</span>
 <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;light_curves/*.dat&#39;</span><span class="p">):</span>
     <span class="n">outfile</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;stored_models/&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
-    <span class="n">light_curve</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">read_light_curve</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>  <span class="c1"># may need to write your own parser</span>
-    <span class="n">fit_model</span><span class="o">.</span><span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+    <span class="n">light_curve</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">read_light_curve</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>  <span class="c1"># may need to write your own parser</span>
+    <span class="n">fit</span><span class="o">.</span><span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
 
 <span class="c1"># Extract features</span>
-<span class="n">data_table</span> <span class="o">=</span> <span class="n">extract_features</span><span class="o">.</span><span class="n">compile_data_table</span><span class="p">(</span><span class="s1">&#39;input_table.txt&#39;</span><span class="p">)</span>
-<span class="n">test_data</span> <span class="o">=</span> <span class="n">extract_features</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
+<span class="n">data_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_data_table</span><span class="p">(</span><span class="s1">&#39;input_table.txt&#39;</span><span class="p">)</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
 <span class="n">train_data</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">select_labeled_events</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
 
 <span class="c1"># Initialize the classifier and resampler (can adjust hyperparameters here)</span>
@@ -239,7 +239,7 @@ Here is an example:</p>
 <span class="o">...</span>
 </pre></div>
 </div>
-<p>Superphot includes a function that can parse data in this format (<a class="reference internal" href="api.html#superphot.util.read_light_curve" title="superphot.util.read_light_curve"><code class="xref py py-func docutils literal notranslate"><span class="pre">superphot.util.read_light_curve()</span></code></a>).
+<p>Superphot includes a function that can parse data in this format (<a class="reference internal" href="api.html#superphot.fit.read_light_curve" title="superphot.fit.read_light_curve"><code class="xref py py-func docutils literal notranslate"><span class="pre">superphot.fit.read_light_curve()</span></code></a>).
 It should also be able to recognize a simple text format like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># MWEBV: 0.0075</span>
 <span class="c1"># REDSHIFT: 0.1260</span>
@@ -274,7 +274,7 @@ The data need to end up as an Astropy table with (at least) the following column
 <p>The file called <code class="docutils literal notranslate"><span class="pre">input_table.txt</span></code> above must have at least two columns: <code class="docutils literal notranslate"><span class="pre">filename</span></code> (referring to the light curve data file) and <code class="docutils literal notranslate"><span class="pre">type</span></code> (referring to the supernova classification).
 The <code class="docutils literal notranslate"><span class="pre">filename</span></code> column is used as the supernova identifier, so each filename must be unique (even if they are in different directories).
 The <code class="docutils literal notranslate"><span class="pre">type</span></code> column is used to train the classifier and can be left blank for supernovae not in the training set.
-If the required metadata are not in the light curve files, you must also include the columns <code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">A_V</span></code>, and <code class="docutils literal notranslate"><span class="pre">redshift</span></code>.</p>
+If the required metadata are not in the light curve files, you must also include the columns <code class="docutils literal notranslate"><span class="pre">MWEBV</span></code> and <code class="docutils literal notranslate"><span class="pre">redshift</span></code>.</p>
 <p>Superphot’s feature extraction step saves the features in two separate files with the same base name (<code class="docutils literal notranslate"><span class="pre">test_data</span></code> above) but different extensions.
 The <code class="docutils literal notranslate"><span class="pre">test_data.txt</span></code> file includes all the supernova metadata, which will be identical to <code class="docutils literal notranslate"><span class="pre">input_table.txt</span></code> unless stored model parameters are missing for any input supernovae.
 The <code class="docutils literal notranslate"><span class="pre">test_data.npz</span></code> file includes the features themselves, stored as a compressed multidimensional binary array.</p>

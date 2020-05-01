@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post7+gedcafcb documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post12+g5551a6a documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post7+gedcafcb
+                0.1.0.post12+g5551a6a
               </div>
             
           
@@ -93,8 +93,8 @@
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.classify">superphot.classify module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-superphot.extract_features">superphot.extract_features module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-superphot.fit_model">superphot.fit_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-superphot.extract">superphot.extract module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-superphot.fit">superphot.fit module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.util">superphot.util module</a></li>
 </ul>
 </li>
@@ -412,16 +412,16 @@ from <cite>clf.predict_proba</cite> (column name = ‘probabilities’).</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-superphot.extract_features">
-<span id="superphot-extract-features-module"></span><h2>superphot.extract_features module<a class="headerlink" href="#module-superphot.extract_features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-superphot.extract">
+<span id="superphot-extract-module"></span><h2>superphot.extract module<a class="headerlink" href="#module-superphot.extract" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="superphot.extract_features.compile_data_table">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">compile_data_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#compile_data_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.compile_data_table" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.compile_data_table">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">compile_data_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#compile_data_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.compile_data_table" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.extract_features">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">R_filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.extract_features" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.extract_features">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">R_filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.extract_features" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
 light curves in each filter.</p>
 <dl class="field-list simple">
@@ -436,7 +436,7 @@ If a Numpy file, read the parameters from this file.</p>
 of the subdirectories in which the traces are stored. Ignored if models are read from a Numpy file.</p>
 </dd>
 <dt><strong>R_filters</strong><span class="classifier">dict, optional</span></dt><dd><p>Ratios of total to selective extinction for <cite>filters</cite>. This package includes the values for common filters
-(see <cite>superphot.extract_features.R_FILTERS</cite>). Use this argument to override those default values or to include
+(see <cite>superphot.extract.R_FILTERS</cite>). Use this argument to override those default values or to include
 additional filters.</p>
 </dd>
 <dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read from a Numpy file.</p>
@@ -466,8 +466,8 @@ Otherwise, use the model parameters directly.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.flux_to_luminosity">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">flux_to_luminosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">R_filter</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#flux_to_luminosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.flux_to_luminosity" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.flux_to_luminosity">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">flux_to_luminosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">R_filter</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#flux_to_luminosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.flux_to_luminosity" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -488,8 +488,8 @@ Otherwise, use the model parameters directly.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.get_principal_components">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">get_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">light_curves_fit</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">whiten</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#get_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.get_principal_components" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.get_principal_components">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">get_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">light_curves_fit</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">whiten</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#get_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.get_principal_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a principal component analysis on a list of light curves and return a list of their principal components.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -516,22 +516,16 @@ Otherwise, use the model parameters directly.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.load_trace">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">trace_path</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">version</span><span class="o">=</span><span class="default_value">'2'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.load_trace" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.load_trace">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tracefile</span></em>, <em class="sig-param"><span class="n">filters</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.load_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).</p>
-<p>Assumes the traces are stored in a directory <cite>basename_vf</cite>, where <cite>basename</cite> is <cite>file</cite> up to the first ‘.’, <cite>v</cite> is
-<cite>version</cite>, and <cite>f</cite> is an element of <cite>filters</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>file</strong><span class="classifier">str</span></dt><dd><p>Filename of the original SNANA data file.</p>
+<dt><strong>tracefile</strong><span class="classifier">str</span></dt><dd><p>Directory where the traces are stored. Should contain an asterisk (*) to be replaced by elements of <cite>filters</cite>.</p>
 </dd>
 <dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to load traces. If one or more filters are not found, the posteriors of the remaining filters
 will be combined and used in place of the missing ones.</p>
-</dd>
-<dt><strong>trace_path</strong><span class="classifier">str, optional</span></dt><dd><p>Directory where the PyMC3 trace data is stored. Default: current directory.</p>
-</dd>
-<dt><strong>version</strong><span class="classifier">str, optional</span></dt><dd><p>Version of the fit to use, where “version” is the character in the filename before the filter. Default: ‘2’.</p>
 </dd>
 </dl>
 </dd>
@@ -545,34 +539,8 @@ will be combined and used in place of the missing ones.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.plot_histograms">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">varnames</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">rownames</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_histograms" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a grid of histograms of the column <cite>colname</cite> of <cite>data_table</cite>, grouped by the column <cite>groupby</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing the columns <cite>colname</cite> and <cite>groupby</cite> for each supernova.</p>
-</dd>
-<dt><strong>colname</strong><span class="classifier">str</span></dt><dd><p>Column name of <cite>data_table</cite> to plot (e.g., ‘params’ or ‘features’).</p>
-</dd>
-<dt><strong>class_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Column name of <cite>data_table</cite> to group by before plotting (e.g., ‘type’ or ‘prediction’). Default: ‘type’.</p>
-</dd>
-<dt><strong>varnames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Parameter names to list on the x-axes of the plot. Default: no labels.</p>
-</dd>
-<dt><strong>rownames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Labels for the leftmost y-axes.</p>
-</dd>
-<dt><strong>no_autoscale</strong><span class="classifier">tuple or list, optional</span></dt><dd><p>Class names not to use in calculating the axis limits. Default: include all.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: display the plot instead of saving it.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract_features.plot_pca_reconstruction">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.plot_pca_reconstruction">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
 These are saved as a multipage PDF.</p>
 <dl class="field-list simple">
@@ -595,8 +563,8 @@ the coefficients will be printed at the top right of each plot.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.plot_principal_components">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'principal_components.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.plot_principal_components" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.plot_principal_components">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'principal_components.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_principal_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the principal components being used to extract features from the model light curves.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -615,13 +583,13 @@ the coefficients will be printed at the top right of each plot.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.save_data">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">save_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">basename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#save_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.save_data" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.save_data">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">save_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">basename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#save_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.save_data" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="superphot.extract_features.select_good_events">
-<code class="sig-prename descclassname">superphot.extract_features.</code><code class="sig-name descname">select_good_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract_features.html#select_good_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract_features.select_good_events" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.extract.select_good_events">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">select_good_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#select_good_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.select_good_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select only events with finite data for all draws. Returns the table and data for only these events.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -644,11 +612,11 @@ the coefficients will be printed at the top right of each plot.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-superphot.fit_model">
-<span id="superphot-fit-model-module"></span><h2>superphot.fit_model module<a class="headerlink" href="#module-superphot.fit_model" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-superphot.fit">
+<span id="superphot-fit-module"></span><h2>superphot.fit module<a class="headerlink" href="#module-superphot.fit" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="superphot.fit_model.LogUniform">
-<em class="property">class </em><code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">LogUniform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">upper</span><span class="o">=</span><span class="default_value">2.718281828459045</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#LogUniform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.LogUniform" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.LogUniform">
+<em class="property">class </em><code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">LogUniform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">upper</span><span class="o">=</span><span class="default_value">2.718281828459045</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#LogUniform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.LogUniform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pymc3.distributions.continuous.BoundedContinuous</span></code></p>
 <p>Continuous log-uniform log-likelihood.</p>
 <p>The pdf of this distribution is</p>
@@ -682,8 +650,8 @@ the coefficients will be printed at the top right of each plot.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="superphot.fit_model.LogUniform.logp">
-<code class="sig-name descname">logp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#LogUniform.logp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.LogUniform.logp" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.LogUniform.logp">
+<code class="sig-name descname">logp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#LogUniform.logp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.LogUniform.logp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate log-probability of LogUniform distribution at specified value.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -701,8 +669,8 @@ the coefficients will be printed at the top right of each plot.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="superphot.fit_model.LogUniform.random">
-<code class="sig-name descname">random</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">point</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">size</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#LogUniform.random"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.LogUniform.random" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.LogUniform.random">
+<code class="sig-name descname">random</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">point</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">size</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#LogUniform.random"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.LogUniform.random" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draw random values from LogUniform distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -726,8 +694,30 @@ specified).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.diagnostics">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">diagnostics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">trace</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#diagnostics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.diagnostics" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.cut_outliers">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">cut_outliers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">nsigma</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#cut_outliers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.cut_outliers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make an Astropy table containing only data that is below the cut off threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the light curve data.</p>
+</dd>
+<dt><strong>nsigma</strong><span class="classifier">float</span></dt><dd><p>Determines at what value (flux &lt; nsigma * mad_std) to cut outlier data points.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>t_cut</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing only data that is below the cut off threshold.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.fit.diagnostics">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">diagnostics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">trace</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#diagnostics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.diagnostics" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make some diagnostic plots for the PyMC3 fitting.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -748,8 +738,8 @@ specified).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.flux_model">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">flux_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">A</span></em>, <em class="sig-param"><span class="n">beta</span></em>, <em class="sig-param"><span class="n">gamma</span></em>, <em class="sig-param"><span class="n">t_0</span></em>, <em class="sig-param"><span class="n">tau_rise</span></em>, <em class="sig-param"><span class="n">tau_fall</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#flux_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.flux_model" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.flux_model">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">flux_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">A</span></em>, <em class="sig-param"><span class="n">beta</span></em>, <em class="sig-param"><span class="n">gamma</span></em>, <em class="sig-param"><span class="n">t_0</span></em>, <em class="sig-param"><span class="n">tau_rise</span></em>, <em class="sig-param"><span class="n">tau_fall</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#flux_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.flux_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
 theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 <dl class="field-list simple">
@@ -781,8 +771,8 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.make_new_priors">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">make_new_priors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">res</span><span class="o">=</span><span class="default_value">100</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#make_new_priors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.make_new_priors" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.make_new_priors">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">make_new_priors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">res</span><span class="o">=</span><span class="default_value">100</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#make_new_priors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.make_new_priors" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each parameter, combine the posteriors for the four filters and use that as the new prior.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -809,8 +799,8 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.plot_final_fits">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">plot_final_fits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">traces1</span></em>, <em class="sig-param"><span class="n">traces2</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">outfile</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#plot_final_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.plot_final_fits" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.plot_final_fits">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">plot_final_fits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">traces1</span></em>, <em class="sig-param"><span class="n">traces2</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">outfile</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#plot_final_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.plot_final_fits" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make a four-panel plot showing sample light curves from each of the two fitting iterations compared to observations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -835,8 +825,8 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.plot_model_lcs">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">plot_model_lcs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">trace</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">size</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fltr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ls</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">phase_min</span><span class="o">=</span><span class="default_value">- 50.0</span></em>, <em class="sig-param"><span class="n">phase_max</span><span class="o">=</span><span class="default_value">180.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#plot_model_lcs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.plot_model_lcs" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.plot_model_lcs">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">plot_model_lcs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">trace</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">size</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fltr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ls</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">phase_min</span><span class="o">=</span><span class="default_value">- 50.0</span></em>, <em class="sig-param"><span class="n">phase_max</span><span class="o">=</span><span class="default_value">180.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#plot_model_lcs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.plot_model_lcs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot sample light curves from a fit compared to the observations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -863,8 +853,8 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.plot_priors">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">plot_priors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_priors</span></em>, <em class="sig-param"><span class="n">y_priors</span></em>, <em class="sig-param"><span class="n">old_posteriors</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#plot_priors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.plot_priors" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.plot_priors">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">plot_priors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_priors</span></em>, <em class="sig-param"><span class="n">y_priors</span></em>, <em class="sig-param"><span class="n">old_posteriors</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#plot_priors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.plot_priors" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overplot the old priors, the old posteriors in each filter, and the new priors for each parameter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -885,8 +875,8 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.produce_lc">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">produce_lc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time</span></em>, <em class="sig-param"><span class="n">trace</span></em>, <em class="sig-param"><span class="n">align_to_t0</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#produce_lc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.produce_lc" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.produce_lc">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">produce_lc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time</span></em>, <em class="sig-param"><span class="n">trace</span></em>, <em class="sig-param"><span class="n">align_to_t0</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#produce_lc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.produce_lc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the stored PyMC3 traces and produce model light curves from the parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -909,8 +899,28 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.sample_or_load_trace">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">sample_or_load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">trace_file</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#sample_or_load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.sample_or_load_trace" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.read_light_curve">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">read_light_curve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#read_light_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.read_light_curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read light curve data from a text file as an Astropy table. SNANA files are recognized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>filename</strong><span class="classifier">str</span></dt><dd><p>Path to light curve data file.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of light curve data.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.fit.sample_or_load_trace">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">sample_or_load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">trace_file</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#sample_or_load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.sample_or_load_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.</p>
 <p>If the MCMC has already been run, read and return the existing trace (unless <cite>force=True</cite>).</p>
 <dl class="field-list simple">
@@ -940,8 +950,32 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.setup_model1">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">setup_model1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">max_flux</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#setup_model1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.setup_model1" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.select_event_data">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">select_event_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">phase_min</span><span class="o">=</span><span class="default_value">- 50.0</span></em>, <em class="sig-param"><span class="n">phase_max</span><span class="o">=</span><span class="default_value">180.0</span></em>, <em class="sig-param"><span class="n">nsigma</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#select_event_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.select_event_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select data only from the period containing the peak flux, with outliers cut.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the light curve data.</p>
+</dd>
+<dt><strong>phase_min, phase_max</strong><span class="classifier">float, optional</span></dt><dd><p>Include only points within [<cite>phase_min</cite>, <cite>phase_max</cite>) days of SEARCH_PEAKMJD.</p>
+</dd>
+<dt><strong>nsigma</strong><span class="classifier">float, optional</span></dt><dd><p>Determines at what value (flux &lt; nsigma * mad_std) to reject outlier data points. Default: no rejection.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>t_event</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the reduced light curve data from the period containing the peak flux.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.fit.setup_model1">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">setup_model1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">max_flux</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#setup_model1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.setup_model1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set up the PyMC3 model object, which contains the priors and the likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -963,8 +997,8 @@ the input table is used, even though it does not contain all the filters.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.setup_model2">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">setup_model2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">x_priors</span></em>, <em class="sig-param"><span class="n">y_priors</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#setup_model2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.setup_model2" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.setup_model2">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">setup_model2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obs</span></em>, <em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">x_priors</span></em>, <em class="sig-param"><span class="n">y_priors</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#setup_model2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.setup_model2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set up a PyMC3 model for observations in a given filter using the given priors and parameter names.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -989,8 +1023,8 @@ the input table is used, even though it does not contain all the filters.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.fit_model.two_iteration_mcmc">
-<code class="sig-prename descclassname">superphot.fit_model.</code><code class="sig-name descname">two_iteration_mcmc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curve</span></em>, <em class="sig-param"><span class="n">outfile</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force_second</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_diagnostics</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit_model.html#two_iteration_mcmc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit_model.two_iteration_mcmc" title="Permalink to this definition">¶</a></dt>
+<dt id="superphot.fit.two_iteration_mcmc">
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">two_iteration_mcmc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curve</span></em>, <em class="sig-param"><span class="n">outfile</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force_second</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_diagnostics</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#two_iteration_mcmc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.two_iteration_mcmc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model to the observed light curve. Then combine the posteriors for each filter and use that as the new prior
 for a second iteration of fitting.</p>
 <dl class="field-list simple">
@@ -1032,71 +1066,31 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 <div class="section" id="module-superphot.util">
 <span id="superphot-util-module"></span><h2>superphot.util module<a class="headerlink" href="#module-superphot.util" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt id="superphot.util.cut_outliers">
-<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">cut_outliers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">nsigma</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#cut_outliers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.cut_outliers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make an Astropy table containing only data that is below the cut off threshold.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the light curve data.</p>
-</dd>
-<dt><strong>nsigma</strong><span class="classifier">float</span></dt><dd><p>Determines at what value (flux &lt; nsigma * mad_std) to cut outlier data points.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>t_cut</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing only data that is below the cut off threshold.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt id="superphot.util.has_labeled_events">
 <code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">has_labeled_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'type'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#has_labeled_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.has_labeled_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if a table has unmasked values in the column <cite>key</cite></p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.util.read_light_curve">
-<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">read_light_curve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#read_light_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.read_light_curve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read light curve data from a text file as an Astropy table. SNANA files are recognized.</p>
+<dt id="superphot.util.plot_histograms">
+<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">varnames</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">rownames</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.plot_histograms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a grid of histograms of the column <cite>colname</cite> of <cite>data_table</cite>, grouped by the column <cite>groupby</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>filename</strong><span class="classifier">str</span></dt><dd><p>Path to light curve data file.</p>
+<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing the columns <cite>colname</cite> and <cite>groupby</cite> for each supernova.</p>
 </dd>
-</dl>
+<dt><strong>colname</strong><span class="classifier">str</span></dt><dd><p>Column name of <cite>data_table</cite> to plot (e.g., ‘params’ or ‘features’).</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of light curve data.</p>
+<dt><strong>class_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Column name of <cite>data_table</cite> to group by before plotting (e.g., ‘type’ or ‘prediction’). Default: ‘type’.</p>
 </dd>
-</dl>
+<dt><strong>varnames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Parameter names to list on the x-axes of the plot. Default: no labels.</p>
 </dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.util.select_event_data">
-<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">select_event_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">phase_min</span><span class="o">=</span><span class="default_value">- 50.0</span></em>, <em class="sig-param"><span class="n">phase_max</span><span class="o">=</span><span class="default_value">180.0</span></em>, <em class="sig-param"><span class="n">nsigma</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#select_event_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.select_event_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Select data only from the period containing the peak flux, with outliers cut.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the light curve data.</p>
+<dt><strong>rownames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Labels for the leftmost y-axes.</p>
 </dd>
-<dt><strong>phase_min, phase_max</strong><span class="classifier">float, optional</span></dt><dd><p>Include only points within [<cite>phase_min</cite>, <cite>phase_max</cite>) days of SEARCH_PEAKMJD.</p>
+<dt><strong>no_autoscale</strong><span class="classifier">tuple or list, optional</span></dt><dd><p>Class names not to use in calculating the axis limits. Default: include all.</p>
 </dd>
-<dt><strong>nsigma</strong><span class="classifier">float, optional</span></dt><dd><p>Determines at what value (flux &lt; nsigma * mad_std) to reject outlier data points. Default: no rejection.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>t_event</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the reduced light curve data from the period containing the peak flux.</p>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: display the plot instead of saving it.</p>
 </dd>
 </dl>
 </dd>

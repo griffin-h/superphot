@@ -1,8 +1,8 @@
 ./_images/api-1.png
 ./_modules/index.html
 ./_modules/superphot/classify.html
-./_modules/superphot/extract_features.html
-./_modules/superphot/fit_model.html
+./_modules/superphot/extract.html
+./_modules/superphot/fit.html
 ./_modules/superphot/util.html
 ./_sources/api.rst.txt
 ./_sources/index.rst.txt
