@@ -558,27 +558,9 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
     return traces1, traces2, parameters2
 
 
-def plot_diagnostics():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename', type=str, help='Path to PyMC3 trace directory')
-    parser.add_argument('--snana-path', type=str, default='.', help='Path to SNANA files')
-    parser.add_argument('--show', action='store_true', help='Show the plots instead of saving to a file')
-    args = parser.parse_args()
-
-    _, _, ps1id, fltr = os.path.split(args.filename.strip('/'))[-1].split('_')
-    fltr = fltr.strip('12')
-    snana_file = os.path.join(args.snana_path, f'PS1_PS1MD_{ps1id}.snana.dat')
-    t_full = read_light_curve(snana_file)
-    t = select_event_data(t_full)
-    obs = t[t['FLT'] == fltr]
-    model, parameters = setup_model1(obs, t['FLUXCAL'].max())
-    trace = pm.load_trace(args.filename, model)
-    diagnostics(obs, trace, parameters, args.filename, args.show)
-
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('filenames', nargs='+', type=str, help='Input SNANA files')
+    parser.add_argument('filenames', nargs='+', type=str, help='Input light curve data file(s)')
     parser.add_argument('--filters', type=str, help='Subset of filters to fit')
     parser.add_argument('--iterations', type=int, default=ITERATIONS, help='Number of steps after burn-in')
     parser.add_argument('--tuning', type=int, default=TUNING, help='Number of burn-in steps')

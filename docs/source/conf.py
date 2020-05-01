@@ -56,7 +56,7 @@ numpydoc_show_class_members = False
 
 
 def autodoc_skip_member_handler(app, what, name, obj, skip, options):
-    return name in ['main', 'plot_diagnostics', 'plot_confusion_matrix_from_file'] or name.startswith('_')
+    return name in ['main', 'plot_confusion_matrix_from_file'] or name.startswith('_')
 
 
 def setup(app):

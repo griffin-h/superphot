@@ -24,36 +24,27 @@ R_FILTERS = {'g': 3.57585511, 'r': 2.54033913, 'i': 1.88284171, 'z': 1.49033933,
 PARAMNAMES = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
 
 
-def load_trace(file, filters, trace_path='.', version='2'):
+def load_trace(tracefile, filters):
     """
     Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).
 
-    Assumes the traces are stored in a directory `basename_vf`, where `basename` is `file` up to the first '.', `v` is
-    `version`, and `f` is an element of `filters`.
-
     Parameters
     ----------
-    file : str
-        Filename of the original SNANA data file.
+    tracefile : str
+        Directory where the traces are stored. Should contain an asterisk (*) to be replaced by elements of `filters`.
     filters : iterable
         Filters for which to load traces. If one or more filters are not found, the posteriors of the remaining filters
         will be combined and used in place of the missing ones.
-    trace_path : str, optional
-        Directory where the PyMC3 trace data is stored. Default: current directory.
-    version : str, optional
-        Version of the fit to use, where "version" is the character in the filename before the filter. Default: '2'.
 
     Returns
     -------
     trace_values : numpy.array
         PyMC3 trace stored as 3-D array with shape (nsteps, nfilters, nparams).
     """
-    basename = os.path.basename(file).split('.')[0]
-    tracefile = os.path.join(trace_path, basename) + '_{}{}'
     trace_values = []
     missing_filters = []
     for fltr in filters:
-        tracefile_filter = tracefile.format(version, fltr)
+        tracefile_filter = tracefile.replace('*', fltr)
         if os.path.exists(tracefile_filter):
             trace = []
             for chain in glob(os.path.join(tracefile_filter, '*/samples.npz')):
@@ -64,7 +55,7 @@ def load_trace(file, filters, trace_path='.', version='2'):
             logging.warning(f"No such file or directory: '{tracefile_filter}'")
             missing_filters.append(fltr)
     if len(missing_filters) == len(filters):
-        raise FileNotFoundError(f"No traces found for {basename}")
+        raise FileNotFoundError(f"No traces found for {tracefile}")
     for fltr in missing_filters:
         trace_values.insert(filters.index(fltr), np.mean(trace_values, axis=0))
     trace_values = np.moveaxis(trace_values, 2, 0)
@@ -340,8 +331,10 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         bad_rows = []
         for i, filename in enumerate(t['filename']):
             try:
-                trace = load_trace(filename, filters, trace_path=stored_models)
-                logging.info(f'loaded trace from {filename}')
+                basename = os.path.basename(filename).split('.')[0]
+                tracefile = os.path.join(stored_models, basename) + '_2*'
+                trace = load_trace(tracefile, filters)
+                logging.info(f'loaded trace from {tracefile}')
             except FileNotFoundError as e:
                 bad_rows.append(i)
                 logging.error(e)
@@ -450,7 +443,7 @@ def save_data(t, basename):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_table', type=str, help='List of input SNANA files, or input data table')
+    parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
                                               'or Numpy file containing stored model parameters/LCs')
     parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
