@@ -8,12 +8,9 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
-import warnings
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore', FutureWarning)
-    from imblearn.over_sampling.base import BaseOverSampler
-    from imblearn.utils._docstring import Substitution, _random_state_docstring
-    from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling.base import BaseOverSampler
+from imblearn.utils._docstring import Substitution, _random_state_docstring
+from imblearn.over_sampling import SMOTE
 from .util import meta_columns, select_labeled_events, plot_histograms
 import itertools
 from tqdm import tqdm
