@@ -11,6 +11,8 @@ from sklearn.utils import check_random_state
 from imblearn.over_sampling.base import BaseOverSampler
 from imblearn.utils._docstring import Substitution, _random_state_docstring
 from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline
+import pickle
 from .util import meta_columns, select_labeled_events, plot_histograms
 import itertools
 from tqdm import tqdm
@@ -135,34 +137,26 @@ class MultivariateGaussian(BaseOverSampler):
         return X_resampled, y_resampled
 
 
-def fit_predict(clf, sampler, train_data, test_data, scaler=StandardScaler()):
+def fit_predict(pipeline, train_data, test_data):
     """
-    Train a random forest classifier on `train_data` and use it to classify `test_data`. Balance the classes before
-    training by oversampling.
+    Train a classification pipeline on `train_data` and use it to classify `test_data`.
 
     Parameters
     ----------
-    clf : sklearn.emsemble.RandomForestClassifier
-        A random forest classifier trained from the classified transients.
-    sampler : imblearn.over_sampling.base.BaseOverSampler
-        A resampler used to balance the training sample.
+    pipeline : imblearn.pipeline.Pipeline
+        The full classification pipeline, including rescaling, resampling, and classification.
     train_data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'type' column.
     test_data : astropy.table.Table
         Astropy table containing the test data. Must have a 'features' column.
-    scaler : sklearn.preprocessing.StandardScaler
-        Scikit-learn scaler to apply to the features before training and classification. Default: mean = 0, var = 1.
 
     Returns
     -------
     p_class : numpy.array
         Classification probabilities for each of the supernovae in `test_features`.
     """
-    train_features = scaler.fit_transform(train_data['features'].reshape(len(train_data), -1))
-    test_features = scaler.transform(test_data['features'].reshape(len(test_data), -1))
-    features_resamp, labels_resamp = sampler.fit_resample(train_features, train_data['type'])
-    clf.fit(features_resamp, labels_resamp)
-    p_class = clf.predict_proba(test_features)
+    pipeline.fit(train_data['features'].reshape(len(train_data), -1), train_data['type'])
+    p_class = pipeline.predict_proba(test_data['features'].reshape(len(test_data), -1))
     return p_class
 
 
@@ -192,16 +186,14 @@ def aggregate_probabilities(table):
     return results
 
 
-def validate_classifier(clf, sampler, train_data, test_data=None):
+def validate_classifier(pipeline, train_data, test_data=None):
     """
     Validate the performance of a machine-learning classifier using leave-one-out cross-validation.
 
     Parameters
     ----------
-    clf : sklearn.emsemble.RandomForestClassifier
-        The classifier to validate.
-    sampler : imblearn.over_sampling.SMOTE
-        First resample the data using this sampler.
+    pipeline : imblearn.pipeline.Pipeline
+        The full classification pipeline, including rescaling, resampling, and classification.
     train_data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'type' column.
     test_data : astropy.table.Table, optional
@@ -215,11 +207,11 @@ def validate_classifier(clf, sampler, train_data, test_data=None):
     """
     if test_data is None:
         test_data = train_data
-    p_class = fit_predict(clf, sampler, train_data, test_data)
+    p_class = fit_predict(pipeline, train_data, test_data)
     for filename in tqdm(train_data['filename'], desc='Cross-validation'):
         train_index = train_data['filename'] != filename
         test_index = test_data['filename'] == filename
-        p_class[test_index] = fit_predict(clf, sampler, train_data[train_index], test_data[test_index])
+        p_class[test_index] = fit_predict(pipeline, train_data[train_index], test_data[test_index])
     return p_class
 
 
@@ -377,7 +369,8 @@ def main():
     else:
         raise NotImplementedError(f'{args.sampler} is not a recognized sampler type')
 
-    test_data['probabilities'] = fit_predict(clf, sampler, train_data, test_data)
+    pipeline = Pipeline([('scaler', StandardScaler()), ('sampler', sampler), ('classifier', clf)])
+    test_data['probabilities'] = fit_predict(pipeline, train_data, test_data)
     test_data['prediction'] = clf.classes_[test_data['probabilities'].argmax(axis=1)]
     plot_histograms(test_data, 'params', 'prediction', varnames=test_data.meta['paramnames'],
                     rownames=test_data.meta['filters'], saveto='phot_class_parameters.pdf')
@@ -387,8 +380,10 @@ def main():
 
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')
+    with open('pipeline.pickle', 'wb') as f:
+        pickle.dump(pipeline, f)
 
-    validation_data['probabilities'] = validate_classifier(clf, sampler, train_data, validation_data)
+    validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
     write_results(validation_data, clf.classes_, 'validation_full.txt')
     results_validate = aggregate_probabilities(validation_data)
     write_results(results_validate, clf.classes_, 'validation.txt')
