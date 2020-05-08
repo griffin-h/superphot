@@ -35,18 +35,21 @@ For more advanced use cases, you can import the module and use some version of t
     test_data = extract.extract_features(data_table, 'stored_models/')
     train_data = util.select_labeled_events(test_data)
 
-    # Initialize the classifier and resampler (can adjust hyperparameters here)
-    clf = classify.RandomForestClassifier(criterion='entropy', max_features=5)
-    sampler = classify.MultivariateGaussian(sampling_strategy=1000)
+    # Initialize the pipeline (can adjust hyperparameters here)
+    pipeline = classify.make_pipeline(
+        classify.StandardScaler(),
+        classify.MultivariateGaussian(sampling_strategy=1000),
+        classify.RandomForestClassifier(criterion='entropy', max_features=5)
+    )
 
     # Do the classification
-    test_data['probabilities'] = classify.fit_predict(clf, sampler, train_data, test_data)
+    test_data['probabilities'] = classify.fit_predict(pipeline, train_data, test_data)
     results = classify.aggregate_probabilities(test_data)
 
     # Validate the classifier
-    train_data['probabilities'] = classify.validate_classifier(clf, sampler, train_data)
+    train_data['probabilities'] = classify.validate_classifier(pipeline, train_data)
     results_validate = classify.aggregate_probabilities(train_data)
-    classify.make_confusion_matrix(results_validate, clf.classes_)
+    classify.make_confusion_matrix(results_validate, pipeline.classes_)
 
 ------------------------
 Light Curve Data Formats

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; Superphot 0.1.0.post13+g5427545 documentation</title>
+  <title>Usage &mdash; Superphot 0.1.0.post15+g2a59942 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post13+g5427545
+                0.1.0.post15+g2a59942
               </div>
             
           
@@ -191,18 +191,21 @@ superphot-classify test_data.txt
 <span class="n">test_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
 <span class="n">train_data</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">select_labeled_events</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
 
-<span class="c1"># Initialize the classifier and resampler (can adjust hyperparameters here)</span>
-<span class="n">clf</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;entropy&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">sampler</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">MultivariateGaussian</span><span class="p">(</span><span class="n">sampling_strategy</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="c1"># Initialize the pipeline (can adjust hyperparameters here)</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">make_pipeline</span><span class="p">(</span>
+    <span class="n">classify</span><span class="o">.</span><span class="n">StandardScaler</span><span class="p">(),</span>
+    <span class="n">classify</span><span class="o">.</span><span class="n">MultivariateGaussian</span><span class="p">(</span><span class="n">sampling_strategy</span><span class="o">=</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="n">classify</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;entropy&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="c1"># Do the classification</span>
-<span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">sampler</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">)</span>
+<span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
 
 <span class="c1"># Validate the classifier</span>
-<span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">validate_classifier</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">sampler</span><span class="p">,</span> <span class="n">train_data</span><span class="p">)</span>
+<span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">)</span>
 <span class="n">results_validate</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span>
-<span class="n">classify</span><span class="o">.</span><span class="n">make_confusion_matrix</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
+<span class="n">classify</span><span class="o">.</span><span class="n">make_confusion_matrix</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="section" id="light-curve-data-formats">
