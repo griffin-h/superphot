@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import logging
 from astropy.table import Table
 from sklearn.ensemble import RandomForestClassifier
@@ -8,12 +9,13 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
+from sklearn.inspection import permutation_importance
 from imblearn.over_sampling.base import BaseOverSampler
 from imblearn.utils._docstring import Substitution, _random_state_docstring
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import pickle
-from .util import meta_columns, select_labeled_events, plot_histograms
+from .util import meta_columns, select_labeled_events, plot_histograms, filter_colors
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -105,6 +107,8 @@ class MultivariateGaussian(BaseOverSampler):
     """
     def __init__(self, sampling_strategy='all', random_state=None):
         self.random_state = random_state
+        self.mean_ = dict()
+        self.cov_ = dict()
         if isinstance(sampling_strategy, int):
             self.samples_per_class = sampling_strategy
             sampling_strategy = 'all'
@@ -120,21 +124,31 @@ class MultivariateGaussian(BaseOverSampler):
 
         for class_sample, n_samples in self.sampling_strategy_.items():
             X_class = X[y == class_sample]
+            self.mean_[class_sample] = np.mean(X_class, axis=0)
+            self.cov_[class_sample] = np.cov(X_class, rowvar=False)
             if self.samples_per_class is not None:
                 n_samples = self.samples_per_class - X_class.shape[0]
             if n_samples <= 0:
                 continue
 
-            mean = np.mean(X_class, axis=0)
-            cov = np.cov(X_class, rowvar=False)
-            rs = check_random_state(self.random_state)
-            X_new = rs.multivariate_normal(mean, cov, n_samples)
+            self.rs_ = check_random_state(self.random_state)
+            X_new = self.rs_.multivariate_normal(self.mean_[class_sample], self.cov_[class_sample], n_samples)
             y_new = np.repeat(class_sample, n_samples)
 
             X_resampled = np.vstack((X_resampled, X_new))
             y_resampled = np.hstack((y_resampled, y_new))
 
         return X_resampled, y_resampled
+
+    def more_samples(self, n_samples):
+        """Draw more samples from the same distribution of an already fitted sampler."""
+        if not self.mean_ or not self.cov_:
+            raise Exception('Mean and covariance not set. You must first run fit_resample(X, y).')
+        classes = sorted(self.sampling_strategy_.keys())
+        X = np.vstack([self.rs_.multivariate_normal(self.mean_[class_sample], self.cov_[class_sample], n_samples)
+                       for class_sample in classes])
+        y = np.repeat(classes, n_samples)
+        return X, y
 
 
 def fit_predict(pipeline, train_data, test_data):
@@ -315,6 +329,67 @@ def write_results(test_data, classes, filename):
     logging.info(f'classification results saved to {filename}')
 
 
+def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, saveto=None):
+    """
+    Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.
+
+    Parameters
+    ----------
+    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline
+        The trained pipeline for which to plot feature importances. Steps should be named 'classifier' and 'sampler'.
+    train_data : astropy.table.Table
+        Data table containing 'features' and 'type' for training when calculating permutation importances. Must also
+        include 'featnames' and 'filters' in `train_data.meta`.
+    width : float, optional
+        Total width of the bars in units of the separation between bars. Default: 0.8.
+    nsamples : int, optional
+        Number of samples to draw for the fake validation data set. Default: 1000.
+    saveto : str, optional
+        Filename to which to save the plot. Default: show instead of saving.
+    """
+    logging.info('calculating feature importance')
+    featnames = train_data.meta['featnames']
+    filters = train_data.meta['filters']
+
+    featnames = np.append(featnames, 'Random Number')
+    xoff = 0.5 * width / filters.size * np.linspace(1 - filters.size, filters.size - 1, filters.size)
+    xranges = np.arange(featnames.size) + xoff[:, np.newaxis]
+    random_feature_train = np.random.random(len(train_data))
+    random_feature_validate = np.random.random(nsamples * pipeline.classes_.size)
+    fig, ax = plt.subplots(1, 1)
+    for real_features, xrange, fltr in zip(np.moveaxis(train_data['features'], 1, 0), xranges, filters):
+        X = np.hstack([real_features, random_feature_train[:, np.newaxis]])
+        pipeline.fit(X, train_data['type'])
+        importance0 = pipeline.named_steps['classifier'].feature_importances_
+
+        X_val, y_val = pipeline.named_steps['sampler'].more_samples(nsamples)
+        X_val[:, -1] = random_feature_validate
+        result = permutation_importance(pipeline.named_steps['classifier'], X_val, y_val, n_jobs=-1)
+        importance = result.importances_mean
+        std = result.importances_std
+
+        c = filter_colors.get(fltr)
+        ax.barh(xrange[:-1], importance0[:-1], width / filters.size, color=c)
+        ax.errorbar(importance, xrange, xerr=std, fmt='o', color=c, mfc='w')
+
+    proxy_artists = [Patch(color='gray'), ax.errorbar([], [], xerr=[], fmt='o', color='gray', mfc='w')]
+    ax.legend(proxy_artists, ['Mean Decrease in Impurity', 'Permutation Importance'], loc='best')
+    for i, featname in enumerate(featnames):
+        ax.text(-0.03, i, featname, ha='right', va='center', transform=ax.get_yaxis_transform())
+    ax.set_yticks([])
+    ax.set_yticks(xranges.flatten(), minor=True)
+    ax.set_yticklabels(np.repeat(filters, featnames.size), minor=True, size='x-small', ha='center')
+    ax.invert_yaxis()
+    ax.set_xlabel('Feature Importance')
+    ax.set_xlim(0., ax.get_xlim()[1])
+    fig.tight_layout()
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
+    plt.close(fig)
+
+
 def plot_confusion_matrix_from_file():
     parser = ArgumentParser()
     parser.add_argument('filename', type=str, help='Filename containing the table of classification results.')
@@ -383,6 +458,8 @@ def main():
     write_results(results, clf.classes_, 'results.txt')
     with open('pipeline.pickle', 'wb') as f:
         pickle.dump(pipeline, f)
+
+    plot_feature_importance(pipeline, train_data, saveto='feature_importance.pdf')
 
     if args.validate:
         validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
