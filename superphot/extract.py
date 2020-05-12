@@ -12,6 +12,7 @@ from tqdm import trange
 from .util import filter_colors, meta_columns, plot_histograms, has_labeled_events, subplots_layout
 from .fit import read_light_curve, produce_lc
 import pickle
+from scipy.stats import spearmanr
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
@@ -196,6 +197,50 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=No
                     ax.text(0.99, 0.99, str(coefficients[i]), va='top', ha='right', transform=ax.transAxes)
             pdf.savefig()
             ax.clear()
+
+
+def plot_feature_correlation(data_table, saveto=None):
+    """
+    Plot a matrix of the Spearman rank correlation coefficients between each pair of features.
+
+    Parameters
+    ----------
+    data_table : astropy.table.Table
+        Astropy table containing a 'features' column. Must also have 'featnames' and 'filters' in `data_table.meta`.
+    saveto : str, optional
+        Filename to which to save the plot. Default: show instead of saving.
+    """
+    X = data_table['features'].reshape(len(data_table), -1, order='F')
+    featnames = data_table.meta['featnames']
+    filters = data_table.meta['filters']
+    nfeats = len(featnames)
+    nfilt = len(filters)
+    corr = spearmanr(X).correlation
+    fig, ax = plt.subplots(1, 1, figsize=(6., 5.))
+    cmap = ax.imshow(np.abs(corr), vmin=0., vmax=1.)
+    lines = np.arange(1., nfeats) * nfilt - 0.5
+    ax.vlines(lines, *ax.get_ylim(), lw=1)
+    ax.hlines(lines, *ax.get_xlim(), lw=1)
+    cbar = fig.colorbar(cmap, ax=ax)
+    cbar.set_label('Spearman Rank Correlation Coefficient $|\\rho|$')
+    ticks = np.arange(nfeats * nfilt)
+    ticklabels = np.tile(filters, nfeats)
+    ax.set_xticks([])
+    ax.set_xticks(ticks, minor=True)
+    ax.set_xticklabels(ticklabels, size='small', minor=True, va='center', rotation='vertical')
+    ax.set_yticks([])
+    ax.set_yticks(ticks, minor=True)
+    ax.set_yticklabels(ticklabels, size='small', minor=True, ha='center')
+    for i, featname in enumerate(data_table.meta['featnames']):
+        pos = (i + 0.5) * nfilt - 0.5
+        ax.text(-0.05, pos, featname, ha='right', va='center', transform=ax.get_yaxis_transform())
+        ax.text(pos, -0.05, featname, ha='center', va='top', transform=ax.get_xaxis_transform(), rotation='vertical')
+    fig.tight_layout()
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
+    plt.close(fig)
 
 
 def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_point=27.5, use_pca=True,
@@ -405,4 +450,5 @@ def main():
                         saveto=args.output + '_parameters.pdf')
         plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'], rownames=args.filters,
                         no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
+    plot_feature_correlation(test_data, saveto=args.output + '_correlation.pdf')
     logging.info('finished feature extraction')
