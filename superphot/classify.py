@@ -342,6 +342,7 @@ def main():
     parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
     parser.add_argument('--pmin', type=float, default=0.,
                         help='Minimum confidence to be included in the confusion matrix.')
+    parser.add_argument('--skip-validation', action='store_false', dest='validate', help='Skip the validation step.')
     args = parser.parse_args()
 
     logging.info('started classification')
@@ -383,10 +384,11 @@ def main():
     with open('pipeline.pickle', 'wb') as f:
         pickle.dump(pipeline, f)
 
-    validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
-    write_results(validation_data, clf.classes_, 'validation_full.txt')
-    results_validate = aggregate_probabilities(validation_data)
-    write_results(results_validate, clf.classes_, 'validation.txt')
-    make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
-    logging.info('validation complete')
+    if args.validate:
+        validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
+        write_results(validation_data, clf.classes_, 'validation_full.txt')
+        results_validate = aggregate_probabilities(validation_data)
+        write_results(results_validate, clf.classes_, 'validation.txt')
+        make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
+        logging.info('validation complete')
     logging.info('finished classification')
