@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post15+g2a59942 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post18+gba89861 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post15+g2a59942
+                0.1.0.post18+gba89861
               </div>
             
           
@@ -228,6 +228,12 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 </dl>
 </dd>
 </dl>
+<dl class="py method">
+<dt id="superphot.classify.MultivariateGaussian.more_samples">
+<code class="sig-name descname">more_samples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">n_samples</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#MultivariateGaussian.more_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.MultivariateGaussian.more_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw more samples from the same distribution of an already fitted sampler.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -354,6 +360,29 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 <dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x- and y-axes. Default: “True Label” and “Predicted Label”.</p>
 </dd>
 <dt><strong>ax</strong><span class="classifier">matplotlib.pyplot.axes, optional</span></dt><dd><p>Axis on which to plot the confusion matrix. Default: new axis.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.plot_feature_importance">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_feature_importance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">width</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">nsamples</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_feature_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_feature_importance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The trained pipeline for which to plot feature importances. Steps should be named ‘classifier’ and ‘sampler’.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing ‘features’ and ‘type’ for training when calculating permutation importances. Must also
+include ‘featnames’ and ‘filters’ in <cite>train_data.meta</cite>.</p>
+</dd>
+<dt><strong>width</strong><span class="classifier">float, optional</span></dt><dd><p>Total width of the bars in units of the separation between bars. Default: 0.8.</p>
+</dd>
+<dt><strong>nsamples</strong><span class="classifier">int, optional</span></dt><dd><p>Number of samples to draw for the fake validation data set. Default: 1000.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: show instead of saving.</p>
 </dd>
 </dl>
 </dd>
@@ -525,6 +554,22 @@ will be combined and used in place of the missing ones.</p>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
 <dt><strong>trace_values</strong><span class="classifier">numpy.array</span></dt><dd><p>PyMC3 trace stored as 3-D array with shape (nsteps, nfilters, nparams).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.plot_feature_correlation">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_feature_correlation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_feature_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_feature_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a matrix of the Spearman rank correlation coefficients between each pair of features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing a ‘features’ column. Must also have ‘featnames’ and ‘filters’ in <cite>data_table.meta</cite>.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: show instead of saving.</p>
 </dd>
 </dl>
 </dd>

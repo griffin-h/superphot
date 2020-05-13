@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.classify &mdash; Superphot 0.1.0.post15+g2a59942 documentation</title>
+  <title>superphot.classify &mdash; Superphot 0.1.0.post18+gba89861 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post15+g2a59942
+                0.1.0.post18+gba89861
               </div>
             
           
@@ -156,6 +156,7 @@
   <h1>Source code for superphot.classify</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Patch</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span>
@@ -164,12 +165,13 @@
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">sklearn.inspection</span> <span class="kn">import</span> <span class="n">permutation_importance</span>
 <span class="kn">from</span> <span class="nn">imblearn.over_sampling.base</span> <span class="kn">import</span> <span class="n">BaseOverSampler</span>
 <span class="kn">from</span> <span class="nn">imblearn.utils._docstring</span> <span class="kn">import</span> <span class="n">Substitution</span><span class="p">,</span> <span class="n">_random_state_docstring</span>
 <span class="kn">from</span> <span class="nn">imblearn.over_sampling</span> <span class="kn">import</span> <span class="n">SMOTE</span>
 <span class="kn">from</span> <span class="nn">imblearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">meta_columns</span><span class="p">,</span> <span class="n">select_labeled_events</span><span class="p">,</span> <span class="n">plot_histograms</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">meta_columns</span><span class="p">,</span> <span class="n">select_labeled_events</span><span class="p">,</span> <span class="n">plot_histograms</span><span class="p">,</span> <span class="n">filter_colors</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
@@ -261,6 +263,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sampling_strategy</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean_</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sampling_strategy</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_class</span> <span class="o">=</span> <span class="n">sampling_strategy</span>
             <span class="n">sampling_strategy</span> <span class="o">=</span> <span class="s1">&#39;all&#39;</span>
@@ -276,21 +280,31 @@
 
         <span class="k">for</span> <span class="n">class_sample</span><span class="p">,</span> <span class="n">n_samples</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_strategy_</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">X_class</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">==</span> <span class="n">class_sample</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mean_</span><span class="p">[</span><span class="n">class_sample</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X_class</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov_</span><span class="p">[</span><span class="n">class_sample</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">X_class</span><span class="p">,</span> <span class="n">rowvar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">n_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_class</span> <span class="o">-</span> <span class="n">X_class</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">continue</span>
 
-            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X_class</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">X_class</span><span class="p">,</span> <span class="n">rowvar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">rs</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
-            <span class="n">X_new</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rs_</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+            <span class="n">X_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rs_</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean_</span><span class="p">[</span><span class="n">class_sample</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_</span><span class="p">[</span><span class="n">class_sample</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">)</span>
             <span class="n">y_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">class_sample</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
 
             <span class="n">X_resampled</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">X_resampled</span><span class="p">,</span> <span class="n">X_new</span><span class="p">))</span>
             <span class="n">y_resampled</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">y_resampled</span><span class="p">,</span> <span class="n">y_new</span><span class="p">))</span>
 
-        <span class="k">return</span> <span class="n">X_resampled</span><span class="p">,</span> <span class="n">y_resampled</span></div>
+        <span class="k">return</span> <span class="n">X_resampled</span><span class="p">,</span> <span class="n">y_resampled</span>
+
+<div class="viewcode-block" id="MultivariateGaussian.more_samples"><a class="viewcode-back" href="../../api.html#superphot.classify.MultivariateGaussian.more_samples">[docs]</a>    <span class="k">def</span> <span class="nf">more_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draw more samples from the same distribution of an already fitted sampler.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean_</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Mean and covariance not set. You must first run fit_resample(X, y).&#39;</span><span class="p">)</span>
+        <span class="n">classes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_strategy_</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">rs_</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean_</span><span class="p">[</span><span class="n">class_sample</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_</span><span class="p">[</span><span class="n">class_sample</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">)</span>
+                       <span class="k">for</span> <span class="n">class_sample</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">classes</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span></div></div>
 
 
 <div class="viewcode-block" id="fit_predict"><a class="viewcode-back" href="../../api.html#superphot.classify.fit_predict">[docs]</a><span class="k">def</span> <span class="nf">fit_predict</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">):</span>
@@ -471,6 +485,67 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;classification results saved to </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="plot_feature_importance"><a class="viewcode-back" href="../../api.html#superphot.classify.plot_feature_importance">[docs]</a><span class="k">def</span> <span class="nf">plot_feature_importance</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span>
+<span class="sd">        The trained pipeline for which to plot feature importances. Steps should be named &#39;classifier&#39; and &#39;sampler&#39;.</span>
+<span class="sd">    train_data : astropy.table.Table</span>
+<span class="sd">        Data table containing &#39;features&#39; and &#39;type&#39; for training when calculating permutation importances. Must also</span>
+<span class="sd">        include &#39;featnames&#39; and &#39;filters&#39; in `train_data.meta`.</span>
+<span class="sd">    width : float, optional</span>
+<span class="sd">        Total width of the bars in units of the separation between bars. Default: 0.8.</span>
+<span class="sd">    nsamples : int, optional</span>
+<span class="sd">        Number of samples to draw for the fake validation data set. Default: 1000.</span>
+<span class="sd">    saveto : str, optional</span>
+<span class="sd">        Filename to which to save the plot. Default: show instead of saving.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;calculating feature importance&#39;</span><span class="p">)</span>
+    <span class="n">featnames</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;featnames&#39;</span><span class="p">]</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;filters&#39;</span><span class="p">]</span>
+
+    <span class="n">featnames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">featnames</span><span class="p">,</span> <span class="s1">&#39;Random Number&#39;</span><span class="p">)</span>
+    <span class="n">xoff</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">width</span> <span class="o">/</span> <span class="n">filters</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">filters</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">filters</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">filters</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">xranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">featnames</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="n">xoff</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="n">random_feature_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_data</span><span class="p">))</span>
+    <span class="n">random_feature_validate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">nsamples</span> <span class="o">*</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">real_features</span><span class="p">,</span> <span class="n">xrange</span><span class="p">,</span> <span class="n">fltr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">xranges</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">real_features</span><span class="p">,</span> <span class="n">random_feature_train</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]])</span>
+        <span class="n">pipeline</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
+        <span class="n">importance0</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">named_steps</span><span class="p">[</span><span class="s1">&#39;classifier&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">feature_importances_</span>
+
+        <span class="n">X_val</span><span class="p">,</span> <span class="n">y_val</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">named_steps</span><span class="p">[</span><span class="s1">&#39;sampler&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">more_samples</span><span class="p">(</span><span class="n">nsamples</span><span class="p">)</span>
+        <span class="n">X_val</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_feature_validate</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">permutation_importance</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">named_steps</span><span class="p">[</span><span class="s1">&#39;classifier&#39;</span><span class="p">],</span> <span class="n">X_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">importance</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">importances_mean</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">importances_std</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="n">filter_colors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fltr</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">barh</span><span class="p">(</span><span class="n">xrange</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">importance0</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">width</span> <span class="o">/</span> <span class="n">filters</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">importance</span><span class="p">,</span> <span class="n">xrange</span><span class="p">,</span> <span class="n">xerr</span><span class="o">=</span><span class="n">std</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">mfc</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+
+    <span class="n">proxy_artists</span> <span class="o">=</span> <span class="p">[</span><span class="n">Patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">),</span> <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">xerr</span><span class="o">=</span><span class="p">[],</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">mfc</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">proxy_artists</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Mean Decrease in Impurity&#39;</span><span class="p">,</span> <span class="s1">&#39;Permutation Importance&#39;</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">featname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">featnames</span><span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">-</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">featname</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis_transform</span><span class="p">())</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">xranges</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">minor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">featnames</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">minor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;x-small&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Feature Importance&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">saveto</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">saveto</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
+
+
 <span class="k">def</span> <span class="nf">plot_confusion_matrix_from_file</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename containing the table of classification results.&#39;</span><span class="p">)</span>
@@ -498,6 +573,7 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--random-state&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Seed for the random number generator (for reproducibility).&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--pmin&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Minimum confidence to be included in the confusion matrix.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--skip-validation&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_false&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;validate&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Skip the validation step.&#39;</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;started classification&#39;</span><span class="p">)</span>
@@ -539,12 +615,15 @@
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;pipeline.pickle&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
 
-    <span class="n">validation_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
-    <span class="n">write_results</span><span class="p">(</span><span class="n">validation_data</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;validation_full.txt&#39;</span><span class="p">)</span>
-    <span class="n">results_validate</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">validation_data</span><span class="p">)</span>
-    <span class="n">write_results</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;validation.txt&#39;</span><span class="p">)</span>
-    <span class="n">make_confusion_matrix</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">pmin</span><span class="p">,</span> <span class="s1">&#39;confusion_matrix.pdf&#39;</span><span class="p">)</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;validation complete&#39;</span><span class="p">)</span>
+    <span class="n">plot_feature_importance</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;feature_importance.pdf&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">validate</span><span class="p">:</span>
+        <span class="n">validation_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
+        <span class="n">write_results</span><span class="p">(</span><span class="n">validation_data</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;validation_full.txt&#39;</span><span class="p">)</span>
+        <span class="n">results_validate</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">validation_data</span><span class="p">)</span>
+        <span class="n">write_results</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;validation.txt&#39;</span><span class="p">)</span>
+        <span class="n">make_confusion_matrix</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">pmin</span><span class="p">,</span> <span class="s1">&#39;confusion_matrix.pdf&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;validation complete&#39;</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;finished classification&#39;</span><span class="p">)</span>
 </pre></div>
 
