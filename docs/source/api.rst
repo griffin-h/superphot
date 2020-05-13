@@ -25,6 +25,14 @@ superphot.fit module
    :undoc-members:
    :show-inheritance:
 
+superphot.optimize module
+-------------------------
+
+.. automodule:: superphot.optimize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 superphot.util module
 ---------------------
 
