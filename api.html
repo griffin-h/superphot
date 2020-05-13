@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post18+gba89861 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post19+gf7c5ab0 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post18+gba89861
+                0.1.0.post19+gf7c5ab0
               </div>
             
           
@@ -95,6 +95,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.classify">superphot.classify module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.extract">superphot.extract module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.fit">superphot.fit module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-superphot.optimize">superphot.optimize module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.util">superphot.util module</a></li>
 </ul>
 </li>
@@ -1094,6 +1095,52 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 <dt><strong>traces1, traces2</strong><span class="classifier">dict</span></dt><dd><p>Dictionaries of the PyMC3 trace objects for each filter for the first and second fitting iterations.</p>
 </dd>
 <dt><strong>parameters</strong><span class="classifier">list</span></dt><dd><p>List of Theano variables in the PyMC3 model.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-superphot.optimize">
+<span id="superphot-optimize-module"></span><h2>superphot.optimize module<a class="headerlink" href="#module-superphot.optimize" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="superphot.optimize.plot_hyperparameters_3d">
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">ccols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">'classifier__max_depth'</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">'classifier__max_features'</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">'classifier__n_estimators'</span></em>, <em class="sig-param"><span class="n">mcol</span><span class="o">=</span><span class="default_value">'classifier__criterion'</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot 3D scatter plots of the metrics against the hyperparameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of results from <cite>test_hyperparameters</cite>.</p>
+</dd>
+<dt><strong>ccols</strong><span class="classifier">list, optional</span></dt><dd><p>List of columns to plot as metrics. Default: all columns other than <cite>xcol</cite>, <cite>ycol</cite>, <cite>zcol</cite>, and <cite>mcol</cite>.</p>
+</dd>
+<dt><strong>xcol, ycol, zcol</strong><span class="classifier">str, optional</span></dt><dd><p>Columns to plot on the x-, y-, and z-axes of the scatter plots.</p>
+</dd>
+<dt><strong>mcol</strong><span class="classifier">str, optional</span></dt><dd><p>Column to plot as the marker shape in the scatter plots.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.optimize.test_hyperparameters">
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">test_hyperparameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_set</span></em>, <em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">test_data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#test_hyperparameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.test_hyperparameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates the pipeline for a set of hyperparameters.</p>
+<p>Measures F1 score and accuracy, as well as completeness and purity for each class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>param_set</strong><span class="classifier">dict</span></dt><dd><p>A dictionary containing keywords that match the parameters of <cite>pipeline</cite> and values to which to set them.</p>
+</dd>
+<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘features’ column and a ‘type’ column.</p>
+</dd>
+<dt><strong>test_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ column.</p>
 </dd>
 </dl>
 </dd>

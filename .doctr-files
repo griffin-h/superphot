@@ -3,6 +3,7 @@
 ./_modules/superphot/classify.html
 ./_modules/superphot/extract.html
 ./_modules/superphot/fit.html
+./_modules/superphot/optimize.html
 ./_modules/superphot/util.html
 ./_sources/api.rst.txt
 ./_sources/index.rst.txt
