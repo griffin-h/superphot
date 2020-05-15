@@ -10,7 +10,7 @@ import os
 import logging
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.markers import MarkerStyle
+from matplotlib.backends.backend_pdf import PdfPages
 from itertools import product
 import json
 from multiprocessing import Pool
@@ -54,8 +54,15 @@ def test_hyperparameters(param_set, pipeline, train_data, test_data):
     return param_set
 
 
-def plot_hyperparameters_3d(t, ccols=None, xcol='classifier__max_depth', ycol='classifier__max_features',
-                            zcol='classifier__n_estimators', mcol='classifier__criterion', saveto=None):
+def titlecase(x):
+    """Capitalize the first letter of each word in a string (where words are separated by whitespace)."""
+    words = x.split()
+    cap_words = [word[0].upper() + word[1:] for word in words]
+    title = ' '.join(cap_words)
+    return title
+
+
+def plot_hyperparameters_3d(t, ccols, xcol, ycol, zcol, cmap=None, cmin=None, cmax=None):
     """
     Plot 3D scatter plots of the metrics against the hyperparameters.
 
@@ -63,42 +70,78 @@ def plot_hyperparameters_3d(t, ccols=None, xcol='classifier__max_depth', ycol='c
     ----------
     t : astropy.table.Table
         Table of results from `test_hyperparameters`.
-    ccols : list, optional
-        List of columns to plot as metrics. Default: all columns other than `xcol`, `ycol`, `zcol`, and `mcol`.
-    xcol, ycol, zcol : str, optional
+    ccols : list
+        List of columns to plot as metrics.
+    xcol, ycol, zcol : str
         Columns to plot on the x-, y-, and z-axes of the scatter plots.
-    mcol : str, optional
-        Column to plot as the marker shape in the scatter plots.
-    saveto : str, optional
-        Save the plot to this filename. If None, the plot is displayed and not saved.
+    cmap : str, optional
+        Name of the colormap to use to color the values in `ccols`.
+    cmin, cmax : float, optional
+        Data limits corresponding to the minimum and maximum colors in `cmap`.
     """
-    t = t.group_by(mcol)
-    t.groups.keys['marker'] = None
-    if ccols is None:
-        ccols = [col for col in t.colnames if col not in [xcol, ycol, zcol, mcol]]
     nrows, ncols = subplots_layout(len(ccols))
-    fig = plt.figure(figsize=(12., 10.))
     gs = plt.GridSpec(nrows + 1, ncols, height_ratios=(8,) * nrows + (1,))
+    fig = plt.figure(figsize=(11., 8.5))
     for (i, j), ccol in zip(product(range(nrows), range(ncols)), ccols):
         ax = fig.add_subplot(gs[i, j], projection='3d')
         ax.minorticks_off()
         ax.set_zticks([], minor=True)
-        for g, k, m in zip(t.groups, t.groups.keys, MarkerStyle.filled_markers):
-            k['marker'] = m
-            cmap = ax.scatter(g[xcol], g[ycol], g[zcol], marker=m, c=g[ccol], label=k[mcol], vmin=0., vmax=1.)
+        logz = np.log(t[zcol])  # 3D axes do not support log scaling
+        cbar = ax.scatter(t[xcol], t[ycol], logz, marker='o', c=t[ccol], cmap=cmap, vmin=cmin, vmax=cmax, alpha=1.)
+        vmin, vmax = np.percentile(t[ccol], [0., 100.])
         ax.set_xlabel(xcol.split('__')[1])
         ax.set_ylabel(ycol.split('__')[1])
         ax.set_zlabel(zcol.split('__')[1])
-        ax.set_title(ccol)
-    fig.legend([plt.Line2D([], [], marker=m, color='k', ls='none') for m in t.groups.keys['marker']],
-               t.groups.keys[mcol], title=mcol.split('__')[1], loc='upper center', ncol=ncols)
+        ax.set_xticks(np.unique(t[xcol]))
+        ax.set_yticks(np.unique(t[ycol]))
+        ax.set_zticks(np.unique(logz))
+        ax.set_zticklabels(np.unique(t[zcol]))
+        title = titlecase(ccol.replace('_', ' '))
+        if len(title) > 12:
+            title = title[:-7] + '.'
+        ax.set_title(f'${vmin:.2f}$ < {title} < {vmax:.2f}', size='medium')
     cax = fig.add_subplot(gs[-1, :])
-    fig.colorbar(cmap, cax, orientation='horizontal')
-    fig.tight_layout(rect=[0.05, 0., 0.95, 0.95], h_pad=3., w_pad=5.)
+    cax = fig.colorbar(cbar, cax, orientation='horizontal')
+    if cmin is None or cmax is None:
+        cax.set_ticks(cbar.get_clim())
+        cax.set_ticklabels(['min', 'max'])
+    fig.tight_layout(pad=3.)
+    return fig
+
+
+def plot_hyperparameters_with_diff(t, dcol, xcol, ycol, zcol, saveto=None):
+    """
+    Plot the metrics for one value of `dcol` and the difference in the metrics for the second value of `dcol`.
+
+    Parameters
+    ----------
+    t : astropy.table.Table
+        Table of results from `test_hyperparameters`.
+    dcol : str
+        Column to plot as a difference.
+    xcol, ycol, zcol : str
+        Columns to plot on the x-, y-, and z-axes of the scatter plots.
+    saveto : str, optional
+        Save the plot to this filename. If None, the plot is displayed and not saved.
+    """
+    kcols = sorted([col for col in t.colnames if col.startswith('classifier__')])
+    t = t.group_by(dcol)
+    if len(t.groups) != 2:
+        raise ValueError('`dcol` must have exactly two possible values')
+    t.sort([dcol, xcol, ycol, zcol])
+    t0, t1 = t.groups
+    ccols = sorted(set(t.colnames) - {dcol, xcol, ycol, zcol})
+    for ccol in ccols:
+        t1[ccol] = t0[ccol] - t1[ccol]
+    with PdfPages(saveto) as pdf:
+        fig1 = plot_hyperparameters_3d(t0, ccols, xcol, ycol, zcol)
+        pdf.savefig(fig1)
+        fig2 = plot_hyperparameters_3d(t1, ccols, xcol, ycol, zcol, cmap='coolwarm_r', cmin=-0.2, cmax=0.2)
+        pdf.savefig(fig2)
     if saveto is None:
         plt.show()
-    else:
-        fig.savefig(saveto)
+    plt.close(fig1)
+    plt.close(fig2)
 
 
 def main():
@@ -148,4 +191,6 @@ def main():
     else:
         logging.info('Writing results to', args.saveto)
     tfinal.write(args.saveto, format='ascii.fixed_width_two_line', overwrite=True)
-    plot_hyperparameters_3d(tfinal, saveto=args.saveto.replace('.txt', '.pdf'))
+
+    dcol, xcol, ycol, zcol = sorted(param_distributions.keys())
+    plot_hyperparameters_with_diff(tfinal, dcol, xcol, ycol, zcol, saveto=args.saveto.replace('.txt', '.pdf'))
