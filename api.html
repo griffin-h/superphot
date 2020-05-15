@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post19+gf7c5ab0 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post20+g24b524e documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post19+gf7c5ab0
+                0.1.0.post20+g24b524e
               </div>
             
           
@@ -1106,18 +1106,38 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 <span id="superphot-optimize-module"></span><h2>superphot.optimize module<a class="headerlink" href="#module-superphot.optimize" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt id="superphot.optimize.plot_hyperparameters_3d">
-<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">ccols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">'classifier__max_depth'</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">'classifier__max_features'</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">'classifier__n_estimators'</span></em>, <em class="sig-param"><span class="n">mcol</span><span class="o">=</span><span class="default_value">'classifier__criterion'</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_3d" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">ccols</span></em>, <em class="sig-param"><span class="n">xcol</span></em>, <em class="sig-param"><span class="n">ycol</span></em>, <em class="sig-param"><span class="n">zcol</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmin</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_3d" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot 3D scatter plots of the metrics against the hyperparameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of results from <cite>test_hyperparameters</cite>.</p>
 </dd>
-<dt><strong>ccols</strong><span class="classifier">list, optional</span></dt><dd><p>List of columns to plot as metrics. Default: all columns other than <cite>xcol</cite>, <cite>ycol</cite>, <cite>zcol</cite>, and <cite>mcol</cite>.</p>
+<dt><strong>ccols</strong><span class="classifier">list</span></dt><dd><p>List of columns to plot as metrics.</p>
 </dd>
-<dt><strong>xcol, ycol, zcol</strong><span class="classifier">str, optional</span></dt><dd><p>Columns to plot on the x-, y-, and z-axes of the scatter plots.</p>
+<dt><strong>xcol, ycol, zcol</strong><span class="classifier">str</span></dt><dd><p>Columns to plot on the x-, y-, and z-axes of the scatter plots.</p>
 </dd>
-<dt><strong>mcol</strong><span class="classifier">str, optional</span></dt><dd><p>Column to plot as the marker shape in the scatter plots.</p>
+<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of the colormap to use to color the values in <cite>ccols</cite>.</p>
+</dd>
+<dt><strong>cmin, cmax</strong><span class="classifier">float, optional</span></dt><dd><p>Data limits corresponding to the minimum and maximum colors in <cite>cmap</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.optimize.plot_hyperparameters_with_diff">
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_with_diff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">dcol</span></em>, <em class="sig-param"><span class="n">xcol</span></em>, <em class="sig-param"><span class="n">ycol</span></em>, <em class="sig-param"><span class="n">zcol</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_with_diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_with_diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the metrics for one value of <cite>dcol</cite> and the difference in the metrics for the second value of <cite>dcol</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of results from <cite>test_hyperparameters</cite>.</p>
+</dd>
+<dt><strong>dcol</strong><span class="classifier">str</span></dt><dd><p>Column to plot as a difference.</p>
+</dd>
+<dt><strong>xcol, ycol, zcol</strong><span class="classifier">str</span></dt><dd><p>Columns to plot on the x-, y-, and z-axes of the scatter plots.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
 </dd>
@@ -1145,6 +1165,12 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.optimize.titlecase">
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">titlecase</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#titlecase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.titlecase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Capitalize the first letter of each word in a string (where words are separated by whitespace).</p>
 </dd></dl>
 
 </div>
