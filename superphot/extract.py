@@ -9,7 +9,7 @@ from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
-from .util import filter_colors, meta_columns, plot_histograms, has_labeled_events, subplots_layout
+from .util import filter_colors, meta_columns, plot_histograms, subplots_layout
 from .fit import read_light_curve, produce_lc
 import pickle
 from scipy.stats import spearmanr
@@ -338,10 +338,7 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         t_good, good_models = select_good_events(t, models)
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        if has_labeled_events(t_good):
-            models_to_fit = good_models[~t_good.mask['type']]
-        else:
-            models_to_fit = good_models
+        models_to_fit = good_models[~t_good['type'].mask]
         coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
                                                                      stored_pcas=stored_pcas)
         if save_pca_to is not None:
@@ -389,6 +386,8 @@ def select_good_events(t, data):
 
 def compile_data_table(filename):
     t_input = Table.read(filename, format='ascii')
+    if 'type' in t_input.colnames:
+        t_input['type'] = np.ma.array(t_input['type'])
     required_cols = ['MWEBV', 'redshift']
     missing_cols = [col for col in required_cols if col not in t_input.colnames]
     if missing_cols:
@@ -445,7 +444,8 @@ def main():
                                  stored_pcas=args.pcas, save_pca_to=args.output + '_pca.pdf',
                                  save_reconstruction_to=save_reconstruction_to, random_state=args.random_state)
     save_data(test_data, args.output)
-    if has_labeled_events(test_data):
+    plot_data = test_data[~test_data['type'].mask]
+    if plot_data:
         plot_histograms(test_data, 'params', varnames=PARAMNAMES, rownames=args.filters,
                         saveto=args.output + '_parameters.pdf')
         plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'], rownames=args.filters,

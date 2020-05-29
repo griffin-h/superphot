@@ -8,16 +8,6 @@ plt.rcParams['xtick.minor.visible'] = True
 plt.rcParams['ytick.minor.visible'] = True
 
 
-def has_labeled_events(t, key='type'):
-    """Returns True if a table has unmasked values in the column `key`"""
-    return t.has_masked_values and key in t.colnames and not t.mask[key].all()
-
-
-def select_labeled_events(t, key='type'):
-    """Returns rows from a table where the column `key` is not masked."""
-    return t[~t.mask[key]] if has_labeled_events(t, key) else t.copy()
-
-
 def subplots_layout(n):
     """
     Calculate the number of rows and columns for a multi-panel plot, staying as close to a square as possible.
@@ -60,7 +50,7 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
     """
     _, nrows, ncols = data_table[colname].shape
     if class_kwd:
-        data_table = select_labeled_events(data_table, key=class_kwd).group_by(class_kwd)
+        data_table = data_table.group_by(class_kwd)
         data_table.groups.keys['patch'] = None
     else:
         data_table = data_table.group_by(np.ones(len(data_table)))

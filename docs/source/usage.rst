@@ -20,7 +20,7 @@ For more advanced use cases, you can import the module and use some version of t
 
 .. code-block:: python
 
-    from superphot import util, fit, extract, classify
+    from superphot import fit, extract, classify
     from glob import glob
     from os import path
 
@@ -33,7 +33,7 @@ For more advanced use cases, you can import the module and use some version of t
     # Extract features
     data_table = extract.compile_data_table('input_table.txt')
     test_data = extract.extract_features(data_table, 'stored_models/')
-    train_data = util.select_labeled_events(test_data)
+    train_data = test_data[~test_data['type'].mask]
 
     # Initialize the pipeline (can adjust hyperparameters here)
     pipeline = classify.make_pipeline(

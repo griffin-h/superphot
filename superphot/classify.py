@@ -15,7 +15,7 @@ from imblearn.utils._docstring import Substitution, _random_state_docstring
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import pickle
-from .util import meta_columns, select_labeled_events, plot_histograms, filter_colors
+from .util import meta_columns, plot_histograms, filter_colors
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -197,6 +197,8 @@ def aggregate_probabilities(table):
     table.keep_columns(meta_columns + ['probabilities'])
     grouped = table.filled().group_by(meta_columns)
     results = grouped.groups.aggregate(mean_axis0)
+    if 'type' in results.colnames:
+        results['type'] = np.ma.array(results['type'])
     return results
 
 
@@ -246,7 +248,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
     purity : bool, optional
         If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
     """
-    results = select_labeled_events(results)
+    results = results[~results['type'].mask]
     if classes is None:
         classes = np.unique(results['type'])
     predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
@@ -283,6 +285,8 @@ def load_data(meta_file, data_file=None):
         meta_file_parts[-1] = 'npz'
         data_file = '.'.join(meta_file_parts)
     t = Table.read(meta_file, format='ascii', fill_values=('', ''))
+    if 'type' in t.colnames:
+        t['type'] = np.ma.array(t['type'])
     stored = np.load(data_file)
     data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
     for col in data_table.colnames:
@@ -299,6 +303,8 @@ def load_data(meta_file, data_file=None):
 
 def load_results(filename):
     results = Table.read(filename, format='ascii')
+    if 'type' in results.colnames:
+        results['type'] = np.ma.array(results['type'])
     classes = [col for col in results.colnames if col not in meta_columns]
     results['probabilities'] = np.stack([results[sntype].data for sntype in classes]).T
     results.remove_columns(classes)
@@ -426,8 +432,8 @@ def main():
         train_data = test_data
     else:
         train_data = load_data(args.train_data)
-    train_data = select_labeled_events(train_data)
-    validation_data = select_labeled_events(test_data)
+    train_data = train_data[~train_data['type'].mask]
+    validation_data = test_data[~test_data['type'].mask]
 
     if args.classifier == 'rf':
         clf = RandomForestClassifier(criterion='entropy', max_features=5, n_jobs=-1, random_state=args.random_state)
