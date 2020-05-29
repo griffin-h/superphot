@@ -323,6 +323,8 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
                 params.append(trace.mean(axis=0)[np.newaxis])
                 ndraws = 1
         params = np.vstack(params)
+        if bad_rows:
+            t[bad_rows].write('failed.txt', format='ascii.fixed_width_two_line')
         t.remove_rows(bad_rows)  # excluding rows that have not been fit
         np.savez_compressed('params.npz', params=params, filters=list(filters), ndraws=ndraws)
         logging.info(f'posteriors sampled from {stored_models}, saved to params.npz')
