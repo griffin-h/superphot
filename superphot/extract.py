@@ -78,7 +78,7 @@ def flux_to_luminosity(row, R_filter):
     """
     A_coeffs = row['MWEBV'] * np.array(R_filter)
     dist = cosmo.luminosity_distance(row['redshift']).to('dapc').value
-    flux2lum = 10. ** (A_coeffs / 2.5) * 4. * np.pi * dist ** 2. * (1. + row['redshift'])
+    flux2lum = 10. ** (A_coeffs / 2.5) * dist ** 2. * (1. + row['redshift'])
     return flux2lum
 
 
