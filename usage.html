@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; Superphot 0.1.0.post20+g24b524e documentation</title>
+  <title>Usage &mdash; Superphot 0.1.0.post22+ga35acff documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post20+g24b524e
+                0.1.0.post22+ga35acff
               </div>
             
           
@@ -176,7 +176,7 @@ superphot-classify test_data.txt
 </pre></div>
 </div>
 <p>For more advanced use cases, you can import the module and use some version of the following workflow:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">superphot</span> <span class="kn">import</span> <span class="n">util</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">extract</span><span class="p">,</span> <span class="n">classify</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">superphot</span> <span class="kn">import</span> <span class="n">fit</span><span class="p">,</span> <span class="n">extract</span><span class="p">,</span> <span class="n">classify</span>
 <span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
 <span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
 
@@ -189,7 +189,7 @@ superphot-classify test_data.txt
 <span class="c1"># Extract features</span>
 <span class="n">data_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_data_table</span><span class="p">(</span><span class="s1">&#39;input_table.txt&#39;</span><span class="p">)</span>
 <span class="n">test_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
-<span class="n">train_data</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">select_labeled_events</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
+<span class="n">train_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
 
 <span class="c1"># Initialize the pipeline (can adjust hyperparameters here)</span>
 <span class="n">pipeline</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">make_pipeline</span><span class="p">(</span>

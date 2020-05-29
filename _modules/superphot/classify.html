@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.classify &mdash; Superphot 0.1.0.post20+g24b524e documentation</title>
+  <title>superphot.classify &mdash; Superphot 0.1.0.post22+ga35acff documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post20+g24b524e
+                0.1.0.post22+ga35acff
               </div>
             
           
@@ -171,7 +171,7 @@
 <span class="kn">from</span> <span class="nn">imblearn.over_sampling</span> <span class="kn">import</span> <span class="n">SMOTE</span>
 <span class="kn">from</span> <span class="nn">imblearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">meta_columns</span><span class="p">,</span> <span class="n">select_labeled_events</span><span class="p">,</span> <span class="n">plot_histograms</span><span class="p">,</span> <span class="n">filter_colors</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">meta_columns</span><span class="p">,</span> <span class="n">plot_histograms</span><span class="p">,</span> <span class="n">filter_colors</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
@@ -353,6 +353,8 @@
     <span class="n">table</span><span class="o">.</span><span class="n">keep_columns</span><span class="p">(</span><span class="n">meta_columns</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">])</span>
     <span class="n">grouped</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">filled</span><span class="p">()</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">meta_columns</span><span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">grouped</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span><span class="n">mean_axis0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">results</span></div>
 
 
@@ -402,7 +404,7 @@
 <span class="sd">    purity : bool, optional</span>
 <span class="sd">        If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">select_labeled_events</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="o">~</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">classes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">classes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
     <span class="n">predicted_types</span> <span class="o">=</span> <span class="n">classes</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
@@ -439,6 +441,8 @@
         <span class="n">meta_file_parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;npz&#39;</span>
         <span class="n">data_file</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">meta_file_parts</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">meta_file</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="n">t</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
     <span class="n">stored</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
     <span class="n">data_table</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)),</span> <span class="n">stored</span><span class="p">[</span><span class="s1">&#39;ndraws&#39;</span><span class="p">])]</span>
     <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data_table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
@@ -455,6 +459,8 @@
 
 <div class="viewcode-block" id="load_results"><a class="viewcode-back" href="../../api.html#superphot.classify.load_results">[docs]</a><span class="k">def</span> <span class="nf">load_results</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
     <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">meta_columns</span><span class="p">]</span>
     <span class="n">results</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">results</span><span class="p">[</span><span class="n">sntype</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">sntype</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
     <span class="n">results</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">(</span><span class="n">classes</span><span class="p">)</span>
@@ -582,8 +588,8 @@
         <span class="n">train_data</span> <span class="o">=</span> <span class="n">test_data</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">train_data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">train_data</span><span class="p">)</span>
-    <span class="n">train_data</span> <span class="o">=</span> <span class="n">select_labeled_events</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span>
-    <span class="n">validation_data</span> <span class="o">=</span> <span class="n">select_labeled_events</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
+    <span class="n">train_data</span> <span class="o">=</span> <span class="n">train_data</span><span class="p">[</span><span class="o">~</span><span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
+    <span class="n">validation_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">classifier</span> <span class="o">==</span> <span class="s1">&#39;rf&#39;</span><span class="p">:</span>
         <span class="n">clf</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;entropy&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>

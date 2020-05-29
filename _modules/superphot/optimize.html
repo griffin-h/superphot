@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.optimize &mdash; Superphot 0.1.0.post20+g24b524e documentation</title>
+  <title>superphot.optimize &mdash; Superphot 0.1.0.post22+ga35acff documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post20+g24b524e
+                0.1.0.post22+ga35acff
               </div>
             
           
@@ -159,7 +159,7 @@
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">ParameterGrid</span><span class="p">,</span> <span class="n">ParameterSampler</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">f1_score</span>
 <span class="kn">from</span> <span class="nn">.classify</span> <span class="kn">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">validate_classifier</span><span class="p">,</span> <span class="n">aggregate_probabilities</span>
-<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">select_labeled_events</span><span class="p">,</span> <span class="n">subplots_layout</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">subplots_layout</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">vstack</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
 <span class="kn">import</span> <span class="nn">os</span>
@@ -192,7 +192,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">param_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">param_set</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">pipeline</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">classifier__n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">param_set</span><span class="p">)</span>
-    <span class="n">validation_data</span> <span class="o">=</span> <span class="n">select_labeled_events</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
+    <span class="n">validation_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
     <span class="n">validation_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">validation_data</span><span class="p">)</span>
     <span class="n">predicted_types</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
