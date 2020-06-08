@@ -41,7 +41,7 @@ setuptools.setup(
     description="Photometric classification of supernovae",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/FDauphin/2019_REU_CfA",
+    url="https://griffin-h.github.io/superphot",
     packages=setuptools.find_packages(exclude=['docs', 'tests']),
     include_package_data=True,
     license="GNU General Public License v2 (GPLv2)",
