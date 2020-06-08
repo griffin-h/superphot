@@ -15,7 +15,7 @@ from imblearn.utils._docstring import Substitution, _random_state_docstring
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import pickle
-from .util import meta_columns, plot_histograms, filter_colors
+from .util import meta_columns, plot_histograms, filter_colors, load_data
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -254,44 +254,6 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
         fig.savefig(saveto)
 
 
-def load_data(meta_file, data_file=None):
-    """
-    Read input from a text file (the metadata table) and a Numpy file (the features) and return as an Astropy table.
-
-    Parameters
-    ----------
-    meta_file : str
-        Filename of the input metadata table. Must in an ASCII format readable by Astropy.
-    data_file : str, optional
-        Filename where the features are saved. Must be in Numpy binary format. If None, replace the extension of
-        `meta_file` with .npz.
-
-    Returns
-    -------
-    data_table : astropy.table.Table
-        Table containing the metadata along with a 'features' column.
-    """
-    if data_file is None:
-        meta_file_parts = meta_file.split('.')
-        meta_file_parts[-1] = 'npz'
-        data_file = '.'.join(meta_file_parts)
-    t = Table.read(meta_file, format='ascii', fill_values=('', ''))
-    if 'type' in t.colnames:
-        t['type'] = np.ma.array(t['type'])
-    stored = np.load(data_file)
-    data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
-    for col in data_table.colnames:
-        if data_table[col].dtype.type is np.str_:
-            data_table[col].fill_value = ''
-    for key in stored:
-        if key in ['filters', 'ndraws', 'paramnames', 'featnames']:
-            data_table.meta[key] = stored[key]
-        else:
-            data_table[key] = stored[key]
-    logging.info(f'data loaded from {meta_file} and {data_file}')
-    return data_table
-
-
 def load_results(filename):
     results = Table.read(filename, format='ascii')
     if 'type' in results.colnames:
@@ -445,11 +407,10 @@ def _main():
     pipeline = Pipeline([('scaler', StandardScaler()), ('sampler', sampler), ('classifier', clf)])
     test_data['probabilities'] = fit_predict(pipeline, train_data, test_data)
     test_data['prediction'] = clf.classes_[test_data['probabilities'].argmax(axis=1)]
-    plot_histograms(test_data, 'params', 'prediction', varnames=test_data.meta['paramnames'],
-                    rownames=test_data.meta['filters'], saveto='phot_class_parameters.pdf')
-    plot_histograms(test_data, 'features', 'prediction', varnames=test_data.meta['featnames'],
-                    rownames=test_data.meta['filters'], no_autoscale=['SLSN', 'SNIIn'],
-                    saveto='phot_class_features.pdf')
+    plot_histograms(test_data, 'params', 'prediction', var_kwd='paramnames', row_kwd='filters',
+                    saveto='phot_class_parameters.pdf')
+    plot_histograms(test_data, 'features', 'prediction', var_kwd='featnames', row_kwd='filters',
+                    no_autoscale=['SLSN', 'SNIIn'], saveto='phot_class_features.pdf')
 
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')

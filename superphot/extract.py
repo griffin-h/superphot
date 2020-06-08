@@ -9,7 +9,7 @@ from astropy.table import Table, hstack
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
-from .util import filter_colors, meta_columns, plot_histograms, subplots_layout
+from .util import filter_colors, meta_columns, load_data, plot_histograms, subplots_layout
 from .fit import read_light_curve, produce_lc
 import pickle
 from scipy.stats import spearmanr
@@ -243,8 +243,55 @@ def plot_feature_correlation(data_table, saveto=None):
     plt.close(fig)
 
 
-def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_point=27.5, use_pca=True,
-                     stored_pcas=None, save_pca_to=None, save_reconstruction_to=None, random_state=None):
+def compile_parameters(t, stored_models, filters, ndraws=10, random_state=None):
+    """
+    Read the saved PyMC3 traces and compile an array of fit parameters for each transient. Save to a Numpy file.
+
+    Parameters
+    ----------
+    t : astropy.table.Table
+        Table containing the 'filename' of each transient to be classified.
+    stored_models : str
+        Look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
+    filters : iterable
+        Filters for which to compile parameters. These should be the last characters of the subdirectories in which the
+        traces are stored.
+    ndraws : int, optional
+        Number of random draws from the MCMC posterior. Default: 10.
+    random_state : int, optional
+        Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.
+    """
+    params = []
+    bad_rows = []
+    for i, filename in enumerate(t['filename']):
+        try:
+            basename = os.path.basename(filename).split('.')[0]
+            tracefile = os.path.join(stored_models, basename) + '_2*'
+            trace = load_trace(tracefile, filters)
+            logging.info(f'loaded trace from {tracefile}')
+        except FileNotFoundError as e:
+            bad_rows.append(i)
+            logging.error(e)
+            continue
+        if ndraws:
+            rng = np.random.default_rng(random_state)
+            params.append(rng.choice(trace, ndraws))
+        else:  # ndraws == 0 means take the median
+            params.append(np.median(trace, axis=0)[np.newaxis])
+            ndraws = 1
+    params = np.vstack(params)
+    if bad_rows:
+        t[bad_rows].write('failed.txt', format='ascii.fixed_width_two_line', overwrite=True)
+    t.remove_rows(bad_rows)
+    t = t[np.repeat(range(len(t)), ndraws)]
+    t.meta['filters'] = list(filters)
+    t.meta['ndraws'] = ndraws
+    t.meta['paramnames'] = PARAMNAMES
+    t['params'] = params
+    return t
+
+
+def extract_features(t, zero_point=27.5, use_pca=True, stored_pcas=None, save_pca_to=None, save_reconstruction_to=None):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -252,19 +299,7 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
     Parameters
     ----------
     t : astropy.table.Table
-        Table containing the 'filename' and 'redshift' of each transient to be classified.
-    stored_models : str
-        If a directory, look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
-        If a Numpy file, read the parameters from this file.
-    filters : iterable
-        Filters for which to extract features. If `stored_models` is a directory, these should be the last characters
-        of the subdirectories in which the traces are stored. Ignored if models are read from a Numpy file.
-    R_filters : dict, optional
-        Ratios of total to selective extinction for `filters`. This package includes the values for common filters
-        (see `superphot.extract.R_FILTERS`). Use this argument to override those default values or to include
-        additional filters.
-    ndraws : int, optional
-        Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read from a Numpy file.
+        Table containing the 'params', 'redshift', and 'MWEBV' of each transient to be classified.
     zero_point : float, optional
         Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.
     use_pca : bool, optional
@@ -276,63 +311,20 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         Plot and save the principal components to this file. Default: skip this step.
     save_reconstruction_to : str, optional
         Plot and save the reconstructed light curves to this file (slow). Default: skip this step.
-    random_state : int, optional
-        Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.
 
     Returns
     -------
     t_good : astropy.table.Table
         Slice of the input table with a 'features' column added. Rows with any bad features are excluded.
     """
-    if os.path.isdir(stored_models):
-        stored = {}
-    else:
-        stored = np.load(stored_models)
-        filters = stored.get('filters', filters)
-        ndraws = stored.get('ndraws', ndraws)
-
     R_filter = []
-    for fltr in filters:
-        if R_filters is not None and fltr in R_filters:
-            R_filter.append(R_filter[fltr])
-        elif fltr in R_FILTERS:
+    for fltr in t.meta['filters']:
+        if fltr in R_FILTERS:
             R_filter.append(R_FILTERS[fltr])
         else:
-            raise ValueError(f'Unrecognized filter {fltr}. Please specify the extinction correction using `R_filters`.')
+            raise ValueError(f'Unrecognized filter {fltr}. Please add the extinction correction to `R_FILTERS`.')
 
-    if 'params' in stored:
-        params = stored['params']
-        logging.info(f'parameters read from {stored_models}')
-    else:
-        params = []
-        bad_rows = []
-        for i, filename in enumerate(t['filename']):
-            try:
-                basename = os.path.basename(filename).split('.')[0]
-                tracefile = os.path.join(stored_models, basename) + '_2*'
-                trace = load_trace(tracefile, filters)
-                logging.info(f'loaded trace from {tracefile}')
-            except FileNotFoundError as e:
-                bad_rows.append(i)
-                logging.error(e)
-                continue
-            if ndraws:
-                rng = np.random.default_rng(random_state)
-                params.append(rng.choice(trace, ndraws))
-            else:  # ndraws == 0 means take the median
-                params.append(np.median(trace, axis=0)[np.newaxis])
-                ndraws = 1
-        params = np.vstack(params)
-        if bad_rows:
-            t[bad_rows].write('failed.txt', format='ascii.fixed_width_two_line')
-        t.remove_rows(bad_rows)  # excluding rows that have not been fit
-        np.savez_compressed('params.npz', params=params, filters=list(filters), ndraws=ndraws)
-        logging.info(f'posteriors sampled from {stored_models}, saved to params.npz')
-
-    t = t[np.repeat(range(len(t)), ndraws)]
-    t.meta['filters'] = list(filters)
-    t.meta['ndraws'] = ndraws
-    t['params'] = params
+    params = t['params'].data
     params[:, :, 0] *= np.vstack([flux_to_luminosity(row, R_filter) for row in t])
     if use_pca:
         time = np.linspace(0., 300., 1000)
@@ -344,10 +336,11 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
         coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
                                                                      stored_pcas=stored_pcas)
         if save_pca_to is not None:
-            plot_principal_components(pcas, time, filters, save_pca_to)
+            plot_principal_components(pcas, time, t.meta['filters'], save_pca_to)
         logging.info('PCA finished')
         if save_reconstruction_to is not None:
-            plot_pca_reconstruction(models_to_fit, reconstructed, coefficients, filters, save_reconstruction_to)
+            plot_pca_reconstruction(models_to_fit, reconstructed, coefficients, t.meta['filters'],
+                                    save_reconstruction_to)
         features = np.dstack([peakmags, coefficients])
         t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
@@ -414,43 +407,53 @@ def save_data(t, basename):
     t.sort('filename')
     save_table = t[[col for col in meta_columns if col in t.colnames]][::t.meta['ndraws']]
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
-    np.savez_compressed(f'{basename}.npz', params=t['params'], features=t['features'], filters=t.meta['filters'],
-                        ndraws=t.meta['ndraws'], paramnames=PARAMNAMES, featnames=t.meta['featnames'])
+    save_dict = t.meta.copy()
+    for col in set(t.colnames) - set(meta_columns):
+        save_dict[col] = t[col]
+    np.savez_compressed(f'{basename}.npz', **save_dict)
     logging.info(f'data saved to {basename}.txt and {basename}.npz')
+
+
+def _compile_parameters():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_table', type=str, help='List of input light curve files')
+    parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored')
+    parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
+    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
+                                                               ' Set to 0 to use the median of the LC parameters.')
+    parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
+    parser.add_argument('--output', default='params', help='Filename (without extension) to save the parameters')
+    args = parser.parse_args()
+
+    data_table = compile_data_table(args.input_table)
+    data_table = compile_parameters(data_table, args.stored_models, args.filters, args.ndraws, args.random_state)
+    save_data(data_table, args.output)
+    plot_data = data_table[~data_table['type'].mask]
+    if plot_data:
+        plot_histograms(plot_data, 'params', var_kwd='paramnames', row_kwd='filters',
+                        saveto=args.output + '_parameters.pdf')
 
 
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
-    parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
-                                              'or Numpy file containing stored model parameters/LCs')
-    parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
-    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
-                                                               ' Set to 0 to use the median of the LC parameters.')
+    parser.add_argument('--params', type=str, help='Numpy file containing stored model parameters')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
                         help='Plot and save the reconstructed light curves to {output}_reconstruction.pdf (slow)')
-    parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
-    parser.add_argument('--output', default='test_data',
-                        help='Filename (without extension) to save the test data and features')
+    parser.add_argument('--output', default='test_data', help='Filename (without extension) to save the features')
     args = parser.parse_args()
 
     logging.info('started feature extraction')
-    data_table = compile_data_table(args.input_table)
-    if args.reconstruct:
-        save_reconstruction_to = args.output + '_reconstruction.pdf'
-    else:
-        save_reconstruction_to = None
-    test_data = extract_features(data_table, args.stored_models, args.filters, ndraws=args.ndraws, use_pca=args.use_pca,
-                                 stored_pcas=args.pcas, save_pca_to=args.output + '_pca.pdf',
-                                 save_reconstruction_to=save_reconstruction_to, random_state=args.random_state)
+    data_table = load_data(args.input_table, args.params)
+    test_data = extract_features(data_table, use_pca=args.use_pca, stored_pcas=args.pcas,
+                                 save_pca_to=args.output + '_pca.pdf',
+                                 save_reconstruction_to=args.output+'_reconstruction.pdf' if args.reconstruct else None)
     save_data(test_data, args.output)
     plot_data = test_data[~test_data['type'].mask]
     if plot_data:
-        plot_histograms(test_data, 'params', varnames=PARAMNAMES, rownames=args.filters,
-                        saveto=args.output + '_parameters.pdf')
-        plot_histograms(test_data, 'features', varnames=test_data.meta['featnames'], rownames=args.filters,
+        plot_histograms(plot_data, 'features', var_kwd='featnames', row_kwd='filters',
                         no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
     plot_feature_correlation(test_data, saveto=args.output + '_correlation.pdf')
     logging.info('finished feature extraction')

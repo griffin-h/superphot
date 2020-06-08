@@ -13,7 +13,8 @@ For basic functionality, Superphot can be run from the command line. For example
 .. code-block:: bash
 
     superphot-fit light_curve_file.dat --output-dir stored_models/
-    superphot-extract input_table.txt stored_models/ --output test_data
+    superphot-compile input_table.txt stored_models/ --output params
+    superphot-extract params.txt --output test_data
     superphot-classify test_data.txt
 
 For more advanced use cases, you can import the module and use some version of the following workflow:
@@ -32,7 +33,8 @@ For more advanced use cases, you can import the module and use some version of t
 
     # Extract features
     data_table = extract.compile_data_table('input_table.txt')
-    test_data = extract.extract_features(data_table, 'stored_models/')
+    param_table = extract.compile_parameters(data_table, 'stored_models/')
+    test_data = extract.extract_features(param_table)
     train_data = test_data[~test_data['type'].mask]
 
     # Initialize the pipeline (can adjust hyperparameters here)

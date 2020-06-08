@@ -55,6 +55,7 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'superphot-fit = superphot.fit:_main',
+            'superphot-compile = superphot.extract:_compile_parameters',
             'superphot-extract = superphot.extract:_main',
             'superphot-classify = superphot.classify:_main',
             'superphot-confuse = superphot.classify:_plot_confusion_matrix_from_file',

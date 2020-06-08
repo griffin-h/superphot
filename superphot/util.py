@@ -1,11 +1,51 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from astropy.table import Table
+import logging
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000', 'y': 'y',
                  'U': '#3C0072', 'B': '#0057FF', 'V': '#79FF00', 'R': '#FF7000', 'I': '#66000B'}
 meta_columns = ['filename', 'type', 'MWEBV', 'redshift']
 plt.rcParams['xtick.minor.visible'] = True
 plt.rcParams['ytick.minor.visible'] = True
+
+
+def load_data(meta_file, data_file=None):
+    """
+    Read input from a text file (the metadata table) and a Numpy file (the features) and return as an Astropy table.
+
+    Parameters
+    ----------
+    meta_file : str
+        Filename of the input metadata table. Must in an ASCII format readable by Astropy.
+    data_file : str, optional
+        Filename where the features are saved. Must be in Numpy binary format. If None, replace the extension of
+        `meta_file` with .npz.
+
+    Returns
+    -------
+    data_table : astropy.table.Table
+        Table containing the metadata along with a 'features' column.
+    """
+    if data_file is None:
+        meta_file_parts = meta_file.split('.')
+        meta_file_parts[-1] = 'npz'
+        data_file = '.'.join(meta_file_parts)
+    t = Table.read(meta_file, format='ascii', fill_values=('', ''))
+    if 'type' in t.colnames:
+        t['type'] = np.ma.array(t['type'])
+    stored = np.load(data_file)
+    data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
+    for col in data_table.colnames:
+        if data_table[col].dtype.type is np.str_:
+            data_table[col].fill_value = ''
+    for key in stored:
+        if key in ['filters', 'ndraws', 'paramnames', 'featnames']:
+            data_table.meta[key] = stored[key]
+        else:
+            data_table[key] = stored[key]
+    logging.info(f'data loaded from {meta_file} and {data_file}')
+    return data_table
 
 
 def subplots_layout(n):
@@ -27,7 +67,7 @@ def subplots_layout(n):
     return nrows, ncols
 
 
-def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames=(), no_autoscale=(), saveto=None):
+def plot_histograms(data_table, colname, class_kwd='type', var_kwd=None, row_kwd=None, no_autoscale=(), saveto=None):
     """
     Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.
 
@@ -39,10 +79,10 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
         Column name of `data_table` to plot (e.g., 'params' or 'features').
     class_kwd : str, optional
         Column name of `data_table` to group by before plotting (e.g., 'type' or 'prediction'). Default: 'type'.
-    varnames : iterable, optional
-        Parameter names to list on the x-axes of the plot. Default: no labels.
-    rownames : iterable, optional
-        Labels for the leftmost y-axes.
+    var_kwd : str, optional
+        Keyword in `data_table.meta` containing the parameter names to list on the x-axes. Default: no labels.
+    row_kwd : str, optional
+        Keyword in `data_table.meta` containing labels for the leftmost y-axes.
     no_autoscale : tuple or list, optional
         Class names not to use in calculating the axis limits. Default: include all.
     saveto : str, optional
@@ -77,13 +117,15 @@ def plot_histograms(data_table, colname, class_kwd='type', varnames=(), rownames
     if class_kwd:
         fig.legend(data_table.groups.keys['patch'], data_table.groups.keys[class_kwd], loc='upper center', ncol=ngroups,
                    title={'type': 'Spectroscopic Class', 'prediction': 'Photometric Class'}.get(class_kwd, class_kwd))
-    for ax, var in zip(axarr[-1], varnames):
-        ax.set_xlabel(var, size='small')
-        ax.tick_params(labelsize='small')
-        if 'mag' in var.lower():
-            ax.invert_xaxis()
-    for ax, filt in zip(axarr[:, 0], rownames):
-        ax.set_ylabel(filt, rotation=0, va='center')
+    if var_kwd is not None:
+        for ax, var in zip(axarr[-1], data_table.meta[var_kwd]):
+            ax.set_xlabel(var, size='small')
+            ax.tick_params(labelsize='small')
+            if 'mag' in var.lower():
+                ax.invert_xaxis()
+    if row_kwd is not None:
+        for ax, filt in zip(axarr[:, 0], data_table.meta[row_kwd]):
+            ax.set_ylabel(filt, rotation=0, va='center')
     fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.9 if class_kwd else 1.))
     if saveto is None:
         plt.show()
