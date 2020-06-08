@@ -262,6 +262,7 @@ def compile_parameters(t, stored_models, filters, ndraws=10, random_state=None):
         Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.
     """
     params = []
+    median_params = []
     bad_rows = []
     for i, filename in enumerate(t['filename']):
         try:
@@ -273,16 +274,15 @@ def compile_parameters(t, stored_models, filters, ndraws=10, random_state=None):
             bad_rows.append(i)
             logging.error(e)
             continue
-        if ndraws:
-            rng = np.random.default_rng(random_state)
-            params.append(rng.choice(trace, ndraws))
-        else:  # ndraws == 0 means take the median
-            params.append(np.median(trace, axis=0)[np.newaxis])
-            ndraws = 1
+        rng = np.random.default_rng(random_state)
+        params.append(rng.choice(trace, ndraws))
+        median_params.append(np.median(trace, axis=0))
     params = np.vstack(params)
+    median_params = np.stack(median_params)
     if bad_rows:
         t[bad_rows].write('failed.txt', format='ascii.fixed_width_two_line', overwrite=True)
     t.remove_rows(bad_rows)
+    t['median_params'] = median_params
     t = t[np.repeat(range(len(t)), ndraws)]
     t.meta['filters'] = list(filters)
     t.meta['ndraws'] = ndraws
@@ -291,7 +291,8 @@ def compile_parameters(t, stored_models, filters, ndraws=10, random_state=None):
     return t
 
 
-def extract_features(t, zero_point=27.5, use_pca=True, stored_pcas=None, save_pca_to=None, save_reconstruction_to=None):
+def extract_features(t, zero_point=27.5, use_median=False, use_pca=True, stored_pcas=None, save_pca_to=None,
+                     save_reconstruction_to=None):
     """
     Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
     light curves in each filter.
@@ -299,9 +300,11 @@ def extract_features(t, zero_point=27.5, use_pca=True, stored_pcas=None, save_pc
     Parameters
     ----------
     t : astropy.table.Table
-        Table containing the 'params', 'redshift', and 'MWEBV' of each transient to be classified.
+        Table containing the 'params'/'median_params', 'redshift', and 'MWEBV' of each transient to be classified.
     zero_point : float, optional
         Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.
+    use_median : bool, optional
+        Use the median parameters to produce the light curves instead of the multiple draws from the posterior.
     use_pca : bool, optional
         Use the peak absolute magnitudes and principal components of the light curve as the features (default).
         Otherwise, use the model parameters directly.
@@ -324,6 +327,10 @@ def extract_features(t, zero_point=27.5, use_pca=True, stored_pcas=None, save_pc
         else:
             raise ValueError(f'Unrecognized filter {fltr}. Please add the extinction correction to `R_FILTERS`.')
 
+    if use_median:
+        t = t[::t.meta['ndraws']]
+        t.meta['ndraws'] = 1
+        t['params'] = t['median_params']
     params = t['params'].data
     params[:, :, 0] *= np.vstack([flux_to_luminosity(row, R_filter) for row in t])
     if use_pca:
@@ -419,8 +426,7 @@ def _compile_parameters():
     parser.add_argument('input_table', type=str, help='List of input light curve files')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored')
     parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
-    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
-                                                               ' Set to 0 to use the median of the LC parameters.')
+    parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for test set.')
     parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
     parser.add_argument('--output', default='params', help='Filename (without extension) to save the parameters')
     args = parser.parse_args()
@@ -438,6 +444,7 @@ def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
     parser.add_argument('--params', type=str, help='Numpy file containing stored model parameters')
+    parser.add_argument('--use-median', action='store_true', help='Use median parameters instead of multiple draws')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
@@ -447,7 +454,7 @@ def _main():
 
     logging.info('started feature extraction')
     data_table = load_data(args.input_table, args.params)
-    test_data = extract_features(data_table, use_pca=args.use_pca, stored_pcas=args.pcas,
+    test_data = extract_features(data_table, use_median=args.use_median, use_pca=args.use_pca, stored_pcas=args.pcas,
                                  save_pca_to=args.output + '_pca.pdf',
                                  save_reconstruction_to=args.output+'_reconstruction.pdf' if args.reconstruct else None)
     save_data(test_data, args.output)
