@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.extract &mdash; Superphot 0.1.0.post31+g9fb8c33 documentation</title>
+  <title>superphot.extract &mdash; Superphot 0.1.0.post32+g7ee62f5 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post31+g9fb8c33
+                0.1.0.post32+g7ee62f5
               </div>
             
           
@@ -161,7 +161,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">hstack</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">hstack</span><span class="p">,</span> <span class="n">join</span>
 <span class="kn">from</span> <span class="nn">astropy.cosmology</span> <span class="kn">import</span> <span class="n">Planck15</span> <span class="k">as</span> <span class="n">cosmo</span>
 <span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">trange</span>
@@ -599,6 +599,8 @@
 <span class="k">def</span> <span class="nf">_main</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_table&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;List of input light curve files, or input data table&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--param-table&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Data table corresponding to the Numpy parameter file &#39;</span>
+                                                        <span class="s1">&#39;(if different than input_table)&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--params&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Numpy file containing stored model parameters&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--use-median&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Use median parameters instead of multiple draws&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--pcas&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to pickled PCA objects. Default: create and fit new PCA objects.&#39;</span><span class="p">)</span>
@@ -609,7 +611,12 @@
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;started feature extraction&#39;</span><span class="p">)</span>
-    <span class="n">data_table</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_table</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">param_table</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data_table</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_table</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">input_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+        <span class="n">data_table</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">param_table</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">data_table</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">input_table</span><span class="p">[[</span><span class="s1">&#39;filename&#39;</span><span class="p">]],</span> <span class="n">data_table</span><span class="p">)</span>
     <span class="n">test_data</span> <span class="o">=</span> <span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="n">use_median</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">use_median</span><span class="p">,</span> <span class="n">use_pca</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">use_pca</span><span class="p">,</span> <span class="n">stored_pcas</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">pcas</span><span class="p">,</span>
                                  <span class="n">save_pca_to</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output</span> <span class="o">+</span> <span class="s1">&#39;_pca.pdf&#39;</span><span class="p">,</span>
                                  <span class="n">save_reconstruction_to</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="o">+</span><span class="s1">&#39;_reconstruction.pdf&#39;</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">reconstruct</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
