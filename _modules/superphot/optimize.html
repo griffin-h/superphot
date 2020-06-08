@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.optimize &mdash; Superphot 0.1.0.post27+g2aebe7f documentation</title>
+  <title>superphot.optimize &mdash; Superphot 0.1.0.post31+g9fb8c33 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post27+g2aebe7f
+                0.1.0.post31+g9fb8c33
               </div>
             
           
@@ -316,7 +316,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig2</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_hyperparameters_from_file"><a class="viewcode-back" href="../../api.html#superphot.optimize.plot_hyperparameters_from_file">[docs]</a><span class="k">def</span> <span class="nf">plot_hyperparameters_from_file</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">_plot_hyperparameters_from_file</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;results&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Table of results from superphot-optimize.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--saveto&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename to which to save the plot.&#39;</span><span class="p">)</span>
@@ -324,10 +324,10 @@
 
     <span class="n">t</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
     <span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;classifier__&#39;</span><span class="p">)])</span>
-    <span class="n">plot_hyperparameters_with_diff</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">)</span></div>
+    <span class="n">plot_hyperparameters_with_diff</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">_main</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;param_dist&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;JSON-encoded parameter grid/distribution to test.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;pipeline&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the pickled pipeline object.&#39;</span><span class="p">)</span>

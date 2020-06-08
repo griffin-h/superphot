@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.util &mdash; Superphot 0.1.0.post27+g2aebe7f documentation</title>
+  <title>superphot.util &mdash; Superphot 0.1.0.post31+g9fb8c33 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post27+g2aebe7f
+                0.1.0.post31+g9fb8c33
               </div>
             
           
@@ -156,12 +156,52 @@
   <h1>Source code for superphot.util</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="n">filter_colors</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="s1">&#39;#00CCFF&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="s1">&#39;#FF7D00&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span> <span class="s1">&#39;#90002C&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="s1">&#39;#000000&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="s1">&#39;#3C0072&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">:</span> <span class="s1">&#39;#0057FF&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="s1">&#39;#79FF00&#39;</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">:</span> <span class="s1">&#39;#FF7000&#39;</span><span class="p">,</span> <span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="s1">&#39;#66000B&#39;</span><span class="p">}</span>
 <span class="n">meta_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;MWEBV&#39;</span><span class="p">,</span> <span class="s1">&#39;redshift&#39;</span><span class="p">]</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.minor.visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.minor.visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="load_data"><a class="viewcode-back" href="../../api.html#superphot.util.load_data">[docs]</a><span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">meta_file</span><span class="p">,</span> <span class="n">data_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read input from a text file (the metadata table) and a Numpy file (the features) and return as an Astropy table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    meta_file : str</span>
+<span class="sd">        Filename of the input metadata table. Must in an ASCII format readable by Astropy.</span>
+<span class="sd">    data_file : str, optional</span>
+<span class="sd">        Filename where the features are saved. Must be in Numpy binary format. If None, replace the extension of</span>
+<span class="sd">        `meta_file` with .npz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data_table : astropy.table.Table</span>
+<span class="sd">        Table containing the metadata along with a &#39;features&#39; column.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">data_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">meta_file_parts</span> <span class="o">=</span> <span class="n">meta_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">meta_file_parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;npz&#39;</span>
+        <span class="n">data_file</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">meta_file_parts</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">meta_file</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">,</span> <span class="n">fill_values</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="n">t</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
+    <span class="n">stored</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
+    <span class="n">data_table</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)),</span> <span class="n">stored</span><span class="p">[</span><span class="s1">&#39;ndraws&#39;</span><span class="p">])]</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data_table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">data_table</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">:</span>
+            <span class="n">data_table</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">fill_value</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stored</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;filters&#39;</span><span class="p">,</span> <span class="s1">&#39;ndraws&#39;</span><span class="p">,</span> <span class="s1">&#39;paramnames&#39;</span><span class="p">,</span> <span class="s1">&#39;featnames&#39;</span><span class="p">]:</span>
+            <span class="n">data_table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stored</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_table</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stored</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;data loaded from </span><span class="si">{</span><span class="n">meta_file</span><span class="si">}</span><span class="s1"> and </span><span class="si">{</span><span class="n">data_file</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data_table</span></div>
 
 
 <div class="viewcode-block" id="subplots_layout"><a class="viewcode-back" href="../../api.html#superphot.util.subplots_layout">[docs]</a><span class="k">def</span> <span class="nf">subplots_layout</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
@@ -183,7 +223,7 @@
     <span class="k">return</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span></div>
 
 
-<div class="viewcode-block" id="plot_histograms"><a class="viewcode-back" href="../../api.html#superphot.util.plot_histograms">[docs]</a><span class="k">def</span> <span class="nf">plot_histograms</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="n">colname</span><span class="p">,</span> <span class="n">class_kwd</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="n">varnames</span><span class="o">=</span><span class="p">(),</span> <span class="n">rownames</span><span class="o">=</span><span class="p">(),</span> <span class="n">no_autoscale</span><span class="o">=</span><span class="p">(),</span> <span class="n">saveto</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_histograms"><a class="viewcode-back" href="../../api.html#superphot.util.plot_histograms">[docs]</a><span class="k">def</span> <span class="nf">plot_histograms</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="n">colname</span><span class="p">,</span> <span class="n">class_kwd</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="n">var_kwd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_kwd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_autoscale</span><span class="o">=</span><span class="p">(),</span> <span class="n">saveto</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.</span>
 
@@ -195,10 +235,10 @@
 <span class="sd">        Column name of `data_table` to plot (e.g., &#39;params&#39; or &#39;features&#39;).</span>
 <span class="sd">    class_kwd : str, optional</span>
 <span class="sd">        Column name of `data_table` to group by before plotting (e.g., &#39;type&#39; or &#39;prediction&#39;). Default: &#39;type&#39;.</span>
-<span class="sd">    varnames : iterable, optional</span>
-<span class="sd">        Parameter names to list on the x-axes of the plot. Default: no labels.</span>
-<span class="sd">    rownames : iterable, optional</span>
-<span class="sd">        Labels for the leftmost y-axes.</span>
+<span class="sd">    var_kwd : str, optional</span>
+<span class="sd">        Keyword in `data_table.meta` containing the parameter names to list on the x-axes. Default: no labels.</span>
+<span class="sd">    row_kwd : str, optional</span>
+<span class="sd">        Keyword in `data_table.meta` containing labels for the leftmost y-axes.</span>
 <span class="sd">    no_autoscale : tuple or list, optional</span>
 <span class="sd">        Class names not to use in calculating the axis limits. Default: include all.</span>
 <span class="sd">    saveto : str, optional</span>
@@ -233,13 +273,15 @@
     <span class="k">if</span> <span class="n">class_kwd</span><span class="p">:</span>
         <span class="n">fig</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">data_table</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="s1">&#39;patch&#39;</span><span class="p">],</span> <span class="n">data_table</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">class_kwd</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper center&#39;</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="n">ngroups</span><span class="p">,</span>
                    <span class="n">title</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;Spectroscopic Class&#39;</span><span class="p">,</span> <span class="s1">&#39;prediction&#39;</span><span class="p">:</span> <span class="s1">&#39;Photometric Class&#39;</span><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">class_kwd</span><span class="p">,</span> <span class="n">class_kwd</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axarr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">varnames</span><span class="p">):</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;small&#39;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="s1">&#39;small&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;mag&#39;</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">invert_xaxis</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">filt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axarr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">rownames</span><span class="p">):</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">var_kwd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axarr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">data_table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">var_kwd</span><span class="p">]):</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;small&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="s1">&#39;small&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;mag&#39;</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">invert_xaxis</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">row_kwd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">filt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axarr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">data_table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">row_kwd</span><span class="p">]):</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">h_pad</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">w_pad</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">rect</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.9</span> <span class="k">if</span> <span class="n">class_kwd</span> <span class="k">else</span> <span class="mf">1.</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">saveto</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>

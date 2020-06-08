@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post27+g2aebe7f documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post31+g9fb8c33 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post27+g2aebe7f
+                0.1.0.post31+g9fb8c33
               </div>
             
           
@@ -283,29 +283,6 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.classify.load_data">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">meta_file</span></em>, <em class="sig-param"><span class="n">data_file</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.load_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read input from a text file (the metadata table) and a Numpy file (the features) and return as an Astropy table.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>meta_file</strong><span class="classifier">str</span></dt><dd><p>Filename of the input metadata table. Must in an ASCII format readable by Astropy.</p>
-</dd>
-<dt><strong>data_file</strong><span class="classifier">str, optional</span></dt><dd><p>Filename where the features are saved. Must be in Numpy binary format. If None, replace the extension of
-<cite>meta_file</cite> with .npz.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the metadata along with a ‘features’ column.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt id="superphot.classify.load_results">
 <code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">load_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#load_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.load_results" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -441,28 +418,41 @@ from <cite>clf.predict_proba</cite> (column name = ‘probabilities’).</p>
 <dd></dd></dl>
 
 <dl class="py function">
+<dt id="superphot.extract.compile_parameters">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">compile_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#compile_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.compile_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the saved PyMC3 traces and compile an array of fit parameters for each transient. Save to a Numpy file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the ‘filename’ of each transient to be classified.</p>
+</dd>
+<dt><strong>stored_models</strong><span class="classifier">str</span></dt><dd><p>Look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to compile parameters. These should be the last characters of the subdirectories in which the
+traces are stored.</p>
+</dd>
+<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10.</p>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, optional</span></dt><dd><p>Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="superphot.extract.extract_features">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">R_filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.extract_features" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_median</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.extract_features" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
 light curves in each filter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the ‘filename’ and ‘redshift’ of each transient to be classified.</p>
-</dd>
-<dt><strong>stored_models</strong><span class="classifier">str</span></dt><dd><p>If a directory, look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
-If a Numpy file, read the parameters from this file.</p>
-</dd>
-<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to extract features. If <cite>stored_models</cite> is a directory, these should be the last characters
-of the subdirectories in which the traces are stored. Ignored if models are read from a Numpy file.</p>
-</dd>
-<dt><strong>R_filters</strong><span class="classifier">dict, optional</span></dt><dd><p>Ratios of total to selective extinction for <cite>filters</cite>. This package includes the values for common filters
-(see <cite>superphot.extract.R_FILTERS</cite>). Use this argument to override those default values or to include
-additional filters.</p>
-</dd>
-<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10. Ignored if models are read from a Numpy file.</p>
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the ‘params’/’median_params’, ‘redshift’, and ‘MWEBV’ of each transient to be classified.</p>
 </dd>
 <dt><strong>zero_point</strong><span class="classifier">float, optional</span></dt><dd><p>Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.</p>
+</dd>
+<dt><strong>use_median</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the median parameters to produce the light curves instead of the multiple draws from the posterior.</p>
 </dd>
 <dt><strong>use_pca</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the peak absolute magnitudes and principal components of the light curve as the features (default).
 Otherwise, use the model parameters directly.</p>
@@ -472,8 +462,6 @@ Otherwise, use the model parameters directly.</p>
 <dt><strong>save_pca_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the principal components to this file. Default: skip this step.</p>
 </dd>
 <dt><strong>save_reconstruction_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the reconstructed light curves to this file (slow). Default: skip this step.</p>
-</dd>
-<dt><strong>random_state</strong><span class="classifier">int, optional</span></dt><dd><p>Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.</p>
 </dd>
 </dl>
 </dd>
@@ -1125,11 +1113,6 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 </dd></dl>
 
 <dl class="py function">
-<dt id="superphot.optimize.plot_hyperparameters_from_file">
-<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_from_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_from_file" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
 <dt id="superphot.optimize.plot_hyperparameters_with_diff">
 <code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_with_diff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">dcol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">criteria</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_with_diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_with_diff" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the metrics for one value of <cite>dcol</cite> and the difference in the metrics for the second value of <cite>dcol</cite>.</p>
@@ -1181,8 +1164,31 @@ starting wtih ‘classifier’.</p>
 <div class="section" id="module-superphot.util">
 <span id="superphot-util-module"></span><h2>superphot.util module<a class="headerlink" href="#module-superphot.util" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
+<dt id="superphot.util.load_data">
+<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">meta_file</span></em>, <em class="sig-param"><span class="n">data_file</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.load_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read input from a text file (the metadata table) and a Numpy file (the features) and return as an Astropy table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>meta_file</strong><span class="classifier">str</span></dt><dd><p>Filename of the input metadata table. Must in an ASCII format readable by Astropy.</p>
+</dd>
+<dt><strong>data_file</strong><span class="classifier">str, optional</span></dt><dd><p>Filename where the features are saved. Must be in Numpy binary format. If None, replace the extension of
+<cite>meta_file</cite> with .npz.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the metadata along with a ‘features’ column.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="superphot.util.plot_histograms">
-<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">varnames</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">rownames</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.plot_histograms" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">var_kwd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">row_kwd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.plot_histograms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a grid of histograms of the column <cite>colname</cite> of <cite>data_table</cite>, grouped by the column <cite>groupby</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1193,9 +1199,9 @@ starting wtih ‘classifier’.</p>
 </dd>
 <dt><strong>class_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Column name of <cite>data_table</cite> to group by before plotting (e.g., ‘type’ or ‘prediction’). Default: ‘type’.</p>
 </dd>
-<dt><strong>varnames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Parameter names to list on the x-axes of the plot. Default: no labels.</p>
+<dt><strong>var_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Keyword in <cite>data_table.meta</cite> containing the parameter names to list on the x-axes. Default: no labels.</p>
 </dd>
-<dt><strong>rownames</strong><span class="classifier">iterable, optional</span></dt><dd><p>Labels for the leftmost y-axes.</p>
+<dt><strong>row_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Keyword in <cite>data_table.meta</cite> containing labels for the leftmost y-axes.</p>
 </dd>
 <dt><strong>no_autoscale</strong><span class="classifier">tuple or list, optional</span></dt><dd><p>Class names not to use in calculating the axis limits. Default: include all.</p>
 </dd>

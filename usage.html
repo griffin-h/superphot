@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; Superphot 0.1.0.post27+g2aebe7f documentation</title>
+  <title>Usage &mdash; Superphot 0.1.0.post31+g9fb8c33 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post27+g2aebe7f
+                0.1.0.post31+g9fb8c33
               </div>
             
           
@@ -171,7 +171,8 @@
 </ol>
 <p>For basic functionality, Superphot can be run from the command line. For example:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-fit light_curve_file.dat --output-dir stored_models/
-superphot-extract input_table.txt stored_models/ --output test_data
+superphot-compile input_table.txt stored_models/ --output params
+superphot-extract params.txt --output test_data
 superphot-classify test_data.txt
 </pre></div>
 </div>
@@ -188,7 +189,8 @@ superphot-classify test_data.txt
 
 <span class="c1"># Extract features</span>
 <span class="n">data_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_data_table</span><span class="p">(</span><span class="s1">&#39;input_table.txt&#39;</span><span class="p">)</span>
-<span class="n">test_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
+<span class="n">param_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_parameters</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">param_table</span><span class="p">)</span>
 <span class="n">train_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
 
 <span class="c1"># Initialize the pipeline (can adjust hyperparameters here)</span>
