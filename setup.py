@@ -59,6 +59,7 @@ setuptools.setup(
             'superphot-classify = superphot.classify:main',
             'superphot-confuse = superphot.classify:plot_confusion_matrix_from_file',
             'superphot-optimize = superphot.optimize:main',
+            'superphot-hyperparameters = superphot.optimize:plot_hyperparameters_from_file',
         ],
     },
 )
