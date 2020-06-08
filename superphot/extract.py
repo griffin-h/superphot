@@ -319,8 +319,8 @@ def extract_features(t, stored_models, filters, R_filters=None, ndraws=10, zero_
             if ndraws:
                 rng = np.random.default_rng(random_state)
                 params.append(rng.choice(trace, ndraws))
-            else:  # ndraws == 0 means take the average
-                params.append(trace.mean(axis=0)[np.newaxis])
+            else:  # ndraws == 0 means take the median
+                params.append(np.median(trace, axis=0)[np.newaxis])
                 ndraws = 1
         params = np.vstack(params)
         if bad_rows:
@@ -426,7 +426,7 @@ def main():
                                               'or Numpy file containing stored model parameters/LCs')
     parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for training set.'
-                                                               ' Set to 0 to use the mean of the LC parameters.')
+                                                               ' Set to 0 to use the median of the LC parameters.')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
     parser.add_argument('--reconstruct', action='store_true',
