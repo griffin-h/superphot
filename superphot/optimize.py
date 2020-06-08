@@ -160,7 +160,7 @@ def plot_hyperparameters_with_diff(t, dcol=None, xcol=None, ycol=None, zcol=None
     plt.close(fig2)
 
 
-def plot_hyperparameters_from_file():
+def _plot_hyperparameters_from_file():
     parser = ArgumentParser()
     parser.add_argument('results', help='Table of results from superphot-optimize.')
     parser.add_argument('--saveto', help='Filename to which to save the plot.')
@@ -171,7 +171,7 @@ def plot_hyperparameters_from_file():
     plot_hyperparameters_with_diff(t, dcol, xcol, ycol, zcol, saveto=args.saveto)
 
 
-def main():
+def _main():
     parser = ArgumentParser()
     parser.add_argument('param_dist', help='JSON-encoded parameter grid/distribution to test.')
     parser.add_argument('pipeline', help='Filename of the pickled pipeline object.')

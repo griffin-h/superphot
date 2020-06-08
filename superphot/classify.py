@@ -387,7 +387,7 @@ def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, save
     plt.close(fig)
 
 
-def plot_confusion_matrix_from_file():
+def _plot_confusion_matrix_from_file():
     parser = ArgumentParser()
     parser.add_argument('filename', type=str, help='Filename containing the table of classification results.')
     parser.add_argument('--pmin', type=float, default=0.,
@@ -400,7 +400,7 @@ def plot_confusion_matrix_from_file():
     make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto, purity=args.purity)
 
 
-def main():
+def _main():
     parser = ArgumentParser()
     parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
     parser.add_argument('--train-data', help='Filename of the metadata table for the training set.'

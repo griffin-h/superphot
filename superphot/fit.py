@@ -646,7 +646,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
     return traces1, traces2, parameters2
 
 
-def main():
+def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('filenames', nargs='+', type=str, help='Input light curve data file(s)')
     parser.add_argument('--filters', type=str, help='Subset of filters to fit')

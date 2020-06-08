@@ -419,7 +419,7 @@ def save_data(t, basename):
     logging.info(f'data saved to {basename}.txt and {basename}.npz')
 
 
-def main():
+def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored, '
