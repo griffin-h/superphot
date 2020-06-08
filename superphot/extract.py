@@ -5,7 +5,7 @@ from glob import glob
 import os
 import argparse
 import logging
-from astropy.table import Table, hstack
+from astropy.table import Table, hstack, join
 from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
@@ -443,6 +443,8 @@ def _compile_parameters():
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
+    parser.add_argument('--param-table', type=str, help='Data table corresponding to the Numpy parameter file '
+                                                        '(if different than input_table)')
     parser.add_argument('--params', type=str, help='Numpy file containing stored model parameters')
     parser.add_argument('--use-median', action='store_true', help='Use median parameters instead of multiple draws')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
@@ -453,7 +455,12 @@ def _main():
     args = parser.parse_args()
 
     logging.info('started feature extraction')
-    data_table = load_data(args.input_table, args.params)
+    if args.param_table is None:
+        data_table = load_data(args.input_table, args.params)
+    else:
+        input_table = Table.read(args.input_table, format='ascii')
+        data_table = load_data(args.param_table, args.params)
+        data_table = join(input_table[['filename']], data_table)
     test_data = extract_features(data_table, use_median=args.use_median, use_pca=args.use_pca, stored_pcas=args.pcas,
                                  save_pca_to=args.output + '_pca.pdf',
                                  save_reconstruction_to=args.output+'_reconstruction.pdf' if args.reconstruct else None)
