@@ -118,17 +118,17 @@ def plot_hyperparameters_with_diff(t, dcol=None, xcol=None, ycol=None, zcol=None
     t : astropy.table.Table
         Table of results from `test_hyperparameters`.
     dcol : str, optional
-        Column to plot as a difference. Default: alphabetically first column starting with 'classifier__'
+        Column to plot as a difference. Default: alphabetically first column starting with 'classifier'
     xcol, ycol, zcol : str, optional
         Columns to plot on the x-, y-, and z-axes of the scatter plots. Default: alphabetically 2nd-4th columns
-        starting wtih 'classifier__'.
+        starting wtih 'classifier'.
     saveto : str, optional
         Save the plot to this filename. If None, the plot is displayed and not saved.
     """
     for key, val in criteria.items():
         t = t[t[key] == val]
         t.remove_column(key)
-    kcols = sorted({col for col in t.colnames if col.startswith('classifier__')} - {dcol, xcol, ycol, zcol})[::-1]
+    kcols = sorted({col for col in t.colnames if col.startswith('classifier')} - {dcol, xcol, ycol, zcol})[::-1]
     if dcol is None:
         dcol = kcols.pop()
     if xcol is None:
