@@ -6,7 +6,7 @@ from astropy.table import Table
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 from sklearn.inspection import permutation_importance
@@ -23,7 +23,7 @@ from argparse import ArgumentParser
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
 
-def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', purity=False, title=None,
+def plot_confusion_matrix(confusion_matrix, classes, cmap='Blues', purity=False, title='',
                           xlabel='Photometric Classification', ylabel='Spectroscopic Classification', ax=None):
     """
     Plot a confusion matrix with each cell labeled by its fraction and absolute number.
@@ -36,38 +36,27 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', pur
         The confusion matrix as a square array of integers.
     classes : list
         List of class labels for the axes of the confusion matrix.
-    ndraws : int, optional
-        If `ndraws > 0`, divide each cell in the matrix by `ndraws` before plotting and note this in the title.
     cmap : str, optional
         Name of a Matplotlib colormap to color the matrix.
     purity : bool, optional
-        If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
+        If False (default), aggregate by row (spec. class). If True, aggregate by column (phot. class).
     title : str, optional
-        Text to go above the plot. Default: "Confusion Matrix (`N = confusion_matrix.sum()`)".
+        Text to go above the plot. Default: no title.
     xlabel, ylabel : str, optional
-        Labels for the x- and y-axes. Default: "True Label" and "Predicted Label".
+        Labels for the x- and y-axes. Default: "Spectroscopic Classification" and "Photometric Classification".
     ax : matplotlib.pyplot.axes, optional
         Axis on which to plot the confusion matrix. Default: new axis.
     """
-    if ndraws:
-        confusion_matrix = confusion_matrix / ndraws
     n_per_true_class = confusion_matrix.sum(axis=1)
     n_per_pred_class = confusion_matrix.sum(axis=0)
     if purity:
         cm = confusion_matrix / n_per_pred_class[np.newaxis, :]
-        title_word = 'Purity'
     else:
         cm = confusion_matrix / n_per_true_class[:, np.newaxis]
-        title_word = 'Completeness'
     if ax is None:
         ax = plt.axes()
     ax.imshow(cm, interpolation='nearest', cmap=cmap, aspect='equal')
-    if title is not None:
-        ax.set_title(title)
-    elif ndraws:
-        ax.set_title('{} ($N={:.0f}\\times{:d}$)'.format(title_word, confusion_matrix.sum(), ndraws))
-    else:
-        ax.set_title('{} ($N={:d}$)'.format(title_word, confusion_matrix.sum()))
+    ax.set_title(title)
     nclasses = len(classes)
     ax.set_xticks(range(nclasses))
     ax.set_yticks(range(nclasses))
@@ -78,9 +67,8 @@ def plot_confusion_matrix(confusion_matrix, classes, ndraws=0, cmap='Blues', pur
     ax.set_ylim(nclasses - 0.5, -0.5)
 
     thresh = cm.max() / 2.
-    cell_label = '{:.2f}\n({:.1f})' if ndraws > 1 else '{:.2f}\n({:.0f})'
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        ax.text(j, i, cell_label.format(cm[i, j], confusion_matrix[i, j]), ha="center", va="center",
+        ax.text(j, i, f'{cm[i, j]:.2f}\n({confusion_matrix[i, j]:.0f})', ha="center", va="center",
                 color="white" if cm[i, j] > thresh else "black")
 
     ax.set_xlabel(xlabel)
@@ -254,8 +242,11 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
     predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
     include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
+    accuracy = accuracy_score(results['type'][include], predicted_types[include])
+    f1 = f1_score(results['type'][include], predicted_types[include], average='macro')
+    title = f'{"Purity" if purity else "Completeness"} ($N={len(results):d}$, $A={accuracy:.2f}$, $F_1={f1:.2f}$)'
     fig = plt.figure(figsize=(len(classes),) * 2)
-    plot_confusion_matrix(cnf_matrix, classes, purity=purity)
+    plot_confusion_matrix(cnf_matrix, classes, purity=purity, title=title)
     fig.tight_layout()
     if saveto is None:
         plt.show()
