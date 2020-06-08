@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post23+gd81800a documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post27+g2aebe7f documentation</title>
   
 
   
@@ -27,7 +27,7 @@
         <script src="_static/language_data.js"></script>
         <script src="_static/clipboard.min.js"></script>
         <script src="_static/copybutton.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post23+gd81800a
+                0.1.0.post27+g2aebe7f
               </div>
             
           
@@ -340,7 +340,7 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 
 <dl class="py function">
 <dt id="superphot.classify.plot_confusion_matrix">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_confusion_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">confusion_matrix</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">'Blues'</span></em>, <em class="sig-param"><span class="n">purity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xlabel</span><span class="o">=</span><span class="default_value">'Photometric Classification'</span></em>, <em class="sig-param"><span class="n">ylabel</span><span class="o">=</span><span class="default_value">'Spectroscopic Classification'</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_confusion_matrix" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_confusion_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">confusion_matrix</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">'Blues'</span></em>, <em class="sig-param"><span class="n">purity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">xlabel</span><span class="o">=</span><span class="default_value">'Photometric Classification'</span></em>, <em class="sig-param"><span class="n">ylabel</span><span class="o">=</span><span class="default_value">'Spectroscopic Classification'</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_confusion_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a confusion matrix with each cell labeled by its fraction and absolute number.</p>
 <p>Based on tutorial: <a class="reference external" href="https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html</a></p>
 <dl class="field-list simple">
@@ -350,15 +350,13 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 </dd>
 <dt><strong>classes</strong><span class="classifier">list</span></dt><dd><p>List of class labels for the axes of the confusion matrix.</p>
 </dd>
-<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>If <cite>ndraws &gt; 0</cite>, divide each cell in the matrix by <cite>ndraws</cite> before plotting and note this in the title.</p>
-</dd>
 <dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of a Matplotlib colormap to color the matrix.</p>
 </dd>
-<dt><strong>purity</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).</p>
+<dt><strong>purity</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), aggregate by row (spec. class). If True, aggregate by column (phot. class).</p>
 </dd>
-<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Text to go above the plot. Default: “Confusion Matrix (<cite>N = confusion_matrix.sum()</cite>)”.</p>
+<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Text to go above the plot. Default: no title.</p>
 </dd>
-<dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x- and y-axes. Default: “True Label” and “Predicted Label”.</p>
+<dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x- and y-axes. Default: “Spectroscopic Classification” and “Photometric Classification”.</p>
 </dd>
 <dt><strong>ax</strong><span class="classifier">matplotlib.pyplot.axes, optional</span></dt><dd><p>Axis on which to plot the confusion matrix. Default: new axis.</p>
 </dd>
@@ -655,7 +653,7 @@ the coefficients will be printed at the top right of each plot.</p>
 <span id="superphot-fit-module"></span><h2>superphot.fit module<a class="headerlink" href="#module-superphot.fit" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="superphot.fit.LogUniform">
-<em class="property">class </em><code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">LogUniform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lower</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">upper</span><span class="o">=</span><span class="default_value">2.718281828459045</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#LogUniform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.LogUniform" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">LogUniform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#LogUniform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.LogUniform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pymc3.distributions.continuous.BoundedContinuous</span></code></p>
 <p>Continuous log-uniform log-likelihood.</p>
 <p>The pdf of this distribution is</p>
@@ -1106,7 +1104,7 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 <span id="superphot-optimize-module"></span><h2>superphot.optimize module<a class="headerlink" href="#module-superphot.optimize" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt id="superphot.optimize.plot_hyperparameters_3d">
-<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">ccols</span></em>, <em class="sig-param"><span class="n">xcol</span></em>, <em class="sig-param"><span class="n">ycol</span></em>, <em class="sig-param"><span class="n">zcol</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmin</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_3d" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">ccols</span></em>, <em class="sig-param"><span class="n">xcol</span></em>, <em class="sig-param"><span class="n">ycol</span></em>, <em class="sig-param"><span class="n">zcol</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmin</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figtitle</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_3d" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot 3D scatter plots of the metrics against the hyperparameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1127,17 +1125,23 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 </dd></dl>
 
 <dl class="py function">
+<dt id="superphot.optimize.plot_hyperparameters_from_file">
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_from_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_from_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt id="superphot.optimize.plot_hyperparameters_with_diff">
-<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_with_diff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">dcol</span></em>, <em class="sig-param"><span class="n">xcol</span></em>, <em class="sig-param"><span class="n">ycol</span></em>, <em class="sig-param"><span class="n">zcol</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_with_diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_with_diff" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_with_diff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">dcol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">criteria</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_with_diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_with_diff" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the metrics for one value of <cite>dcol</cite> and the difference in the metrics for the second value of <cite>dcol</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of results from <cite>test_hyperparameters</cite>.</p>
 </dd>
-<dt><strong>dcol</strong><span class="classifier">str</span></dt><dd><p>Column to plot as a difference.</p>
+<dt><strong>dcol</strong><span class="classifier">str, optional</span></dt><dd><p>Column to plot as a difference. Default: alphabetically first column starting with ‘classifier’</p>
 </dd>
-<dt><strong>xcol, ycol, zcol</strong><span class="classifier">str</span></dt><dd><p>Columns to plot on the x-, y-, and z-axes of the scatter plots.</p>
+<dt><strong>xcol, ycol, zcol</strong><span class="classifier">str, optional</span></dt><dd><p>Columns to plot on the x-, y-, and z-axes of the scatter plots. Default: alphabetically 2nd-4th columns
+starting wtih ‘classifier’.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
 </dd>
