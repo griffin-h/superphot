@@ -10,7 +10,7 @@ from astropy.cosmology import Planck15 as cosmo
 from sklearn.decomposition import PCA
 from tqdm import trange
 from .util import filter_colors, meta_columns, load_data, plot_histograms, subplots_layout
-from .fit import read_light_curve, produce_lc
+from .fit import read_light_curve, produce_lc, PARAMNAMES
 import pickle
 from scipy.stats import spearmanr
 
@@ -19,7 +19,6 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S
 # using WavelengthMean from the SVO Filter Profile Service http://svo2.cab.inta-csic.es/theory/fps/
 R_FILTERS = {'g': 3.57585511, 'r': 2.54033913, 'i': 1.88284171, 'z': 1.49033933, 'y': 1.24431944,  # Pan-STARRS filters
              'U': 4.78442941, 'B': 4.05870021, 'V': 3.02182672, 'R': 2.34507832, 'I': 1.69396924}  # Bessell filters
-PARAMNAMES = ['Amplitude', 'Plateau Slope', 'Plateau Duration', 'Start Time', 'Rise Time', 'Fall Time']
 
 
 def load_trace(tracefile, filters):
@@ -151,7 +150,7 @@ def plot_principal_components(pcas, time=None, filters=None, saveto='principal_c
         time = np.arange(pcas[0].n_features_)
     else:
         for ax in axes[-1]:
-            ax.set_xlabel('Phase')
+            ax.set_xlabel('Phase (d)')
     lines = []
     if filters is None:
         filters = [f'Filter {i+1:d}' for i in range(len(pcas))]
@@ -353,7 +352,7 @@ def extract_features(t, zero_point=27.5, use_median=False, use_pca=True, stored_
     else:
         params[:, :, 0] = zero_point - 2.5 * np.log10(params[:, :, 0])  # convert amplitude to magnitude
         t_good, features = select_good_events(t, params[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
-        t_good.meta['featnames'] = ['Amplitude (mag)', 'Plateau Slope', 'Plateau Duration', 'Rise Time', 'Fall Time']
+        t_good.meta['featnames'] = ['Amplitude (mag)'] + [PARAMNAMES[i] for i in [1, 2, 4, 5]]
     t_good['features'] = features
     return t_good
 

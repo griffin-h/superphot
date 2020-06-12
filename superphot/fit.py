@@ -17,6 +17,8 @@ PHASE_MAX = 180.
 ITERATIONS = 10000
 TUNING = 25000
 WALKERS = 25
+PARAMNAMES = ['Amplitude', 'Plateau Slope (d$^{-1}$)', 'Plateau Duration (d)',
+              'Start Time (d)', 'Rise Time (d)', 'Fall Time (d)']
 
 
 def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
@@ -167,14 +169,14 @@ def setup_model1(obs, max_flux=None):
         raise ValueError('The maximum flux is very low. Cannot fit the model.')
 
     with pm.Model() as model:
-        A = LogUniform(name='Amplitude', lower=1., upper=100. * max_flux)
-        beta = pm.Uniform(name='Plateau Slope', lower=0., upper=0.01)
+        A = LogUniform(name=PARAMNAMES[0], lower=1., upper=100. * max_flux)
+        beta = pm.Uniform(name=PARAMNAMES[1], lower=0., upper=0.01)
         BoundedNormal = pm.Bound(pm.Normal, lower=0.)
-        gamma = pm.Mixture(name='Plateau Duration', w=tt.constant([2., 1.]) / 3., testval=1.,
+        gamma = pm.Mixture(name=PARAMNAMES[2], w=tt.constant([2., 1.]) / 3., testval=1.,
                            comp_dists=[BoundedNormal.dist(mu=5., sigma=5.), BoundedNormal.dist(mu=60., sigma=30.)])
-        t_0 = pm.Uniform(name='Start Time', lower=PHASE_MIN, upper=PHASE_MAX)
-        tau_rise = pm.Uniform(name='Rise Time', lower=0.01, upper=50.)
-        tau_fall = pm.Uniform(name='Fall Time', lower=1., upper=300.)
+        t_0 = pm.Uniform(name=PARAMNAMES[3], lower=PHASE_MIN, upper=PHASE_MAX)
+        tau_rise = pm.Uniform(name=PARAMNAMES[4], lower=0.01, upper=50.)
+        tau_fall = pm.Uniform(name=PARAMNAMES[5], lower=1., upper=300.)
         extra_sigma = pm.HalfNormal(name='Intrinsic Scatter', sigma=1.)
         parameters = [A, beta, gamma, t_0, tau_rise, tau_fall]
 
@@ -213,7 +215,10 @@ def make_new_priors(traces, parameters, res=100):
     for param in parameters:
         trace_values = {fltr: trace[param.name] for fltr, trace in traces.items()}
         combined_trace = np.concatenate(list(trace_values.values()))
-        x = np.linspace(combined_trace.min(), combined_trace.max(), res)
+        if isinstance(param.distribution, LogUniform):
+            x = np.geomspace(combined_trace.min(), combined_trace.max(), res)
+        else:
+            x = np.linspace(combined_trace.min(), combined_trace.max(), res)
         y_comb = gaussian_kde(combined_trace)(x)
         x_priors.append(x)
         y_priors.append(y_comb)
@@ -249,6 +254,8 @@ def plot_priors(x_priors, y_priors, old_posteriors, parameters, saveto=None):
         ax.plot(x, y_comb, color='gray')
         ax.set_xlabel(param.name)
         ax.set_yticks([])
+        if isinstance(param.distribution, LogUniform):
+            ax.set_xscale('log')
     fig.tight_layout()
     if saveto:
         fig.savefig(saveto)
@@ -438,7 +445,7 @@ def plot_final_fits(t, traces1, traces2, parameters, outfile=None):
         plot_model_lcs(obs, traces2[fltr], parameters, size=10, ax=ax, fltr=fltr)
         ax.set_ylabel('Flux')
     for ax in axes[-1]:
-        ax.set_xlabel('Phase')
+        ax.set_xlabel('Phase (d)')
     for ax in axes[:, -1]:
         ax.yaxis.set_ticks_position('right')
         ax.yaxis.set_label_position('right')
