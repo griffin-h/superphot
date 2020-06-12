@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.extract &mdash; Superphot 0.1.0.post32+g7ee62f5 documentation</title>
+  <title>superphot.extract &mdash; Superphot 0.1.0.post33+gbc94d94 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post32+g7ee62f5
+                0.1.0.post33+gbc94d94
               </div>
             
           
@@ -166,7 +166,7 @@
 <span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">trange</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">filter_colors</span><span class="p">,</span> <span class="n">meta_columns</span><span class="p">,</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">plot_histograms</span><span class="p">,</span> <span class="n">subplots_layout</span>
-<span class="kn">from</span> <span class="nn">.fit</span> <span class="kn">import</span> <span class="n">read_light_curve</span><span class="p">,</span> <span class="n">produce_lc</span>
+<span class="kn">from</span> <span class="nn">.fit</span> <span class="kn">import</span> <span class="n">read_light_curve</span><span class="p">,</span> <span class="n">produce_lc</span><span class="p">,</span> <span class="n">PARAMNAMES</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">spearmanr</span>
 
@@ -175,7 +175,6 @@
 <span class="c1"># using WavelengthMean from the SVO Filter Profile Service http://svo2.cab.inta-csic.es/theory/fps/</span>
 <span class="n">R_FILTERS</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="mf">3.57585511</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="mf">2.54033913</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span> <span class="mf">1.88284171</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mf">1.49033933</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mf">1.24431944</span><span class="p">,</span>  <span class="c1"># Pan-STARRS filters</span>
              <span class="s1">&#39;U&#39;</span><span class="p">:</span> <span class="mf">4.78442941</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">:</span> <span class="mf">4.05870021</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span> <span class="mf">3.02182672</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">:</span> <span class="mf">2.34507832</span><span class="p">,</span> <span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="mf">1.69396924</span><span class="p">}</span>  <span class="c1"># Bessell filters</span>
-<span class="n">PARAMNAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;Plateau Slope&#39;</span><span class="p">,</span> <span class="s1">&#39;Plateau Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;Start Time&#39;</span><span class="p">,</span> <span class="s1">&#39;Rise Time&#39;</span><span class="p">,</span> <span class="s1">&#39;Fall Time&#39;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="load_trace"><a class="viewcode-back" href="../../api.html#superphot.extract.load_trace">[docs]</a><span class="k">def</span> <span class="nf">load_trace</span><span class="p">(</span><span class="n">tracefile</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
@@ -307,7 +306,7 @@
         <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">pcas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">n_features_</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Phase&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Phase (d)&#39;</span><span class="p">)</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">filters</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Filter </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s1">d</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pcas</span><span class="p">))]</span>
@@ -509,7 +508,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">params</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">zero_point</span> <span class="o">-</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">params</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>  <span class="c1"># convert amplitude to magnitude</span>
         <span class="n">t_good</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">select_good_events</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">params</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]])</span>  <span class="c1"># remove start time from features</span>
-        <span class="n">t_good</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;featnames&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Amplitude (mag)&#39;</span><span class="p">,</span> <span class="s1">&#39;Plateau Slope&#39;</span><span class="p">,</span> <span class="s1">&#39;Plateau Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;Rise Time&#39;</span><span class="p">,</span> <span class="s1">&#39;Fall Time&#39;</span><span class="p">]</span>
+        <span class="n">t_good</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;featnames&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Amplitude (mag)&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">PARAMNAMES</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]]</span>
     <span class="n">t_good</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span>
     <span class="k">return</span> <span class="n">t_good</span></div>
 
