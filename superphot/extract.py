@@ -436,14 +436,16 @@ def compile_data_table(filename):
         logging.warning('excluding files with redshifts <= 0')
         t_final[~good_redshift].pprint(max_lines=-1)
     t_final = t_final[good_redshift]
-    t_final['MWEBV'].format = '%.4f'
-    t_final['redshift'].format = '%.4f'
     return t_final
 
 
 def save_data(t, basename):
     t.sort('filename')
-    save_table = t[[col for col in meta_columns if col in t.colnames]][::t.meta['ndraws']]
+    save_table = t[[col for col in t.colnames if col in meta_columns]][::t.meta['ndraws']]
+    if 'MWEBV' in save_table.colnames:
+        save_table['MWEBV'].format = '%.4f'
+    if 'redshift' in save_table.colnames:
+        save_table['redshift'].format = '%.4f'
     save_table.write(f'{basename}.txt', format='ascii.fixed_width_two_line', overwrite=True)
     save_dict = t.meta.copy()
     for col in set(t.colnames) - set(meta_columns):
