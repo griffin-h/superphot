@@ -130,6 +130,10 @@ def project_onto_principal_components(light_curves, pcas):
     for i, pca in enumerate(pcas):
         coefficients[:, i] = pca.transform(light_curves[:, i])
         reconstructed[:, i] = pca.inverse_transform(coefficients[:, i])
+    explained_variance = coefficients.var(axis=0) * [pca.explained_variance_ if pca.whiten else
+                                                     np.ones_like(pca.explained_variance_) for pca in pcas]
+    explained_variance_ratio = explained_variance.sum(axis=-1) / light_curves.var(axis=0).sum(axis=-1)
+    logging.info(f'PCA explained variance ratios: {explained_variance_ratio}')
     return coefficients, reconstructed
 
 
