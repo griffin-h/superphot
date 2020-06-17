@@ -367,6 +367,8 @@ def _main():
     parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
     parser.add_argument('--train-data', help='Filename of the metadata table for the training set.'
                                              'By default, use all classified supernovae in the test data.')
+    parser.add_argument('--validation-data', help='Filename of the metadata table for the validation set.'
+                                                  'By default, use all classified supernovae in the test data.')
     parser.add_argument('--classifier', choices=['rf', 'svm', 'mlp'], default='rf', help='The classification algorithm '
                         'to use. Current choices are "rf" (random forest; default), "svm" (support vector machine), or '
                         '"mlp" (multilayer perceptron).')
@@ -382,11 +384,13 @@ def _main():
     logging.info('started classification')
     test_data = load_data(args.test_data)
     if args.train_data is None:
-        train_data = test_data
+        if test_data['type'].mask.all():
+            raise ValueError('test data has no values in the "type" column')
+        train_data = test_data[~test_data['type'].mask]
     else:
         train_data = load_data(args.train_data)
-    train_data = train_data[~train_data['type'].mask]
-    validation_data = test_data[~test_data['type'].mask]
+        if train_data['type'].mask.any():
+            raise ValueError('training data is missing values in the "type" column')
 
     if args.classifier == 'rf':
         clf = RandomForestClassifier(criterion='entropy', max_features=5, n_jobs=-1, random_state=args.random_state)
@@ -420,6 +424,12 @@ def _main():
     plot_feature_importance(pipeline, train_data, saveto='feature_importance.pdf')
 
     if args.validate:
+        if args.validation_data is None:
+            validation_data = train_data
+        else:
+            validation_data = load_data(args.validation_data)
+            if validation_data['type'].mask.any():
+                raise ValueError('validation data is missing values in the "type" column')
         validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
         write_results(validation_data, clf.classes_, 'validation_full.txt')
         results_validate = aggregate_probabilities(validation_data)
