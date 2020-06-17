@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.1.0.post33+gbc94d94 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.1.0.post38+g547259d documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1.0.post33+gbc94d94
+                0.1.0.post38+g547259d
               </div>
             
           
@@ -498,26 +498,22 @@ Otherwise, use the model parameters directly.</p>
 
 <dl class="py function">
 <dt id="superphot.extract.get_principal_components">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">get_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">light_curves_fit</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">whiten</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#get_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.get_principal_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a principal component analysis on a list of light curves and return a list of their principal components.</p>
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">get_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">whiten</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#get_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.get_principal_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a principal component analysis on a set of light curves for each filter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>A list of evenly-sampled model light curves.</p>
-</dd>
-<dt><strong>light_curves_fit</strong><span class="classifier">array-like, optional</span></dt><dd><p>A list of model light curves to be used for fitting the PCA. Default: fit and transform the same light curves.</p>
+<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>An array of model light curves to be used for fitting the PCA.</p>
 </dd>
 <dt><strong>n_components</strong><span class="classifier">int, optional</span></dt><dd><p>The number of principal components to calculate. Default: 6.</p>
 </dd>
 <dt><strong>whiten</strong><span class="classifier">bool, optional</span></dt><dd><p>Whiten the input data before calculating the principal components. Default: True.</p>
 </dd>
-<dt><strong>stored_pcas</strong><span class="classifier">str, optional</span></dt><dd><p>Path to pickled PCA objects. Default: create and fit new PCA objects.</p>
-</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>principal_components</strong><span class="classifier">array-like</span></dt><dd><p>A list of the principal components for each of the input light curves.</p>
+<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>A list of the PCA objects for each filter.</p>
 </dd>
 </dl>
 </dd>
@@ -565,7 +561,7 @@ will be combined and used in place of the missing ones.</p>
 
 <dl class="py function">
 <dt id="superphot.extract.plot_pca_reconstruction">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">titles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
 These are saved as a multipage PDF.</p>
 <dl class="field-list simple">
@@ -575,10 +571,14 @@ These are saved as a multipage PDF.</p>
 </dd>
 <dt><strong>reconstructed</strong><span class="classifier">array-like</span></dt><dd><p>A 3-D array of reconstructed light curves with shape (ntransients, nfilters, ntimes)</p>
 </dd>
+<dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 1-D array of times that correspond to the last axis of <cite>models</cite>. Default: x-axis will run from 0 to ntimes.</p>
+</dd>
 <dt><strong>coefficients</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
 the coefficients will be printed at the top right of each plot.</p>
 </dd>
 <dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring the lines.</p>
+</dd>
+<dt><strong>titles</strong><span class="classifier">iterable, optional</span></dt><dd><p>Titles for each plot. If a path is given, only the base filename will be displayed.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename for the output file. Default: pca_reconstruction.pdf.</p>
 </dd>
@@ -601,6 +601,30 @@ the coefficients will be printed at the top right of each plot.</p>
 <dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: principal_components.pdf.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.project_onto_principal_components">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">project_onto_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">pcas</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#project_onto_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.project_onto_principal_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project a set of light curves onto their principal components for each filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>An array of model light curves to be projected onto the principal components.</p>
+</dd>
+<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>A list of the PCA objects for each filter.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>coefficients</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>An array of the coefficients on the principal components.</p>
+</dd>
+<dt><strong>reconstructed</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>An reconstruction of the light curves from their principal components.</p>
 </dd>
 </dl>
 </dd>
@@ -1188,7 +1212,7 @@ starting wtih ‘classifier’.</p>
 
 <dl class="py function">
 <dt id="superphot.util.plot_histograms">
-<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">var_kwd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">row_kwd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">no_autoscale</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.plot_histograms" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.util.</code><code class="sig-name descname">plot_histograms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">colname</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'type'</span></em>, <em class="sig-param"><span class="n">var_kwd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">row_kwd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/util.html#plot_histograms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.util.plot_histograms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a grid of histograms of the column <cite>colname</cite> of <cite>data_table</cite>, grouped by the column <cite>groupby</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1202,8 +1226,6 @@ starting wtih ‘classifier’.</p>
 <dt><strong>var_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Keyword in <cite>data_table.meta</cite> containing the parameter names to list on the x-axes. Default: no labels.</p>
 </dd>
 <dt><strong>row_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Keyword in <cite>data_table.meta</cite> containing labels for the leftmost y-axes.</p>
-</dd>
-<dt><strong>no_autoscale</strong><span class="classifier">tuple or list, optional</span></dt><dd><p>Class names not to use in calculating the axis limits. Default: include all.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: display the plot instead of saving it.</p>
 </dd>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.util &mdash; Superphot 0.1.0.post33+gbc94d94 documentation</title>
+  <title>superphot.util &mdash; Superphot 0.1.0.post38+g547259d documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post33+gbc94d94
+                0.1.0.post38+g547259d
               </div>
             
           
@@ -157,6 +157,7 @@
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">astropy.stats</span> <span class="kn">import</span> <span class="n">mad_std</span><span class="p">,</span> <span class="n">sigma_clip</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="n">filter_colors</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="s1">&#39;#00CCFF&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="s1">&#39;#FF7D00&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span> <span class="s1">&#39;#90002C&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="s1">&#39;#000000&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span>
@@ -223,7 +224,7 @@
     <span class="k">return</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span></div>
 
 
-<div class="viewcode-block" id="plot_histograms"><a class="viewcode-back" href="../../api.html#superphot.util.plot_histograms">[docs]</a><span class="k">def</span> <span class="nf">plot_histograms</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="n">colname</span><span class="p">,</span> <span class="n">class_kwd</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="n">var_kwd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_kwd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">no_autoscale</span><span class="o">=</span><span class="p">(),</span> <span class="n">saveto</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_histograms"><a class="viewcode-back" href="../../api.html#superphot.util.plot_histograms">[docs]</a><span class="k">def</span> <span class="nf">plot_histograms</span><span class="p">(</span><span class="n">data_table</span><span class="p">,</span> <span class="n">colname</span><span class="p">,</span> <span class="n">class_kwd</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="n">var_kwd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_kwd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.</span>
 
@@ -239,8 +240,6 @@
 <span class="sd">        Keyword in `data_table.meta` containing the parameter names to list on the x-axes. Default: no labels.</span>
 <span class="sd">    row_kwd : str, optional</span>
 <span class="sd">        Keyword in `data_table.meta` containing labels for the leftmost y-axes.</span>
-<span class="sd">    no_autoscale : tuple or list, optional</span>
-<span class="sd">        Class names not to use in calculating the axis limits. Default: include all.</span>
 <span class="sd">    saveto : str, optional</span>
 <span class="sd">        Filename to which to save the plot. Default: display the plot instead of saving it.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -262,11 +261,11 @@
                 <span class="n">n</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">axarr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">histdata</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="n">histrange</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">class_kwd</span><span class="p">:</span>
                     <span class="n">data_table</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="s1">&#39;patch&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">class_kwd</span> <span class="ow">or</span> <span class="n">data_table</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">class_kwd</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">no_autoscale</span><span class="p">:</span>
-                    <span class="n">xlims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-                    <span class="n">ylims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+                <span class="n">xlims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                <span class="n">ylims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
             <span class="n">axarr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.05</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ylims</span><span class="p">))</span>
             <span class="n">axarr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">xlims</span> <span class="o">=</span> <span class="n">sigma_clip</span><span class="p">(</span><span class="n">xlims</span><span class="p">,</span> <span class="n">stdfunc</span><span class="o">=</span><span class="n">mad_std</span><span class="p">,</span> <span class="n">masked</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">xlims</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">100.</span><span class="p">))</span>
         <span class="n">axarr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">1.05</span> <span class="o">*</span> <span class="n">xmin</span> <span class="o">-</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="n">xmax</span><span class="p">,</span> <span class="mf">1.05</span> <span class="o">*</span> <span class="n">xmax</span> <span class="o">-</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="n">xmin</span><span class="p">)</span>
         <span class="n">axarr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.classify &mdash; Superphot 0.1.0.post33+gbc94d94 documentation</title>
+  <title>superphot.classify &mdash; Superphot 0.1.0.post38+g547259d documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0.post33+gbc94d94
+                0.1.0.post38+g547259d
               </div>
             
           
@@ -523,6 +523,8 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;test_data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the test set.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--train-data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the training set.&#39;</span>
                                              <span class="s1">&#39;By default, use all classified supernovae in the test data.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--validation-data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the validation set.&#39;</span>
+                                                  <span class="s1">&#39;By default, use all classified supernovae in the test data.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--classifier&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;rf&#39;</span><span class="p">,</span> <span class="s1">&#39;svm&#39;</span><span class="p">,</span> <span class="s1">&#39;mlp&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;rf&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;The classification algorithm &#39;</span>
                         <span class="s1">&#39;to use. Current choices are &quot;rf&quot; (random forest; default), &quot;svm&quot; (support vector machine), or &#39;</span>
                         <span class="s1">&#39;&quot;mlp&quot; (multilayer perceptron).&#39;</span><span class="p">)</span>
@@ -538,11 +540,13 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;started classification&#39;</span><span class="p">)</span>
     <span class="n">test_data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">test_data</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">train_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">train_data</span> <span class="o">=</span> <span class="n">test_data</span>
+        <span class="k">if</span> <span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;test data has no values in the &quot;type&quot; column&#39;</span><span class="p">)</span>
+        <span class="n">train_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">train_data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">train_data</span><span class="p">)</span>
-    <span class="n">train_data</span> <span class="o">=</span> <span class="n">train_data</span><span class="p">[</span><span class="o">~</span><span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
-    <span class="n">validation_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;training data is missing values in the &quot;type&quot; column&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">classifier</span> <span class="o">==</span> <span class="s1">&#39;rf&#39;</span><span class="p">:</span>
         <span class="n">clf</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;entropy&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
@@ -566,7 +570,7 @@
     <span class="n">plot_histograms</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="s1">&#39;prediction&#39;</span><span class="p">,</span> <span class="n">var_kwd</span><span class="o">=</span><span class="s1">&#39;paramnames&#39;</span><span class="p">,</span> <span class="n">row_kwd</span><span class="o">=</span><span class="s1">&#39;filters&#39;</span><span class="p">,</span>
                     <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_parameters.pdf&#39;</span><span class="p">)</span>
     <span class="n">plot_histograms</span><span class="p">(</span><span class="n">test_data</span><span class="p">,</span> <span class="s1">&#39;features&#39;</span><span class="p">,</span> <span class="s1">&#39;prediction&#39;</span><span class="p">,</span> <span class="n">var_kwd</span><span class="o">=</span><span class="s1">&#39;featnames&#39;</span><span class="p">,</span> <span class="n">row_kwd</span><span class="o">=</span><span class="s1">&#39;filters&#39;</span><span class="p">,</span>
-                    <span class="n">no_autoscale</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SLSN&#39;</span><span class="p">,</span> <span class="s1">&#39;SNIIn&#39;</span><span class="p">],</span> <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_features.pdf&#39;</span><span class="p">)</span>
+                    <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;phot_class_features.pdf&#39;</span><span class="p">)</span>
 
     <span class="n">results</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
     <span class="n">write_results</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;results.txt&#39;</span><span class="p">)</span>
@@ -576,6 +580,12 @@
     <span class="n">plot_feature_importance</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="s1">&#39;feature_importance.pdf&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">validate</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">validation_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">validation_data</span> <span class="o">=</span> <span class="n">train_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">validation_data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">validation_data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">validation_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;validation data is missing values in the &quot;type&quot; column&#39;</span><span class="p">)</span>
         <span class="n">validation_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
         <span class="n">write_results</span><span class="p">(</span><span class="n">validation_data</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="s1">&#39;validation_full.txt&#39;</span><span class="p">)</span>
         <span class="n">results_validate</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">validation_data</span><span class="p">)</span>
