@@ -467,6 +467,6 @@ def _main():
     plot_data = test_data[~test_data['type'].mask]
     if plot_data:
         plot_histograms(plot_data, 'features', var_kwd='featnames', row_kwd='filters',
-                        no_autoscale=['SLSN', 'SNIIn'] if args.use_pca else [], saveto=args.output + '_features.pdf')
+                        saveto=args.output + '_features.pdf')
     plot_feature_correlation(test_data, saveto=args.output + '_correlation.pdf')
     logging.info('finished feature extraction')

@@ -414,7 +414,7 @@ def _main():
     plot_histograms(test_data, 'params', 'prediction', var_kwd='paramnames', row_kwd='filters',
                     saveto='phot_class_parameters.pdf')
     plot_histograms(test_data, 'features', 'prediction', var_kwd='featnames', row_kwd='filters',
-                    no_autoscale=['SLSN', 'SNIIn'], saveto='phot_class_features.pdf')
+                    saveto='phot_class_features.pdf')
 
     results = aggregate_probabilities(test_data)
     write_results(results, clf.classes_, 'results.txt')

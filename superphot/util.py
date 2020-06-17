@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
+from astropy.stats import mad_std, sigma_clip
 import logging
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000', 'y': 'y',
@@ -67,7 +68,7 @@ def subplots_layout(n):
     return nrows, ncols
 
 
-def plot_histograms(data_table, colname, class_kwd='type', var_kwd=None, row_kwd=None, no_autoscale=(), saveto=None):
+def plot_histograms(data_table, colname, class_kwd='type', var_kwd=None, row_kwd=None, saveto=None):
     """
     Plot a grid of histograms of the column `colname` of `data_table`, grouped by the column `groupby`.
 
@@ -83,8 +84,6 @@ def plot_histograms(data_table, colname, class_kwd='type', var_kwd=None, row_kwd
         Keyword in `data_table.meta` containing the parameter names to list on the x-axes. Default: no labels.
     row_kwd : str, optional
         Keyword in `data_table.meta` containing labels for the leftmost y-axes.
-    no_autoscale : tuple or list, optional
-        Class names not to use in calculating the axis limits. Default: include all.
     saveto : str, optional
         Filename to which to save the plot. Default: display the plot instead of saving it.
     """
@@ -106,11 +105,11 @@ def plot_histograms(data_table, colname, class_kwd='type', var_kwd=None, row_kwd
                 n, b, p = axarr[i, j].hist(histdata, range=histrange, density=True, histtype='step')
                 if class_kwd:
                     data_table.groups.keys['patch'][k] = p[0]
-                if not class_kwd or data_table.groups.keys[class_kwd][k] not in no_autoscale:
-                    xlims.append(b)
-                    ylims.append(n)
+                xlims.append(b)
+                ylims.append(n)
             axarr[i, j].set_ylim(0., 1.05 * np.max(ylims))
             axarr[i, j].set_yticks([])
+        xlims = sigma_clip(xlims, stdfunc=mad_std, masked=False)
         xmin, xmax = np.percentile(xlims, (0., 100.))
         axarr[-1, j].set_xlim(1.05 * xmin - 0.05 * xmax, 1.05 * xmax - 0.05 * xmin)
         axarr[-1, j].xaxis.set_major_locator(plt.MaxNLocator(2))
