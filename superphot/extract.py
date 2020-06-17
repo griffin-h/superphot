@@ -165,9 +165,11 @@ def plot_principal_components(pcas, time=None, filters=None, saveto='principal_c
     fig.legend(lines, filters, ncol=len(filters), loc='upper center')
     fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.95))
     fig.savefig(saveto)
+    plt.close(fig)
 
 
-def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=None, saveto='pca_reconstruction.pdf'):
+def plot_pca_reconstruction(models, reconstructed, time=None, coefficients=None, filters=None, titles=None,
+                            saveto='pca_reconstruction.pdf'):
     """
     Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
     These are saved as a multipage PDF.
@@ -178,28 +180,49 @@ def plot_pca_reconstruction(models, reconstructed, coefficients=None, filters=No
         A 3-D array of model light curves with shape (ntransients, nfilters, ntimes)
     reconstructed : array-like
         A 3-D array of reconstructed light curves with shape (ntransients, nfilters, ntimes)
+    time : array-like, optional
+        A 1-D array of times that correspond to the last axis of `models`. Default: x-axis will run from 0 to ntimes.
     coefficients : array-like, optional
         A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
         the coefficients will be printed at the top right of each plot.
     filters : iterable, optional
         Names of the filters corresponding to the PCA objects. Only used for coloring the lines.
+    titles : iterable, optional
+        Titles for each plot. If a path is given, only the base filename will be displayed.
     saveto : str, optional
         Filename for the output file. Default: pca_reconstruction.pdf.
     """
+    if time is None:
+        time = np.arange(models.shape[-1])
+        xlabel = None
+    else:
+        xlabel = 'Phase (d)'
+    if coefficients is None:
+        legend_title = None
+    else:
+        legend_title = 'Principal Component Projection'
     if filters is None:
         filters = [f'Filter {i+1:d}' for i in range(models.shape[1])]
     with PdfPages(saveto) as pdf:
-        ax = plt.axes()
+        fig, ax = plt.subplots()
         for i in trange(models.shape[0], desc='PCA reconstruction'):
             for j in range(models.shape[1]):
                 c = filter_colors.get(filters[j])
-                ax.plot(models[i, j], color=c)
-                ax.plot(reconstructed[i, j], ls=':', color=c)
-            if coefficients is not None:
-                with np.printoptions(precision=2):
-                    ax.text(0.99, 0.99, str(coefficients[i]), va='top', ha='right', transform=ax.transAxes)
-            pdf.savefig()
+                if coefficients is None:
+                    label = filters[j]
+                else:
+                    with np.printoptions(precision=2, suppress=True, floatmode='fixed'):
+                        label = f'{filters[j]} = {coefficients[i, j]}'
+                ax.plot(time, models[i, j], color=c)
+                ax.plot(time, reconstructed[i, j], ls=':', color=c, label=label)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel('Luminosity')
+            ax.set_title(os.path.basename(titles[i]).split('.')[0])
+            ax.legend(title=legend_title)
+            fig.tight_layout()
+            pdf.savefig(fig)
             ax.clear()
+        plt.close(fig)
 
 
 def plot_feature_correlation(data_table, saveto=None):
@@ -354,8 +377,8 @@ def extract_features(t, zero_point=27.5, use_median=False, use_pca=True, stored_
             plot_principal_components(pcas, time, t.meta['filters'], save_pca_to)
         logging.info('PCA finished')
         if save_reconstruction_to is not None:
-            plot_pca_reconstruction(models_to_fit, reconstructed, coefficients, t.meta['filters'],
-                                    save_reconstruction_to)
+            plot_pca_reconstruction(good_models, reconstructed, time, coefficients, t.meta['filters'],
+                                    t_good['filename'], save_reconstruction_to)
         features = np.dstack([peakmags, coefficients])
         t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
