@@ -81,52 +81,56 @@ def flux_to_luminosity(row, R_filter):
     return flux2lum
 
 
-def get_principal_components(light_curves, light_curves_fit=None, n_components=6, whiten=True, stored_pcas=None):
+def get_principal_components(light_curves, n_components=6, whiten=True):
     """
-    Run a principal component analysis on a list of light curves and return a list of their principal components.
+    Run a principal component analysis on a set of light curves for each filter.
 
     Parameters
     ----------
     light_curves : array-like
-        A list of evenly-sampled model light curves.
-    light_curves_fit : array-like, optional
-        A list of model light curves to be used for fitting the PCA. Default: fit and transform the same light curves.
+        An array of model light curves to be used for fitting the PCA.
     n_components : int, optional
         The number of principal components to calculate. Default: 6.
     whiten : bool, optional
         Whiten the input data before calculating the principal components. Default: True.
-    stored_pcas : str, optional
-        Path to pickled PCA objects. Default: create and fit new PCA objects.
 
     Returns
     -------
-    principal_components : array-like
-        A list of the principal components for each of the input light curves.
+    pcas : list
+        A list of the PCA objects for each filter.
     """
-    filt_range = range(light_curves.shape[1])
-    if light_curves_fit is None:
-        light_curves_fit = light_curves
+    pcas = []
+    for i in range(light_curves.shape[1]):
+        pca = PCA(n_components, whiten=whiten)
+        pca.fit(light_curves[:, i])
+        pcas.append(pca)
+    return pcas
 
-    if stored_pcas is None:
-        pcas = [PCA(n_components, whiten=whiten) for _ in filt_range]
-    else:
-        with open(stored_pcas, 'rb') as f:
-            pcas = pickle.load(f)
-    reconstructed = np.empty_like(light_curves_fit)
-    coefficients = np.empty(light_curves.shape[:-1] + (n_components,))
 
-    for i in filt_range:
-        if stored_pcas is None:
-            pcas[i].fit(light_curves_fit[:, i])
-        coeffs_fit = pcas[i].transform(light_curves_fit[:, i])
-        reconstructed[:, i] = pcas[i].inverse_transform(coeffs_fit)
-        coefficients[:, i] = pcas[i].transform(light_curves[:, i])
+def project_onto_principal_components(light_curves, pcas):
+    """
+    Project a set of light curves onto their principal components for each filter.
 
-    if stored_pcas is None:
-        with open('pca.pickle', 'wb') as f:
-            pickle.dump(pcas, f)
+    Parameters
+    ----------
+    light_curves : array-like
+        An array of model light curves to be projected onto the principal components.
+    pcas : list
+        A list of the PCA objects for each filter.
 
-    return coefficients, reconstructed, pcas
+    Returns
+    -------
+    coefficients : numpy.ndarray
+        An array of the coefficients on the principal components.
+    reconstructed : numpy.ndarray
+        An reconstruction of the light curves from their principal components.
+    """
+    coefficients = np.empty(light_curves.shape[:-1] + (pcas[0].n_components_,))
+    reconstructed = np.empty_like(light_curves)
+    for i, pca in enumerate(pcas):
+        coefficients[:, i] = pca.transform(light_curves[:, i])
+        reconstructed[:, i] = pca.inverse_transform(coefficients[:, i])
+    return coefficients, reconstructed
 
 
 def plot_principal_components(pcas, time=None, filters=None, saveto='principal_components.pdf'):
@@ -338,9 +342,14 @@ def extract_features(t, zero_point=27.5, use_median=False, use_pca=True, stored_
         t_good, good_models = select_good_events(t, models)
         peakmags = zero_point - 2.5 * np.log10(good_models.max(axis=2))
         logging.info('peak magnitudes extracted')
-        models_to_fit = good_models[~t_good['type'].mask]
-        coefficients, reconstructed, pcas = get_principal_components(good_models, models_to_fit,
-                                                                     stored_pcas=stored_pcas)
+        if stored_pcas is None:
+            pcas = get_principal_components(good_models[~t_good['type'].mask])
+            with open('pca.pickle', 'wb') as f:
+                pickle.dump(pcas, f)
+        else:
+            with open(stored_pcas, 'rb') as f:
+                pcas = pickle.load(f)
+        coefficients, reconstructed = project_onto_principal_components(good_models, pcas)
         if save_pca_to is not None:
             plot_principal_components(pcas, time, t.meta['filters'], save_pca_to)
         logging.info('PCA finished')
