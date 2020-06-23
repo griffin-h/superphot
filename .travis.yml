@@ -9,9 +9,9 @@ cache:
     - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
 
 env:
-  global:
-    # Doctr deploy key for YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
-    - secure: "aukDirf6/r3mHmbRj3mCjHkH7Ng+EJGW2gjgrNDjcvG/pxogCStY3s/c1jiTcfbsrrUfnXxyjAk28ogISb/OADxU6wp8EjiEC5MEYod2FPrPr4Cgc1TyENAnpX+qg9TydBtKLg1RV4CvScdPiKoam1jCk3ArkSsUq8tyA4qG6L8emxtKYrU8t1rxCq4SD+BL1on4e1tWgUq9XznnBWVnlAOyu94kNiR67MbhzlXHehJJsdbijKHZ0UcGq62OPuO5b+2aXXFTEbaPHc0dagweLfUhmUdex20xCE+omljsOSLu19UUY6+wIU1GUJCqEdn9953K3APTwfvUd5Q+e8cMiJhAgq2Tt9Da5v35GjGO29cwHA215ku3PkzU8a9oqq25nmLuNeOyNqcSbG+ffUPY7g5RXsROlCcdzbSwEi7gzZM/2MCVQfVHbsT2tD7HEzH6/5gYFrd1gN/ZmSLVGTuYEZFtmsGJjsbAMrgxQi/migVtaylSCsIoMUkF1mwQYkP74khLnWclXedei4pOxItlBBzzJC5E69wB4/A72Vs7zhpfnU3YkAJ21+wtDhbF/Bbc+SaXp+ZluqTmAUHAFxsr9/s2F640cm6W8BBNP7iJ1FcOVa4tINUWXUu8HVVqb41pdtqwKQBkkqEjJhIMumliort2tGzsFy9LmsdrfLxzcak="
+      global:
+        # Doctr deploy key for griffin-h/superphot
+        - secure: "UA+9pHdq/8EjFiYCmThB1Qt1XT2F+Hrph3l8Q1EDIxurIK718txyiL5ihZLR1vEThaYN21zcAemyFOq2mQQzEeP2xzsWaMPDPEs5RjFxLKaG1sD/rmQT7t/qEb+90AXP+h8m/jQLqGqZsUOl2WJIXctnVlXhxua7miGmCWIN47YqRnUpPYejW1CHvjA9nWscz46/pK5q/gULqHh5/h0wuGggODBdGdntwEgmF3295UXpcbse8em42IgkSiyxEGLUM+Rt4QN3CWpH/08dn4eHh5ij/y1OYia8+kUv0N1uQ+FmX9xSlcbWvUQo5o3u7h4ckOqn5suO4J9uTe32PYPak/84WnCb0g5tHNJBvj9xnP6XJuRvayTb20jKaplFebyK1TaiIU0IiUwyPpJLFijS6W6HrcDZYfVWWPAE7XCsqRq5s5heKyYkvKu3ly6zskDVXXgTClsXaTSh8QFIn868xM5RswpNZoyXGlaYXnCvFEQiG0asRkwfi2jLKiOp4eNPAK/8s16tHhX3ozCKYGkUmC753VQyqkeKOh8cTnHJIy/JEr8LouGf8ebUzhp4cS31HtG5TXhxzgrpD6gGgy6aV4VgWQPWInNfT2Yy58IvWsShfgzTdrwwLCBFYYkt5ZICPyI5xfZFP/liMxr70FdGbozqu/bADAlwAKaswt2wGnc="
 
 install:
   # Install this package and the packages listed in requirements.txt.
