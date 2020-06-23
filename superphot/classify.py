@@ -66,7 +66,7 @@ def plot_confusion_matrix(confusion_matrix, classes, cmap='Blues', purity=False,
     ax.set_yticks([], minor=True)
     ax.set_ylim(nclasses - 0.5, -0.5)
 
-    thresh = cm.max() / 2.
+    thresh = np.nanmax(cm) / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         ax.text(j, i, f'{cm[i, j]:.2f}\n({confusion_matrix[i, j]:.0f})', ha="center", va="center",
                 color="white" if cm[i, j] > thresh else "black")
@@ -244,7 +244,7 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
     accuracy = accuracy_score(results['type'][include], predicted_types[include])
     f1 = f1_score(results['type'][include], predicted_types[include], average='macro')
-    title = f'{"Purity" if purity else "Completeness"} ($N={len(results):d}$, $A={accuracy:.2f}$, $F_1={f1:.2f}$)'
+    title = f'{"Purity" if purity else "Completeness"} ($N={include.sum():d}$, $A={accuracy:.2f}$, $F_1={f1:.2f}$)'
     fig = plt.figure(figsize=(len(classes),) * 2)
     plot_confusion_matrix(cnf_matrix, classes, purity=purity, title=title)
     fig.tight_layout()
