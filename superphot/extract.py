@@ -166,8 +166,8 @@ def plot_principal_components(pcas, time=None, filters=None, saveto='principal_c
         for pc, ax in zip(pca.components_, axes.flat):
             p = ax.plot(time, pc, color=filter_colors.get(fltr), label=fltr)
         lines += p
-    fig.legend(lines, filters, ncol=len(filters), loc='upper center')
-    fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.95))
+    fig.legend(lines, filters, ncol=len(filters), loc='upper center', title='Principal Components')
+    fig.tight_layout(h_pad=0., w_pad=0., rect=(0., 0., 1., 0.9))
     fig.savefig(saveto)
     plt.close(fig)
 
