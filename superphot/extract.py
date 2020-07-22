@@ -471,8 +471,8 @@ def _compile_parameters():
     data_table = compile_data_table(args.input_table)
     data_table = compile_parameters(data_table, args.stored_models, args.filters, args.ndraws, args.random_state)
     save_data(data_table, args.output)
-    plot_data = data_table[~data_table['type'].mask]
-    if plot_data:
+    if 'type' in data_table.colnames and not data_table['type'].mask.all():
+        plot_data = data_table[~data_table['type'].mask]
         plot_histograms(plot_data, 'params', var_kwd='paramnames', row_kwd='filters',
                         saveto=args.output + '_parameters.pdf')
 
@@ -502,8 +502,8 @@ def _main():
                                  save_pca_to=args.output + '_pca.pdf',
                                  save_reconstruction_to=args.output+'_reconstruction.pdf' if args.reconstruct else None)
     save_data(test_data, args.output)
-    plot_data = test_data[~test_data['type'].mask]
-    if plot_data:
+    if 'type' in data_table.colnames and not data_table['type'].mask.all():
+        plot_data = data_table[~data_table['type'].mask]
         plot_histograms(plot_data, 'features', var_kwd='featnames', row_kwd='filters',
                         saveto=args.output + '_features.pdf')
     plot_feature_correlation(test_data, saveto=args.output + '_correlation.pdf')

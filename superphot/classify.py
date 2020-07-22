@@ -182,8 +182,8 @@ def aggregate_probabilities(table):
     results : astropy.table.Table
         Astropy table containing the supernova metadata and average classification probabilities for each supernova
     """
-    table.keep_columns(meta_columns + ['probabilities'])
-    grouped = table.filled().group_by(meta_columns)
+    table = table[[col for col in table.colnames if col in meta_columns] + ['probabilities']]
+    grouped = table.filled().group_by(table.colnames[:-1])
     results = grouped.groups.aggregate(mean_axis0)
     if 'type' in results.colnames:
         results['type'] = np.ma.array(results['type'])
@@ -278,7 +278,7 @@ def write_results(test_data, classes, filename):
     filename : str
         Name of the output file
     """
-    output = test_data[meta_columns]
+    output = test_data[[col for col in test_data.colnames if col in meta_columns]]
     output['MWEBV'].format = '%.4f'
     output['redshift'].format = '%.4f'
     for i, classname in enumerate(classes):
