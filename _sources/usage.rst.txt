@@ -14,7 +14,7 @@ For basic functionality, Superphot can be run from the command line. For example
 
     superphot-fit light_curve_file.dat --output-dir stored_models/
     superphot-compile input_table.txt stored_models/ --output params
-    superphot-extract params.txt --output test_data
+    superphot-extract params.txt params.npz --output test_data
     superphot-classify test_data.txt
 
 For more advanced use cases, you can import the module and use some version of the following workflow:
