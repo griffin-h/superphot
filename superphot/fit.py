@@ -18,12 +18,12 @@ ITERATIONS = 10000
 TUNING = 25000
 WALKERS = 25
 PARAMNAMES = ['Amplitude', 'Plateau Slope (d$^{-1}$)', 'Plateau Duration (d)',
-              'Start Time (d)', 'Rise Time (d)', 'Fall Time (d)']
+              'Reference Epoch (d)', 'Rise Time (d)', 'Fall Time (d)']
 
 
 def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
     """
-    Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using
+    Calculate the flux given amplitude, plateau slope, plateau duration, reference epoch, rise time, and fall time using
     theano.switch. Parameters.type = TensorType(float64, scalar).
 
     Parameters
@@ -37,7 +37,7 @@ def flux_model(t, A, beta, gamma, t_0, tau_rise, tau_fall):
     gamma : TensorVariable
         The duration of the plateau after the light curve peaks.
     t_0 : TransformedRV
-        Start time, which is very close to when the actual light curve peak flux occurs.
+        Reference epoch.
     tau_rise : TensorVariable
         Exponential rise time to peak.
     tau_fall : TensorVariable

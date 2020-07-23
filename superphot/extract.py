@@ -387,7 +387,7 @@ def extract_features(t, zero_point=27.5, use_median=False, use_pca=True, stored_
         t_good.meta['featnames'] = ['Peak Abs. Mag.'] + [f'PC{i:d} Proj.' for i in range(1, 7)]
     else:
         params[:, :, 0] = zero_point - 2.5 * np.log10(params[:, :, 0])  # convert amplitude to magnitude
-        t_good, features = select_good_events(t, params[:, :, [0, 1, 2, 4, 5]])  # remove start time from features
+        t_good, features = select_good_events(t, params[:, :, [0, 1, 2, 4, 5]])  # remove reference epoch from features
         t_good.meta['featnames'] = ['Amplitude (mag)'] + [PARAMNAMES[i] for i in [1, 2, 4, 5]]
     t_good['features'] = features
     return t_good
