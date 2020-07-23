@@ -480,9 +480,9 @@ def _compile_parameters():
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
+    parser.add_argument('params', type=str, help='Numpy file containing stored model parameters')
     parser.add_argument('--param-table', type=str, help='Data table corresponding to the Numpy parameter file '
                                                         '(if different than input_table)')
-    parser.add_argument('--params', type=str, help='Numpy file containing stored model parameters')
     parser.add_argument('--use-median', action='store_true', help='Use median parameters instead of multiple draws')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
