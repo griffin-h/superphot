@@ -139,27 +139,42 @@ class MultivariateGaussian(BaseOverSampler):
         return X, y
 
 
-def fit_predict(pipeline, train_data, test_data):
+def train_classifier(pipeline, train_data):
     """
-    Train a classification pipeline on `train_data` and use it to classify `test_data`.
+    Train a classification pipeline on `test_data`.
 
     Parameters
     ----------
     pipeline : imblearn.pipeline.Pipeline
         The full classification pipeline, including rescaling, resampling, and classification.
     train_data : astropy.table.Table
-        Astropy table containing the training data. Must have a 'features' column and a 'type' column.
+        Astropy table containing the test data. Must have a 'features' and a 'type' column.
+    """
+    pipeline.fit(train_data['features'].reshape(len(train_data), -1), train_data['type'])
+
+
+def classify(pipeline, test_data, aggregate=True):
+    """
+    Use a trained classification pipeline to classify `test_data`.
+
+    Parameters
+    ----------
+    pipeline : imblearn.pipeline.Pipeline
+        The full classification pipeline, including rescaling, resampling, and classification.
     test_data : astropy.table.Table
         Astropy table containing the test data. Must have a 'features' column.
+    aggregate : bool, optional
+        If True (default), average the probabilities for a given supernova across the multiple model light curves.
 
     Returns
     -------
-    p_class : numpy.array
-        Classification probabilities for each of the supernovae in `test_features`.
+    results : astropy.table.Table
+        Astropy table containing the supernova metadata and classification probabilities for each supernova
     """
-    pipeline.fit(train_data['features'].reshape(len(train_data), -1), train_data['type'])
-    p_class = pipeline.predict_proba(test_data['features'].reshape(len(test_data), -1))
-    return p_class
+    test_data['probabilities'] = pipeline.predict_proba(test_data['features'].reshape(len(test_data), -1))
+    if aggregate:
+        test_data = aggregate_probabilities(test_data)
+    return test_data
 
 
 def mean_axis0(x, axis=0):
@@ -174,8 +189,7 @@ def aggregate_probabilities(table):
     Parameters
     ----------
     table : astropy.table.Table
-        Astropy table containing the metadata for a supernova and the classification probabilities from
-        `clf.predict_proba` (column name = 'probabilities')
+        Astropy table containing the metadata for a supernova and the classification probabilities ('probabilities')
 
     Returns
     -------
@@ -190,7 +204,7 @@ def aggregate_probabilities(table):
     return results
 
 
-def validate_classifier(pipeline, train_data, test_data=None):
+def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
     """
     Validate the performance of a machine-learning classifier using leave-one-out cross-validation.
 
@@ -203,20 +217,27 @@ def validate_classifier(pipeline, train_data, test_data=None):
     test_data : astropy.table.Table, optional
         Astropy table containing the test data. Must have a 'features' column to which to apply the trained classifier.
         If None, use the training data itself for validation.
+    aggregate : bool, optional
+        If True (default), average the probabilities for a given supernova across the multiple model light curves.
 
     Returns
     -------
-    p_class : numpy.array
-        Classification probabilities for each of the supernovae in `test_features`.
+    results : astropy.table.Table
+        Astropy table containing the supernova metadata and classification probabilities for each supernova
     """
     if test_data is None:
         test_data = train_data
-    p_class = fit_predict(pipeline, train_data, test_data)
+    train_classifier(pipeline, train_data)
+    test_data['probabilities'] = pipeline.predict_proba(test_data['features'].reshape(len(test_data), -1))
     for filename in tqdm(train_data['filename'], desc='Cross-validation'):
         train_index = train_data['filename'] != filename
         test_index = test_data['filename'] == filename
-        p_class[test_index] = fit_predict(pipeline, train_data[train_index], test_data[test_index])
-    return p_class
+        train_classifier(train_data[train_index])
+        test_features = test_data['features'][test_index].reshape(np.count_nonzero(test_index), -1)
+        test_data['probabilities'][test_index] = pipeline.predict_proba(test_features)
+    if aggregate:
+        test_data = aggregate_probabilities(test_data)
+    return test_data
 
 
 def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=False):
@@ -271,8 +292,7 @@ def write_results(test_data, classes, filename):
     Parameters
     ----------
     test_data : astropy.table.Table
-        Astropy table containing the supernova metadata and the classification probabilities for each sample
-        from `clf.predict_proba` (column name = 'probabilities').
+        Astropy table containing the supernova metadata and the classification probabilities ('probabilities').
     classes : list
         The labels that correspond to the columns in 'probabilities'
     filename : str
@@ -362,13 +382,9 @@ def _plot_confusion_matrix_from_file():
     make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto, purity=args.purity)
 
 
-def _main():
+def _train():
     parser = ArgumentParser()
-    parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
-    parser.add_argument('--train-data', help='Filename of the metadata table for the training set.'
-                                             'By default, use all classified supernovae in the test data.')
-    parser.add_argument('--validation-data', help='Filename of the metadata table for the validation set.'
-                                                  'By default, use all classified supernovae in the test data.')
+    parser.add_argument('train_data', help='Filename of the metadata table for the training set.')
     parser.add_argument('--classifier', choices=['rf', 'svm', 'mlp'], default='rf', help='The classification algorithm '
                         'to use. Current choices are "rf" (random forest; default), "svm" (support vector machine), or '
                         '"mlp" (multilayer perceptron).')
@@ -376,21 +392,14 @@ def _main():
                         'Current choices are "mvg" (multivariate Gaussian; default) or "smote" (synthetic minority '
                         'oversampling technique).')
     parser.add_argument('--random-state', type=int, help='Seed for the random number generator (for reproducibility).')
-    parser.add_argument('--pmin', type=float, default=0.,
-                        help='Minimum confidence to be included in the confusion matrix.')
-    parser.add_argument('--skip-validation', action='store_false', dest='validate', help='Skip the validation step.')
+    parser.add_argument('--output', default='pipeline.pickle',
+                        help='Filename to which to save the pickled classification pipeline.')
     args = parser.parse_args()
 
-    logging.info('started classification')
-    test_data = load_data(args.test_data)
-    if args.train_data is None:
-        if test_data['type'].mask.all():
-            raise ValueError('test data has no values in the "type" column')
-        train_data = test_data[~test_data['type'].mask]
-    else:
-        train_data = load_data(args.train_data)
-        if train_data['type'].mask.any():
-            raise ValueError('training data is missing values in the "type" column')
+    logging.info('started training')
+    train_data = load_data(args.train_data)
+    if train_data['type'].mask.any():
+        raise ValueError('training data is missing values in the "type" column')
 
     if args.classifier == 'rf':
         clf = RandomForestClassifier(criterion='entropy', max_features=5, n_jobs=-1, random_state=args.random_state)
@@ -409,31 +418,65 @@ def _main():
         raise NotImplementedError(f'{args.sampler} is not a recognized sampler type')
 
     pipeline = Pipeline([('scaler', StandardScaler()), ('sampler', sampler), ('classifier', clf)])
-    test_data['probabilities'] = fit_predict(pipeline, train_data, test_data)
-    test_data['prediction'] = clf.classes_[test_data['probabilities'].argmax(axis=1)]
+    train_classifier(pipeline, train_data)
+    with open(args.output, 'wb') as f:
+        pickle.dump(pipeline, f)
+    logging.info('finished training')
+
+
+def _classify():
+    parser = ArgumentParser()
+    parser.add_argument('pipeline', help='Filename of the pickled classification pipeline.')
+    parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
+    parser.add_argument('--output', default='test_data', help='Filename (without extension) to save the results.')
+    args = parser.parse_args()
+
+    logging.info('started classification')
+    with open(args.pipeline, 'rb') as f:
+        pipeline = pickle.load(f)
+    test_data = load_data(args.test_data)
+
+    test_data = classify(pipeline, test_data, aggregate=False)
+    test_data['prediction'] = pipeline.classes_[test_data['probabilities'].argmax(axis=1)]
     plot_histograms(test_data, 'params', 'prediction', var_kwd='paramnames', row_kwd='filters',
-                    saveto='phot_class_parameters.pdf')
+                    saveto=f'{args.output}_parameters.pdf')
     plot_histograms(test_data, 'features', 'prediction', var_kwd='featnames', row_kwd='filters',
-                    saveto='phot_class_features.pdf')
+                    saveto=f'{args.output}_features.pdf')
 
     results = aggregate_probabilities(test_data)
-    write_results(results, clf.classes_, 'results.txt')
-    with open('pipeline.pickle', 'wb') as f:
-        pickle.dump(pipeline, f)
+    write_results(results, pipeline.classes_, f'{args.output}_results.txt')
+    logging.info('finished classification')
+
+
+def _validate():
+    parser = ArgumentParser()
+    parser.add_argument('pipeline', help='Filename of the pickled classification pipeline.')
+    parser.add_argument('validation_data', help='Filename of the metadata table for the validation set.')
+    parser.add_argument('--train-data', help='Filename of the metadata table for the training set, if different than '
+                                             'the validation set.')
+    parser.add_argument('--pmin', type=float, default=0.,
+                        help='Minimum confidence to be included in the confusion matrix.')
+    args = parser.parse_args()
+
+    logging.info('started validation')
+    with open(args.pipeline, 'rb') as f:
+        pipeline = pickle.load(f)
+
+    validation_data = load_data(args.validation_data)
+    if validation_data['type'].mask.any():
+        raise ValueError('validation data is missing values in the "type" column')
+
+    if args.train_data is None:
+        train_data = validation_data
+    else:
+        train_data = load_data(args.train_data)
+        if train_data['type'].mask.any():
+            raise ValueError('training data is missing values in the "type" column')
 
     plot_feature_importance(pipeline, train_data, saveto='feature_importance.pdf')
 
-    if args.validate:
-        if args.validation_data is None:
-            validation_data = train_data
-        else:
-            validation_data = load_data(args.validation_data)
-            if validation_data['type'].mask.any():
-                raise ValueError('validation data is missing values in the "type" column')
-        validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
-        write_results(validation_data, clf.classes_, 'validation_full.txt')
-        results_validate = aggregate_probabilities(validation_data)
-        write_results(results_validate, clf.classes_, 'validation.txt')
-        make_confusion_matrix(results_validate, clf.classes_, args.pmin, 'confusion_matrix.pdf')
-        logging.info('validation complete')
-    logging.info('finished classification')
+    results_validate = validate_classifier(pipeline, train_data, validation_data)
+    write_results(results_validate, pipeline.classes_, 'validation.txt')
+    make_confusion_matrix(results_validate, pipeline.classes_, args.pmin, 'confusion_matrix.pdf')
+    make_confusion_matrix(results_validate, pipeline.classes_, args.pmin, 'confusion_matrix_purity.pdf', purity=True)
+    logging.info('finished validation')
