@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from glob import glob
 import os
+import re
 import argparse
 import logging
 from astropy.table import Table, hstack, join
@@ -273,14 +274,12 @@ def plot_feature_correlation(data_table, saveto=None):
     plt.close(fig)
 
 
-def compile_parameters(t, stored_models, filters, ndraws=10, random_state=None):
+def compile_parameters(stored_models, filters, ndraws=10, random_state=None):
     """
     Read the saved PyMC3 traces and compile an array of fit parameters for each transient. Save to a Numpy file.
 
     Parameters
     ----------
-    t : astropy.table.Table
-        Table containing the 'filename' of each transient to be classified.
     stored_models : str
         Look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.
     filters : iterable
@@ -294,6 +293,12 @@ def compile_parameters(t, stored_models, filters, ndraws=10, random_state=None):
     params = []
     median_params = []
     bad_rows = []
+    basenames = set()
+    for fn in os.listdir(stored_models):
+        match = re.search('(\\w+)_2\\w+', fn)
+        if match is not None:
+            basenames.add(match.groups()[0])
+    t = Table([sorted(basenames)], names=['filename'])
     for i, filename in enumerate(t['filename']):
         try:
             basename = os.path.basename(filename).split('.')[0]
@@ -460,7 +465,6 @@ def save_data(t, basename):
 
 def _compile_parameters():
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_table', type=str, help='List of input light curve files')
     parser.add_argument('stored_models', help='Directory where the PyMC3 trace data is stored')
     parser.add_argument('--filters', type=str, default='griz', help='Filters from which to extract features')
     parser.add_argument('--ndraws', type=int, default=10, help='Number of draws from the LC posterior for test set.')
@@ -468,8 +472,7 @@ def _compile_parameters():
     parser.add_argument('--output', default='params', help='Filename (without extension) to save the parameters')
     args = parser.parse_args()
 
-    data_table = compile_data_table(args.input_table)
-    data_table = compile_parameters(data_table, args.stored_models, args.filters, args.ndraws, args.random_state)
+    data_table = compile_parameters(args.stored_models, args.filters, args.ndraws, args.random_state)
     save_data(data_table, args.output)
     if 'type' in data_table.colnames and not data_table['type'].mask.all():
         plot_data = data_table[~data_table['type'].mask]
@@ -479,10 +482,9 @@ def _compile_parameters():
 
 def _main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_table', type=str, help='List of input light curve files, or input data table')
-    parser.add_argument('params', type=str, help='Numpy file containing stored model parameters')
-    parser.add_argument('--param-table', type=str, help='Data table corresponding to the Numpy parameter file '
-                                                        '(if different than input_table)')
+    parser.add_argument('param_table', help='Filename of the metadata table for the parameters')
+    parser.add_argument('--input-table', help='Filename containing a subset of light curves for which to extract '
+                                              'features. Default: extract features for all light curves.')
     parser.add_argument('--use-median', action='store_true', help='Use median parameters instead of multiple draws')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
@@ -492,11 +494,9 @@ def _main():
     args = parser.parse_args()
 
     logging.info('started feature extraction')
-    if args.param_table is None:
-        data_table = load_data(args.input_table, args.params)
-    else:
+    data_table = load_data(args.param_table)
+    if args.input_table is not None:
         input_table = Table.read(args.input_table, format='ascii')
-        data_table = load_data(args.param_table, args.params)
         data_table = join(input_table[['filename']], data_table)
     test_data = extract_features(data_table, use_median=args.use_median, use_pca=args.use_pca, stored_pcas=args.pcas,
                                  save_pca_to=args.output + '_pca.pdf',
