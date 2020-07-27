@@ -240,7 +240,7 @@ def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
     return test_data
 
 
-def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=False):
+def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=False, binary=False):
     """
     Given a data table with classification probabilities, calculate and plot the confusion matrix.
 
@@ -256,18 +256,35 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
         Save the plot to this filename. If None, the plot is displayed and not saved.
     purity : bool, optional
         If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
+    binary : bool, optional
+        If True, plot a SNIa vs non-SNIa (CCSN) binary confusion matrix.
     """
     results = results[~results['type'].mask]
     if classes is None:
         classes = np.unique(results['type'])
-    predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
-    include = results['probabilities'].max(axis=1) > p_min
+    if binary:
+        results['type'] = ['SNIa' if sntype == 'SNIa' else 'CCSN' for sntype in results['type']]
+        SNIa_probs = results['probabilities'][:, np.where(classes == 'SNIa')[0][0]]
+        classes = np.array(['CCSN', 'SNIa'])
+        predicted_types = np.choose(np.round(SNIa_probs).astype(int), classes)
+        include = (SNIa_probs > p_min) | (SNIa_probs < 1. - p_min)
+    else:
+        predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
+        include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
-    accuracy = accuracy_score(results['type'][include], predicted_types[include])
-    f1 = f1_score(results['type'][include], predicted_types[include], average='macro')
-    title = f'{"Purity" if purity else "Completeness"} ($N={include.sum():d}$, $A={accuracy:.2f}$, $F_1={f1:.2f}$)'
-    fig = plt.figure(figsize=(len(classes),) * 2)
-    plot_confusion_matrix(cnf_matrix, classes, purity=purity, title=title)
+    title = 'Purity' if purity else 'Completeness'
+    size = (len(classes) + 1.) * 5. / 6.
+    if size > 3.:  # only add stats to title if figure is big enough
+        accuracy = accuracy_score(results['type'][include], predicted_types[include])
+        f1 = f1_score(results['type'][include], predicted_types[include], average='macro')
+        title += f' ($N={include.sum():d}$, $A={accuracy:.2f}$, $F_1={f1:.2f}$)'
+        xlabel = 'Photometric Classification'
+        ylabel = 'Spectroscopic Classification'
+    else:
+        xlabel = 'Phot. Class.'
+        ylabel = 'Spec. Class.'
+    fig = plt.figure(figsize=(size, size))
+    plot_confusion_matrix(cnf_matrix, classes, purity=purity, title=title, xlabel=xlabel, ylabel=ylabel)
     fig.tight_layout()
     if saveto is None:
         plt.show()
@@ -376,10 +393,11 @@ def _plot_confusion_matrix_from_file():
                         help='Minimum confidence to be included in the confusion matrix.')
     parser.add_argument('--saveto', type=str, help='If provided, save the confusion matrix to this file.')
     parser.add_argument('--purity', action='store_true', help='Aggregate by column instead of by row.')
+    parser.add_argument('--binary', action='store_true', help='Plot a SNIa vs non-SNIa (CCSN) binary confusion matrix.')
     args = parser.parse_args()
 
     results = load_results(args.filename)
-    make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto, purity=args.purity)
+    make_confusion_matrix(results, p_min=args.pmin, saveto=args.saveto, purity=args.purity, binary=args.binary)
 
 
 def _train():
