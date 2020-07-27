@@ -503,7 +503,7 @@ def _main():
                                  save_reconstruction_to=args.output+'_reconstruction.pdf' if args.reconstruct else None)
     save_data(test_data, args.output)
     if 'type' in data_table.colnames and not data_table['type'].mask.all():
-        plot_data = data_table[~data_table['type'].mask]
+        plot_data = test_data[~test_data['type'].mask]
         plot_histograms(plot_data, 'features', var_kwd='featnames', row_kwd='filters',
                         saveto=args.output + '_features.pdf')
     plot_feature_correlation(test_data, saveto=args.output + '_correlation.pdf')
