@@ -61,6 +61,7 @@ setuptools.setup(
             'superphot-classify = superphot.classify:_classify',
             'superphot-validate = superphot.classify:_validate',
             'superphot-confuse = superphot.classify:_plot_confusion_matrix_from_file',
+            'superphot-bar = superphot.classify:_bar_plot_from_file',
             'superphot-optimize = superphot.optimize:_main',
             'superphot-hyperparameters = superphot.optimize:_plot_hyperparameters_from_file',
         ],

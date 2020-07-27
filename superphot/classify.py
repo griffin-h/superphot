@@ -232,7 +232,7 @@ def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
     for filename in tqdm(train_data['filename'], desc='Cross-validation'):
         train_index = train_data['filename'] != filename
         test_index = test_data['filename'] == filename
-        train_classifier(train_data[train_index])
+        train_classifier(pipeline, train_data[train_index])
         test_features = test_data['features'][test_index].reshape(np.count_nonzero(test_index), -1)
         test_data['probabilities'][test_index] = pipeline.predict_proba(test_features)
     if aggregate:
@@ -296,8 +296,9 @@ def load_results(filename):
     results = Table.read(filename, format='ascii')
     if 'type' in results.colnames:
         results['type'] = np.ma.array(results['type'])
-    classes = [col for col in results.colnames if col not in meta_columns]
+    classes = np.array([col for col in results.colnames if col not in meta_columns])
     results['probabilities'] = np.stack([results[sntype].data for sntype in classes]).T
+    results['prediction'] = classes[results['probabilities'].argmax(axis=1)]
     results.remove_columns(classes)
     return results
 
@@ -384,6 +385,72 @@ def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, save
     else:
         fig.savefig(saveto)
     plt.close(fig)
+
+
+def bar_plot(vresults, tresults, saveto=None):
+    """
+    Make a stacked bar plot showing the class breakdown in the training set compared to the test set.
+
+    Parameters
+    ----------
+    vresults : astropy.table.Table
+        Astropy table containing the training data. Must have a 'type' column and a 'prediction' column.
+    tresults : astropy.table.Table
+        Astropy table containing the test data. Must have a 'prediction' column.
+    saveto : str, optional
+        Save the plot to this filename. If None, the plot is displayed and not saved.
+    """
+    labels, n_per_true_class = np.unique(vresults['type'], return_counts=True)
+    labels_pred, n_per_pred_class = np.unique(tresults['prediction'], return_counts=True)
+    if np.any(labels_pred != labels):
+        raise ValueError('photometric and spectroscopic class labels do not match')
+    purity = confusion_matrix(vresults['type'], vresults['prediction'], normalize='pred')
+    corrected = purity @ n_per_pred_class
+
+    names = ['Spectroscopically\nClassified', 'Photometrically\nClassified', 'Phot. Class.\n(Corrected)']
+    rawcounts = np.transpose([n_per_true_class, n_per_pred_class, corrected])
+    fractions = rawcounts / rawcounts.sum(axis=0)
+    cumulative_fractions = fractions.cumsum(axis=0)
+
+    fig = plt.figure()
+    ax = plt.axes()
+    for counts, fracs, cumfracs, label in zip(rawcounts, fractions, cumulative_fractions, labels):
+        plt.bar(names, -fracs, bottom=cumfracs)
+        heights = cumfracs - fracs / 2.
+        for count, frac, name, height in zip(counts, fracs, names, heights):
+            if height < 0.05:
+                h = 0.005
+                va = 'top'
+            elif height > 0.95:
+                h = 0.995
+                va = 'bottom'
+            else:
+                h = height
+                va = 'center'
+            ax.text(name, h, f'{frac:.2f} ({count:.0f})', ha='center', va=va, color='w')
+        ax.text(2.5, heights[-1], label, ha='left', va='center')
+    ax.set_ylim(1., 0.)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.tick_params(axis='both', which='both', labelbottom=False, labelleft=False, bottom=False, left=False,
+                   labeltop=True, labelsize='large')
+    fig.tight_layout()
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
+
+
+def _bar_plot_from_file():
+    parser = ArgumentParser()
+    parser.add_argument('validation_results', help='Filename of the validation results.')
+    parser.add_argument('test_results', help='Filename of the classification results.')
+    parser.add_argument('--saveto', help='Filename to which to save the bar plot.')
+    args = parser.parse_args()
+
+    vresults = load_results(args.validation_results)
+    tresults = load_results(args.test_results)
+    bar_plot(vresults, tresults, args.saveto)
 
 
 def _plot_confusion_matrix_from_file():
