@@ -240,7 +240,7 @@ def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
     return test_data
 
 
-def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=False, binary=False):
+def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=False, binary=False, title=None):
     """
     Given a data table with classification probabilities, calculate and plot the confusion matrix.
 
@@ -258,6 +258,9 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
         If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).
     binary : bool, optional
         If True, plot a SNIa vs non-SNIa (CCSN) binary confusion matrix.
+    title : str, optional
+        A title for the plot. If the plot is big enough, statistics ($N$, $A$, $F_1$) are appended in parentheses.
+        Default: 'Completeness' or 'Purity' depending on `purity`.
     """
     results = results[~results['type'].mask]
     if classes is None:
@@ -272,7 +275,8 @@ def make_confusion_matrix(results, classes=None, p_min=0., saveto=None, purity=F
         predicted_types = classes[np.argmax(results['probabilities'], axis=1)]
         include = results['probabilities'].max(axis=1) > p_min
     cnf_matrix = confusion_matrix(results['type'][include], predicted_types[include])
-    title = 'Purity' if purity else 'Completeness'
+    if title is None:
+        title = 'Purity' if purity else 'Completeness'
     size = (len(classes) + 1.) * 5. / 6.
     if size > 3.:  # only add stats to title if figure is big enough
         accuracy = accuracy_score(results['type'][include], predicted_types[include])
