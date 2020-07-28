@@ -193,7 +193,7 @@ def plot_pca_reconstruction(models, reconstructed, time=None, coefficients=None,
     filters : iterable, optional
         Names of the filters corresponding to the PCA objects. Only used for coloring the lines.
     titles : iterable, optional
-        Titles for each plot. If a path is given, only the base filename will be displayed.
+        Titles for each plot.
     saveto : str, optional
         Filename for the output file. Default: pca_reconstruction.pdf.
     """
@@ -222,7 +222,7 @@ def plot_pca_reconstruction(models, reconstructed, time=None, coefficients=None,
                 ax.plot(time, reconstructed[i, j], ls=':', color=c, label=label)
             ax.set_xlabel(xlabel)
             ax.set_ylabel('Luminosity')
-            ax.set_title(os.path.basename(titles[i]).split('.')[0])
+            ax.set_title(titles[i])
             ax.legend(title=legend_title)
             fig.tight_layout()
             pdf.savefig(fig)
@@ -299,9 +299,8 @@ def compile_parameters(stored_models, filters, ndraws=10, random_state=None):
         if match is not None:
             basenames.add(match.groups()[0])
     t = Table([sorted(basenames)], names=['filename'])
-    for i, filename in enumerate(t['filename']):
+    for i, basename in enumerate(t['filename']):
         try:
-            basename = os.path.basename(filename).split('.')[0]
             tracefile = os.path.join(stored_models, basename) + '_2*'
             trace = load_trace(tracefile, filters)
             logging.info(f'loaded trace from {tracefile}')
@@ -473,18 +472,13 @@ def _compile_parameters():
     args = parser.parse_args()
 
     data_table = compile_parameters(args.stored_models, args.filters, args.ndraws, args.random_state)
-    save_data(data_table, args.output)
-    if 'type' in data_table.colnames and not data_table['type'].mask.all():
-        plot_data = data_table[~data_table['type'].mask]
-        plot_histograms(plot_data, 'params', var_kwd='paramnames', row_kwd='filters',
-                        saveto=args.output + '_parameters.pdf')
+    np.savez_compressed(args.output, **data_table, **data_table.meta)
 
 
 def _main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('param_table', help='Filename of the metadata table for the parameters')
-    parser.add_argument('--input-table', help='Filename containing a subset of light curves for which to extract '
-                                              'features. Default: extract features for all light curves.')
+    parser.add_argument('input_table', help='Filename containing metadata (redshift, MWEBV) for the light curves.')
+    parser.add_argument('param_table', help='Filename of the Numpy archive containing the parameters.')
     parser.add_argument('--use-median', action='store_true', help='Use median parameters instead of multiple draws')
     parser.add_argument('--pcas', help='Path to pickled PCA objects. Default: create and fit new PCA objects.')
     parser.add_argument('--use-params', action='store_false', dest='use_pca', help='Use model parameters as features')
@@ -494,10 +488,7 @@ def _main():
     args = parser.parse_args()
 
     logging.info('started feature extraction')
-    data_table = load_data(args.param_table)
-    if args.input_table is not None:
-        input_table = Table.read(args.input_table, format='ascii')
-        data_table = join(input_table[['filename']], data_table)
+    data_table = load_data(args.input_table, args.param_table)
     test_data = extract_features(data_table, use_median=args.use_median, use_pca=args.use_pca, stored_pcas=args.pcas,
                                  save_pca_to=args.output + '_pca.pdf',
                                  save_reconstruction_to=args.output+'_reconstruction.pdf' if args.reconstruct else None)

@@ -18,8 +18,8 @@ For basic functionality, Superphot can be run from the command line. For example
 
     superphot-fit light_curves/*.dat --output-dir stored_models/  # this is parallelizable
     superphot-compile stored_models/ --output params
-    superphot-extract params.txt --input-table train_input.txt --output train_data
-    superphot-extract params.txt --input-table test_input.txt --output test_data --pcas pca.pickle
+    superphot-extract train_input.txt params.txt --output train_data
+    superphot-extract test_input.txt params.txt --output test_data --pcas pca.pickle  # use the same PCA
     superphot-train train_data.txt --output pipeline.pickle
     superphot-classify pipeline.pickle test_data.txt
     superphot-validate pipeline.pickle train_data.txt
@@ -44,13 +44,13 @@ For more advanced use cases, you can import the module and use some version of t
 
     # Extract training features
     train_input = Table.read('train_input.txt', format='ascii')
-    train_params = join(train_input[['filename']], param_table)
+    train_params = join(train_input, param_table)
     train_data = extract.extract_features(train_params)
 
     # Extract test features
     test_input = Table.read('test_input.txt', format='ascii')
-    test_params = join(test_input[['filename']], param_table)
-    test_data = extract.extract_features(test_params)
+    test_params = join(test_input, param_table)
+    test_data = extract.extract_features(test_params, stored_pcas='pca.pickle')
 
     # Initialize and train the pipeline (can adjust hyperparameters here)
     pipeline = classify.make_pipeline(

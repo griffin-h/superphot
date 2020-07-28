@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy.table import Table
+from astropy.table import Table, hstack, join
 from astropy.stats import mad_std, sigma_clip
 import logging
 
@@ -37,15 +37,18 @@ def load_data(meta_file, data_file=None):
     if 'type' in t.colnames:
         t['type'] = np.ma.array(t['type'])
     stored = np.load(data_file)
-    data_table = t[np.repeat(np.arange(len(t)), stored['ndraws'])]
+    meta_keys = set(stored.keys()) & {'filters', 'ndraws', 'paramnames', 'featnames'}
+    column_keys = set(stored.keys()) - meta_keys
+    t_stored = Table({key: stored[key] for key in column_keys})
+    if set(t.colnames) & column_keys:
+        data_table = join(t, t_stored)
+    else:
+        data_table = hstack([t[np.repeat(np.arange(len(t)), stored['ndraws'])], t_stored])
     for col in data_table.colnames:
         if data_table[col].dtype.type is np.str_:
             data_table[col].fill_value = ''
-    for key in stored:
-        if key in ['filters', 'ndraws', 'paramnames', 'featnames']:
-            data_table.meta[key] = stored[key]
-        else:
-            data_table[key] = stored[key]
+    for key in meta_keys:
+        data_table.meta[key] = stored[key]
     logging.info(f'data loaded from {meta_file} and {data_file}')
     return data_table
 
