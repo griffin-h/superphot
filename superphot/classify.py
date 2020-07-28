@@ -446,23 +446,23 @@ def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', t
         Save the plot to this filename. If None, the plot is displayed and not saved.
     """
     if 'correct' in results.colnames:
-        label = '{snclass}: {ngroup:d} total, {correct:d} correct'
+        label = '{ngroup:d} {snclass}, {correct:d} correct'
         if title is None:
             title = f'Validation Set, Grouped by {CLASS_KEYWORDS.get(class_kwd, class_kwd)}'
     else:
-        results['correct'] = True
-        label = '{snclass}: {ngroup:d} total'
+        label = '{ngroup:d} {snclass}'
         if title is None:
             title = f'Test Set, Grouped by {CLASS_KEYWORDS.get(class_kwd, class_kwd)}'
     grouped = results.group_by(class_kwd)
 
     fig = plt.figure()
     for group, snclass in zip(grouped.groups, grouped.groups.keys[class_kwd]):
-        grouplabel = label.format(snclass=snclass, ngroup=len(group), correct=group['correct'].sum())
-        cumhist(group[xval], lw=1, label=grouplabel, mark=~group['correct'])
-    if not results['correct'].all():
+        correct = group['correct'] if 'correct' in results.colnames else np.ones(len(group), bool)
+        grouplabel = label.format(snclass=snclass, ngroup=len(group), correct=correct.sum())
+        cumhist(group[xval], lw=1, label=grouplabel, mark=~correct)
+    if 'correct' in results.colnames:
         plt.plot([], [], 'kx', label='incorrect')
-    plt.legend(loc='upper left', frameon=False)
+    plt.legend(loc='best', frameon=False)
     plt.tick_params(labelsize='large')
     plt.xlabel(xval, size='large')
     plt.ylabel('Cumulative Fraction', size='large')
@@ -475,22 +475,24 @@ def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', t
         fig.savefig(saveto)
 
 
-def calc_metrics(results, classes=None):
+def calc_metrics(results, xval='Confidence', classes=None):
     """
-    Calculate completeness, purity, accuracy, and F1 score as a function of confidence threshold.
+    Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.
 
     The results are added as columns to the input table.
 
     Parameters
     ----------
     results : astropy.table.Table
-        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and 'Confidence'.
+        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and `xval`.
+    xval : str, optional
+        Table column to use as the independent variable. Default: 'Confidence'.
     classes : array-like, optional
         The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
     """
     if classes is None:
         classes = np.unique(results['type'])
-    results.sort('Confidence')
+    results.sort(xval)
     results['completeness'] = np.zeros_like(results['probabilities'])
     results['purity'] = np.zeros_like(results['probabilities'])
     results['accuracy'] = 0.
@@ -507,7 +509,7 @@ def calc_metrics(results, classes=None):
         results['f1_score'][i] = f1_score(results_pmin['type'], results_pmin['prediction'], average='macro')
 
 
-def plot_metrics_vs_confidence(validation, classes=None, saveto=None):
+def plot_metrics_by_number(validation, xval='Confidence', classes=None, saveto=None):
     """
     Plot completeness, purity, accuracy, F1 score, and fractions remaining as a function of confidence threshold.
 
@@ -515,6 +517,8 @@ def plot_metrics_vs_confidence(validation, classes=None, saveto=None):
     ----------
     validation : astropy.table.Table
         Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and 'Confidence'.
+    xval : str, optional
+        Table column to use as the horizontal axis of the plot. Default: 'Confidence'.
     classes : array-like, optional
         The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
     saveto : str, optional
@@ -522,17 +526,17 @@ def plot_metrics_vs_confidence(validation, classes=None, saveto=None):
     """
     if classes is None:
         classes = np.unique(validation['type'])
-    calc_metrics(validation, classes)
+    calc_metrics(validation, xval, classes)
     ccsne = validation[validation['type'] != 'SNIa']
 
     fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True, figsize=(6., 8.))
-    lines1 = ax1.plot(validation['Confidence'], validation['completeness'])
-    ax2.plot(validation['Confidence'], validation['purity'])
+    lines1 = ax1.step(validation[xval], validation['completeness'])
+    ax2.step(validation[xval], validation['purity'])
     for ax in [ax1, ax2]:
-        lines2 = ax.plot(validation['Confidence'], validation['accuracy'], 'k-')
-        lines2 += ax.plot(validation['Confidence'], validation['f1_score'], 'k--')
-        lines2 += cumhist(validation['Confidence'], reverse=True, ax=ax, color='k', ls='-.')
-        lines2 += cumhist(ccsne['Confidence'], reverse=True, ax=ax, color='k', ls=':')
+        lines2 = ax.step(validation[xval], validation['accuracy'], 'k-')
+        lines2 += ax.step(validation[xval], validation['f1_score'], 'k--')
+        lines2 += cumhist(validation[xval], reverse=True, ax=ax, color='k', ls='-.')
+        lines2 += cumhist(ccsne[xval], reverse=True, ax=ax, color='k', ls=':')
         ax.grid(alpha=0.3)
         ax.tick_params(labelsize='large')
     fig.legend(lines2, ['accuracy', '$F_1$', 'frac.', 'CCSN frac.'], ncol=len(lines2), loc='upper center',
@@ -541,7 +545,7 @@ def plot_metrics_vs_confidence(validation, classes=None, saveto=None):
     ax1.set_ylabel('Completeness', size='large')
     ax2.set_ylabel('Purity', size='large')
     ax2.set_ylim(0, 1)
-    ax2.set_xlabel('Confidence Threshold', size='large')
+    ax2.set_xlabel(f'Minimum {xval}', size='large')
     fig.tight_layout()
     if saveto is None:
         plt.show()
@@ -735,5 +739,5 @@ def _validate():
     results_validate['Confidence'] = results_validate['probabilities'].max(axis=1)
     plot_results_by_number(results_validate, class_kwd='type', saveto='validation_confidence_specclass.pdf')
     plot_results_by_number(results_validate, saveto='validation_confidence_photclass.pdf')
-    plot_metrics_vs_confidence(results_validate, pipeline.classes_, 'threshold.pdf')
+    plot_metrics_by_number(results_validate, classes=pipeline.classes_, saveto='threshold.pdf')
     logging.info('finished validation')
