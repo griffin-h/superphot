@@ -7,6 +7,7 @@ import logging
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000', 'y': 'y',
                  'U': '#3C0072', 'B': '#0057FF', 'V': '#79FF00', 'R': '#FF7000', 'I': '#66000B'}
 meta_columns = ['filename', 'type', 'MWEBV', 'redshift']
+CLASS_KEYWORDS = {'type': 'Spectroscopic Classification', 'prediction': 'Photometric Classification'}
 plt.rcParams['xtick.minor.visible'] = True
 plt.rcParams['ytick.minor.visible'] = True
 
@@ -115,7 +116,7 @@ def plot_histograms(data_table, colname, class_kwd='type', var_kwd=None, row_kwd
         axarr[-1, j].xaxis.set_major_locator(plt.MaxNLocator(2))
     if class_kwd:
         fig.legend(data_table.groups.keys['patch'], data_table.groups.keys[class_kwd], loc='upper center', ncol=ngroups,
-                   title={'type': 'Spectroscopic Class', 'prediction': 'Photometric Class'}.get(class_kwd, class_kwd))
+                   title=CLASS_KEYWORDS.get(class_kwd, class_kwd))
     if var_kwd is not None:
         for ax, var in zip(axarr[-1], data_table.meta[var_kwd]):
             ax.set_xlabel(var, size='small')

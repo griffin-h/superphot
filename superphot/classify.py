@@ -15,7 +15,7 @@ from imblearn.utils._docstring import Substitution, _random_state_docstring
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 import pickle
-from .util import meta_columns, plot_histograms, filter_colors, load_data
+from .util import meta_columns, plot_histograms, filter_colors, load_data, CLASS_KEYWORDS
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -387,6 +387,168 @@ def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, save
     plt.close(fig)
 
 
+def cumhist(data, reverse=False, mark=None, ax=None, **kwargs):
+    """
+    Plot a cumulative histogram of `data`, optionally with certain indices marked with an x.
+
+    Parameters
+    ----------
+    data : array-like
+        Data to include in the histogram
+    reverse : bool, optional
+        If False (default), the histogram increases with increasing `data`. If True, it decreases with increasing `data`
+    mark : array-like, optional
+        An array of indices to mark with an x
+    ax : matplotlib.pyplot.axes, optional
+        Axis on which to plot the confusion matrix. Default: current axis.
+    kwargs : dict, optional
+        Keyword arguments to be passed to `matplotlib.pyplot.step`
+
+    Returns
+    -------
+    p : list
+        The list of `matplotlib.lines.Line2D` objects returned by `matplotlib.pyplot.step`
+    """
+    if mark is None:
+        mark = np.zeros(len(data), bool)
+    if ax is None:
+        ax = plt.gca()
+    i = np.argsort(data)
+    x = data[i]
+    mark = mark[i]
+    x = np.append(x, x[-1])
+    y = np.linspace(0., 1., x.size)
+    if reverse:
+        y = y[::-1]
+    p = ax.step(x, y, **kwargs)
+    ax.scatter(data[i][mark], (y[:-1] + 0.5 * np.diff(y))[mark], marker='x')
+    return p
+
+
+def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', title=None, saveto=None):
+    """
+    Plot cumulative histograms of the results for each class against a specified table column.
+
+    If `results` contains the column 'correct', incorrect classifications will be marked with an x.
+
+    Parameters
+    ----------
+    results : astropy.table.Table
+        Table of classification results. Must contain columns 'type'/'prediction' and the column specified by `xval`.
+    xval : str, optional
+        Table column to use as the horizontal axis of the histogram. Default: 'Confidence'.
+    class_kwd : str, optional
+        Table column to use as the class grouping. Default: 'prediction'.
+    title : str, optional
+        Title for the plot. Default: "Validation/Test Set, Grouped by {class_kwd}", where the first word is determined
+        by the presence of the column 'correct' in `results`.
+    saveto : str, optional
+        Save the plot to this filename. If None, the plot is displayed and not saved.
+    """
+    if 'correct' in results.colnames:
+        label = '{snclass}: {ngroup:d} total, {correct:d} correct'
+        if title is None:
+            title = f'Validation Set, Grouped by {CLASS_KEYWORDS.get(class_kwd, class_kwd)}'
+    else:
+        results['correct'] = True
+        label = '{snclass}: {ngroup:d} total'
+        if title is None:
+            title = f'Test Set, Grouped by {CLASS_KEYWORDS.get(class_kwd, class_kwd)}'
+    grouped = results.group_by(class_kwd)
+
+    fig = plt.figure()
+    for group, snclass in zip(grouped.groups, grouped.groups.keys[class_kwd]):
+        grouplabel = label.format(snclass=snclass, ngroup=len(group), correct=group['correct'].sum())
+        cumhist(group[xval], lw=1, label=grouplabel, mark=~group['correct'])
+    if not results['correct'].all():
+        plt.plot([], [], 'kx', label='incorrect')
+    plt.legend(loc='upper left', frameon=False)
+    plt.tick_params(labelsize='large')
+    plt.xlabel(xval, size='large')
+    plt.ylabel('Cumulative Fraction', size='large')
+    plt.ylim(0, 1)
+    plt.title(title)
+    fig.tight_layout()
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
+
+
+def calc_metrics(results, classes=None):
+    """
+    Calculate completeness, purity, accuracy, and F1 score as a function of confidence threshold.
+
+    The results are added as columns to the input table.
+
+    Parameters
+    ----------
+    results : astropy.table.Table
+        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and 'Confidence'.
+    classes : array-like, optional
+        The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
+    """
+    if classes is None:
+        classes = np.unique(results['type'])
+    results.sort('Confidence')
+    results['completeness'] = np.zeros_like(results['probabilities'])
+    results['purity'] = np.zeros_like(results['probabilities'])
+    results['accuracy'] = 0.
+    results['f1_score'] = 0.
+    for i in range(len(results)):
+        results_pmin = results[i:]
+        cnf_matrix = confusion_matrix(results_pmin['type'], results_pmin['prediction'], classes)
+        correct = np.diag(cnf_matrix)
+        n_per_spec_class = cnf_matrix.sum(axis=1)
+        n_per_phot_class = cnf_matrix.sum(axis=0)
+        results['completeness'][i] = correct / n_per_spec_class
+        results['purity'][i] = correct / n_per_phot_class
+        results['accuracy'][i] = accuracy_score(results_pmin['type'], results_pmin['prediction'])
+        results['f1_score'][i] = f1_score(results_pmin['type'], results_pmin['prediction'], average='macro')
+
+
+def plot_metrics_vs_confidence(validation, classes=None, saveto=None):
+    """
+    Plot completeness, purity, accuracy, F1 score, and fractions remaining as a function of confidence threshold.
+
+    Parameters
+    ----------
+    validation : astropy.table.Table
+        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and 'Confidence'.
+    classes : array-like, optional
+        The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
+    saveto : str, optional
+        Save the plot to this filename. If None, the plot is displayed and not saved.
+    """
+    if classes is None:
+        classes = np.unique(validation['type'])
+    calc_metrics(validation, classes)
+    ccsne = validation[validation['type'] != 'SNIa']
+
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True, figsize=(6., 8.))
+    lines1 = ax1.plot(validation['Confidence'], validation['completeness'])
+    ax2.plot(validation['Confidence'], validation['purity'])
+    for ax in [ax1, ax2]:
+        lines2 = ax.plot(validation['Confidence'], validation['accuracy'], 'k-')
+        lines2 += ax.plot(validation['Confidence'], validation['f1_score'], 'k--')
+        lines2 += cumhist(validation['Confidence'], reverse=True, ax=ax, color='k', ls='-.')
+        lines2 += cumhist(ccsne['Confidence'], reverse=True, ax=ax, color='k', ls=':')
+        ax.grid(alpha=0.3)
+        ax.tick_params(labelsize='large')
+    fig.legend(lines2, ['accuracy', '$F_1$', 'frac.', 'CCSN frac.'], ncol=len(lines2), loc='upper center',
+               bbox_to_anchor=(0.5, 0.975), frameon=False)
+    ax1.legend(lines1, classes, ncol=5, loc='upper center', bbox_to_anchor=(0.5, 1.15), frameon=False)
+    ax1.set_ylabel('Completeness', size='large')
+    ax2.set_ylabel('Purity', size='large')
+    ax2.set_ylim(0, 1)
+    ax2.set_xlabel('Confidence Threshold', size='large')
+    fig.tight_layout()
+    if saveto is None:
+        plt.show()
+    else:
+        fig.savefig(saveto)
+
+
 def bar_plot(vresults, tresults, saveto=None):
     """
     Make a stacked bar plot showing the class breakdown in the training set compared to the test set.
@@ -530,6 +692,9 @@ def _classify():
 
     results = aggregate_probabilities(test_data)
     write_results(results, pipeline.classes_, f'{args.output}_results.txt')
+    results['prediction'] = pipeline.classes_[results['probabilities'].argmax(axis=1)]
+    results['Confidence'] = results['probabilities'].max(axis=1)
+    plot_results_by_number(results, saveto=f'{args.output}_confidence.pdf')
     logging.info('finished classification')
 
 
@@ -564,4 +729,11 @@ def _validate():
     write_results(results_validate, pipeline.classes_, 'validation.txt')
     make_confusion_matrix(results_validate, pipeline.classes_, args.pmin, 'confusion_matrix.pdf')
     make_confusion_matrix(results_validate, pipeline.classes_, args.pmin, 'confusion_matrix_purity.pdf', purity=True)
+
+    results_validate['prediction'] = pipeline.classes_[results_validate['probabilities'].argmax(axis=1)]
+    results_validate['correct'] = results_validate['prediction'] == results_validate['type']
+    results_validate['Confidence'] = results_validate['probabilities'].max(axis=1)
+    plot_results_by_number(results_validate, class_kwd='type', saveto='validation_confidence_specclass.pdf')
+    plot_results_by_number(results_validate, saveto='validation_confidence_photclass.pdf')
+    plot_metrics_vs_confidence(results_validate, pipeline.classes_, 'threshold.pdf')
     logging.info('finished validation')
