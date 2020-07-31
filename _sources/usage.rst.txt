@@ -2,26 +2,34 @@
 Usage
 =====
 
-Superphot runs in three steps:
+Superphot runs in five steps:
 
-1. For each light curve, fit a model to the observations.
-2. Extract features from those models to be used for classification.
-3. Using those features, train the classifier, classify the light curves, and validate the classifier performance.
+1. For each light curve, *fit* a model to the observations.
+2. *Compile* the parameters from all the model fits into a single table.
+3. *Extract* features from those models to be used for classification.
+4. Initialize the classifier and *train* it on the training set.
+5. Use the trained classifier to *classify* the test set.
+6. (Optional) Cross-*validate* the classifier on the training set.
+7. (Optional) *Optimize* the hyperparameters of the classifier.
 
 For basic functionality, Superphot can be run from the command line. For example:
 
 .. code-block:: bash
 
-    superphot-fit light_curve_file.dat --output-dir stored_models/
-    superphot-compile input_table.txt stored_models/ --output params
-    superphot-extract params.txt params.npz --output test_data
-    superphot-classify test_data.txt
+    superphot-fit light_curves/*.dat --output-dir stored_models/  # this is parallelizable
+    superphot-compile stored_models/ --output params
+    superphot-extract train_input.txt params.txt --output train_data
+    superphot-extract test_input.txt params.txt --output test_data --pcas pca.pickle  # use the same PCA
+    superphot-train train_data.txt --output pipeline.pickle
+    superphot-classify pipeline.pickle test_data.txt
+    superphot-validate pipeline.pickle train_data.txt
 
 For more advanced use cases, you can import the module and use some version of the following workflow:
 
 .. code-block:: python
 
     from superphot import fit, extract, classify
+    from astropy.table import Table, join
     from glob import glob
     from os import path
 
@@ -31,26 +39,32 @@ For more advanced use cases, you can import the module and use some version of t
         light_curve = fit.read_light_curve(filename)  # may need to write your own parser
         fit.two_iteration_mcmc(light_curve, outfile)
 
-    # Extract features
-    data_table = extract.compile_data_table('input_table.txt')
-    param_table = extract.compile_parameters(data_table, 'stored_models/')
-    test_data = extract.extract_features(param_table)
-    train_data = test_data[~test_data['type'].mask]
+    # Compile parameters
+    param_table = extract.compile_parameters('stored_models/')
 
-    # Initialize the pipeline (can adjust hyperparameters here)
+    # Extract training features
+    train_input = Table.read('train_input.txt', format='ascii')
+    train_params = join(train_input, param_table)
+    train_data = extract.extract_features(train_params)
+
+    # Extract test features
+    test_input = Table.read('test_input.txt', format='ascii')
+    test_params = join(test_input, param_table)
+    test_data = extract.extract_features(test_params, stored_pcas='pca.pickle')
+
+    # Initialize and train the pipeline (can adjust hyperparameters here)
     pipeline = classify.make_pipeline(
         classify.StandardScaler(),
         classify.MultivariateGaussian(sampling_strategy=1000),
         classify.RandomForestClassifier(criterion='entropy', max_features=5)
     )
+    train_classifier(pipeline, train_data)
 
     # Do the classification
-    test_data['probabilities'] = classify.fit_predict(pipeline, train_data, test_data)
-    results = classify.aggregate_probabilities(test_data)
+    results = classify.classify(pipeline, test_data)
 
-    # Validate the classifier
-    train_data['probabilities'] = classify.validate_classifier(pipeline, train_data)
-    results_validate = classify.aggregate_probabilities(train_data)
+    # Validate the classifier (optional)
+    results_validate = classify.validate_classifier(pipeline, train_data)
     classify.make_confusion_matrix(results_validate, pipeline.classes_)
 
 ------------------------

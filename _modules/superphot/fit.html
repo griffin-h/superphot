@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.fit &mdash; Superphot 0.1.0.post44+g0eb5895 documentation</title>
+  <title>superphot.fit &mdash; Superphot 0.post50+g6772e6a documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1.0.post44+g0eb5895
+                0.post50+g6772e6a
               </div>
             
           
@@ -177,12 +177,12 @@
 <span class="n">TUNING</span> <span class="o">=</span> <span class="mi">25000</span>
 <span class="n">WALKERS</span> <span class="o">=</span> <span class="mi">25</span>
 <span class="n">PARAMNAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;Plateau Slope (d$^{-1}$)&#39;</span><span class="p">,</span> <span class="s1">&#39;Plateau Duration (d)&#39;</span><span class="p">,</span>
-              <span class="s1">&#39;Start Time (d)&#39;</span><span class="p">,</span> <span class="s1">&#39;Rise Time (d)&#39;</span><span class="p">,</span> <span class="s1">&#39;Fall Time (d)&#39;</span><span class="p">]</span>
+              <span class="s1">&#39;Reference Epoch (d)&#39;</span><span class="p">,</span> <span class="s1">&#39;Rise Time (d)&#39;</span><span class="p">,</span> <span class="s1">&#39;Fall Time (d)&#39;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="flux_model"><a class="viewcode-back" href="../../api.html#superphot.fit.flux_model">[docs]</a><span class="k">def</span> <span class="nf">flux_model</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">t_0</span><span class="p">,</span> <span class="n">tau_rise</span><span class="p">,</span> <span class="n">tau_fall</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Calculate the flux given amplitude, plateau slope, plateau duration, start time, rise time, and fall time using</span>
+<span class="sd">    Calculate the flux given amplitude, plateau slope, plateau duration, reference epoch, rise time, and fall time using</span>
 <span class="sd">    theano.switch. Parameters.type = TensorType(float64, scalar).</span>
 
 <span class="sd">    Parameters</span>
@@ -196,7 +196,7 @@
 <span class="sd">    gamma : TensorVariable</span>
 <span class="sd">        The duration of the plateau after the light curve peaks.</span>
 <span class="sd">    t_0 : TransformedRV</span>
-<span class="sd">        Start time, which is very close to when the actual light curve peak flux occurs.</span>
+<span class="sd">        Reference epoch.</span>
 <span class="sd">    tau_rise : TensorVariable</span>
 <span class="sd">        Exponential rise time to peak.</span>
 <span class="sd">    tau_fall : TensorVariable</span>
