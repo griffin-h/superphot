@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.post50+g6772e6a documentation</title>
+  <title>API Documentation &mdash; Superphot 0.post50+g4eebdc2 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.post50+g6772e6a
+                0.post50+g4eebdc2
               </div>
             
           
@@ -280,7 +280,7 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 
 <dl class="py function">
 <dt id="superphot.classify.calc_metrics">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">calc_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'Confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#calc_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.calc_metrics" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">calc_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#calc_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.calc_metrics" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.</p>
 <p>The results are added as columns to the input table.</p>
 <dl class="field-list simple">
@@ -288,7 +288,7 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 <dd class="field-odd"><dl class="simple">
 <dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and <cite>xval</cite>.</p>
 </dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the independent variable. Default: ‘Confidence’.</p>
+<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the independent variable. Default: ‘confidence’.</p>
 </dd>
 <dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
 </dd>
@@ -439,14 +439,14 @@ include ‘featnames’ and ‘filters’ in <cite>train_data.meta</cite>.</p>
 
 <dl class="py function">
 <dt id="superphot.classify.plot_metrics_by_number">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_metrics_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validation</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'Confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_metrics_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_metrics_by_number" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_metrics_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validation</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_metrics_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_metrics_by_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot completeness, purity, accuracy, F1 score, and fractions remaining as a function of confidence threshold.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>validation</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and ‘Confidence’.</p>
+<dt><strong>validation</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and ‘confidence’.</p>
 </dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the plot. Default: ‘Confidence’.</p>
+<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the plot. Default: ‘confidence’.</p>
 </dd>
 <dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
 </dd>
@@ -459,7 +459,7 @@ include ‘featnames’ and ‘filters’ in <cite>train_data.meta</cite>.</p>
 
 <dl class="py function">
 <dt id="superphot.classify.plot_results_by_number">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_results_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'Confidence'</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'prediction'</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_results_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_results_by_number" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_results_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'prediction'</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_results_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_results_by_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot cumulative histograms of the results for each class against a specified table column.</p>
 <p>If <cite>results</cite> contains the column ‘correct’, incorrect classifications will be marked with an x.</p>
 <dl class="field-list simple">
@@ -467,11 +467,11 @@ include ‘featnames’ and ‘filters’ in <cite>train_data.meta</cite>.</p>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of classification results. Must contain columns ‘type’/’prediction’ and the column specified by <cite>xval</cite>.</p>
 </dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the histogram. Default: ‘Confidence’.</p>
+<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the histogram. Default: ‘confidence’.</p>
 </dd>
 <dt><strong>class_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the class grouping. Default: ‘prediction’.</p>
 </dd>
-<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Title for the plot. Default: “Validation/Test Set, Grouped by {class_kwd}”, where the first word is determined
+<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Title for the plot. Default: “Training/Test Set, Grouped by {class_kwd}”, where the first word is determined
 by the presence of the column ‘correct’ in <cite>results</cite>.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
@@ -526,7 +526,7 @@ If None, use the training data itself for validation.</p>
 
 <dl class="py function">
 <dt id="superphot.classify.write_results">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">write_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#write_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.write_results" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">write_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">max_lines</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">latex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">latex_title</span><span class="o">=</span><span class="default_value">'Classification Results'</span></em>, <em class="sig-param"><span class="n">latex_label</span><span class="o">=</span><span class="default_value">'tab:results'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#write_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.write_results" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write the classification results to a text file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -536,6 +536,15 @@ If None, use the training data itself for validation.</p>
 <dt><strong>classes</strong><span class="classifier">list</span></dt><dd><p>The labels that correspond to the columns in ‘probabilities’</p>
 </dd>
 <dt><strong>filename</strong><span class="classifier">str</span></dt><dd><p>Name of the output file</p>
+</dd>
+<dt><strong>max_lines</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum number of table rows to write to the file</p>
+</dd>
+<dt><strong>latex</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), write in the Astropy ‘ascii.fixed_width_two_line’ format. If True, write in the Astropy
+‘ascii.aastex’ format and add fancy table headers, etc.</p>
+</dd>
+<dt><strong>latex_title</strong><span class="classifier">str, optional</span></dt><dd><p>Table caption if written in AASTeX format. Default: ‘Classification Results’</p>
+</dd>
+<dt><strong>latex_label</strong><span class="classifier">str, optional</span></dt><dd><p>LaTeX label if written in AASTeX format. Default: ‘tab:results’</p>
 </dd>
 </dl>
 </dd>
