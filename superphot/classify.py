@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import logging
-from astropy.table import Table
+from astropy.table import Table, join
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
@@ -171,10 +171,13 @@ def classify(pipeline, test_data, aggregate=True):
     results : astropy.table.Table
         Astropy table containing the supernova metadata and classification probabilities for each supernova
     """
-    test_data['probabilities'] = pipeline.predict_proba(test_data['features'].reshape(len(test_data), -1))
+    results = test_data.copy()
+    results['probabilities'] = pipeline.predict_proba(results['features'].reshape(len(results), -1))
     if aggregate:
-        test_data = aggregate_probabilities(test_data)
-    return test_data
+        results = aggregate_probabilities(results)
+    results['prediction'] = pipeline.classes_[results['probabilities'].argmax(axis=1)]
+    results['confidence'] = results['probabilities'].max(axis=1)
+    return results
 
 
 def mean_axis0(x, axis=0):
@@ -237,6 +240,9 @@ def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
         test_data['probabilities'][test_index] = pipeline.predict_proba(test_features)
     if aggregate:
         test_data = aggregate_probabilities(test_data)
+    test_data['prediction'] = pipeline.classes_[test_data['probabilities'].argmax(axis=1)]
+    test_data['confidence'] = test_data['probabilities'].max(axis=1)
+    test_data['correct'] = test_data['prediction'] == test_data['type']
     return test_data
 
 
@@ -302,7 +308,7 @@ def load_results(filename):
         results['type'] = np.ma.array(results['type'])
     classes = np.array([col for col in results.colnames if col not in meta_columns])
     results['probabilities'] = np.stack([results[sntype].data for sntype in classes]).T
-    results['prediction'] = classes[results['probabilities'].argmax(axis=1)]
+    results.meta['classes'] = classes
     results.remove_columns(classes)
     return results
 
@@ -323,6 +329,7 @@ def write_results(test_data, classes, filename):
     output = test_data[[col for col in test_data.colnames if col in meta_columns]]
     output['MWEBV'].format = '%.4f'
     output['redshift'].format = '%.4f'
+    output['confidence'].format = '%.3f'
     for i, classname in enumerate(classes):
         output[classname] = test_data['probabilities'][:, i]
         output[classname].format = '%.3f'
@@ -429,7 +436,7 @@ def cumhist(data, reverse=False, mark=None, ax=None, **kwargs):
     return p
 
 
-def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', title=None, saveto=None):
+def plot_results_by_number(results, xval='confidence', class_kwd='prediction', title=None, saveto=None):
     """
     Plot cumulative histograms of the results for each class against a specified table column.
 
@@ -440,11 +447,11 @@ def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', t
     results : astropy.table.Table
         Table of classification results. Must contain columns 'type'/'prediction' and the column specified by `xval`.
     xval : str, optional
-        Table column to use as the horizontal axis of the histogram. Default: 'Confidence'.
+        Table column to use as the horizontal axis of the histogram. Default: 'confidence'.
     class_kwd : str, optional
         Table column to use as the class grouping. Default: 'prediction'.
     title : str, optional
-        Title for the plot. Default: "Validation/Test Set, Grouped by {class_kwd}", where the first word is determined
+        Title for the plot. Default: "Training/Test Set, Grouped by {class_kwd}", where the first word is determined
         by the presence of the column 'correct' in `results`.
     saveto : str, optional
         Save the plot to this filename. If None, the plot is displayed and not saved.
@@ -452,7 +459,7 @@ def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', t
     if 'correct' in results.colnames:
         label = '{ngroup:d} {snclass}, {correct:d} correct'
         if title is None:
-            title = f'Validation Set, Grouped by {CLASS_KEYWORDS.get(class_kwd, class_kwd)}'
+            title = f'Training Set, Grouped by {CLASS_KEYWORDS.get(class_kwd, class_kwd)}'
     else:
         label = '{ngroup:d} {snclass}'
         if title is None:
@@ -468,7 +475,7 @@ def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', t
         plt.plot([], [], 'kx', label='incorrect')
     plt.legend(loc='best', frameon=False)
     plt.tick_params(labelsize='large')
-    plt.xlabel(xval, size='large')
+    plt.xlabel(xval.title(), size='large')
     plt.ylabel('Cumulative Fraction', size='large')
     plt.ylim(0, 1)
     plt.title(title)
@@ -479,7 +486,7 @@ def plot_results_by_number(results, xval='Confidence', class_kwd='prediction', t
         fig.savefig(saveto)
 
 
-def calc_metrics(results, xval='Confidence', classes=None):
+def calc_metrics(results, xval='confidence', classes=None):
     """
     Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.
 
@@ -490,7 +497,7 @@ def calc_metrics(results, xval='Confidence', classes=None):
     results : astropy.table.Table
         Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and `xval`.
     xval : str, optional
-        Table column to use as the independent variable. Default: 'Confidence'.
+        Table column to use as the independent variable. Default: 'confidence'.
     classes : array-like, optional
         The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
     """
@@ -513,16 +520,16 @@ def calc_metrics(results, xval='Confidence', classes=None):
         results['f1_score'][i] = f1_score(results_pmin['type'], results_pmin['prediction'], average='macro')
 
 
-def plot_metrics_by_number(validation, xval='Confidence', classes=None, saveto=None):
+def plot_metrics_by_number(validation, xval='confidence', classes=None, saveto=None):
     """
     Plot completeness, purity, accuracy, F1 score, and fractions remaining as a function of confidence threshold.
 
     Parameters
     ----------
     validation : astropy.table.Table
-        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and 'Confidence'.
+        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and 'confidence'.
     xval : str, optional
-        Table column to use as the horizontal axis of the plot. Default: 'Confidence'.
+        Table column to use as the horizontal axis of the plot. Default: 'confidence'.
     classes : array-like, optional
         The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
     saveto : str, optional
@@ -691,18 +698,16 @@ def _classify():
         pipeline = pickle.load(f)
     test_data = load_data(args.test_data)
 
-    test_data = classify(pipeline, test_data, aggregate=False)
-    test_data['prediction'] = pipeline.classes_[test_data['probabilities'].argmax(axis=1)]
-    plot_histograms(test_data, 'params', 'prediction', var_kwd='paramnames', row_kwd='filters',
+    results = classify(pipeline, test_data)
+    write_results(results, pipeline.classes_, f'{args.output}_results.txt')
+    plot_results_by_number(results, saveto=f'{args.output}_confidence.pdf')
+
+    test_data_full = join(test_data, results)
+    plot_histograms(test_data_full, 'params', 'prediction', var_kwd='paramnames', row_kwd='filters',
                     saveto=f'{args.output}_parameters.pdf')
-    plot_histograms(test_data, 'features', 'prediction', var_kwd='featnames', row_kwd='filters',
+    plot_histograms(test_data_full, 'features', 'prediction', var_kwd='featnames', row_kwd='filters',
                     saveto=f'{args.output}_features.pdf')
 
-    results = aggregate_probabilities(test_data)
-    write_results(results, pipeline.classes_, f'{args.output}_results.txt')
-    results['prediction'] = pipeline.classes_[results['probabilities'].argmax(axis=1)]
-    results['Confidence'] = results['probabilities'].max(axis=1)
-    plot_results_by_number(results, saveto=f'{args.output}_confidence.pdf')
     logging.info('finished classification')
 
 
@@ -734,13 +739,9 @@ def _validate():
     plot_feature_importance(pipeline, train_data, saveto='feature_importance.pdf')
 
     results_validate = validate_classifier(pipeline, train_data, validation_data)
-    write_results(results_validate, pipeline.classes_, 'validation.txt')
+    write_results(results_validate, pipeline.classes_, 'validation_results.txt')
     make_confusion_matrix(results_validate, pipeline.classes_, args.pmin, 'confusion_matrix.pdf')
     make_confusion_matrix(results_validate, pipeline.classes_, args.pmin, 'confusion_matrix_purity.pdf', purity=True)
-
-    results_validate['prediction'] = pipeline.classes_[results_validate['probabilities'].argmax(axis=1)]
-    results_validate['correct'] = results_validate['prediction'] == results_validate['type']
-    results_validate['Confidence'] = results_validate['probabilities'].max(axis=1)
     plot_results_by_number(results_validate, class_kwd='type', saveto='validation_confidence_specclass.pdf')
     plot_results_by_number(results_validate, saveto='validation_confidence_photclass.pdf')
     plot_metrics_by_number(results_validate, classes=pipeline.classes_, saveto='threshold.pdf')

@@ -6,7 +6,7 @@ import logging
 
 filter_colors = {'g': '#00CCFF', 'r': '#FF7D00', 'i': '#90002C', 'z': '#000000', 'y': 'y',
                  'U': '#3C0072', 'B': '#0057FF', 'V': '#79FF00', 'R': '#FF7000', 'I': '#66000B'}
-meta_columns = ['filename', 'type', 'MWEBV', 'redshift']
+meta_columns = ['filename', 'type', 'MWEBV', 'redshift', 'prediction', 'confidence']
 CLASS_KEYWORDS = {'type': 'Spectroscopic Classification', 'prediction': 'Photometric Classification'}
 plt.rcParams['xtick.minor.visible'] = True
 plt.rcParams['ytick.minor.visible'] = True
