@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import logging
 from astropy.table import Table, join
+from astropy.io.ascii import masked
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
@@ -313,7 +314,8 @@ def load_results(filename):
     return results
 
 
-def write_results(test_data, classes, filename):
+def write_results(test_data, classes, filename, max_lines=None, latex=False, latex_title='Classification Results',
+                  latex_label='tab:results'):
     """
     Write the classification results to a text file.
 
@@ -325,15 +327,57 @@ def write_results(test_data, classes, filename):
         The labels that correspond to the columns in 'probabilities'
     filename : str
         Name of the output file
+    max_lines : int, optional
+        Maximum number of table rows to write to the file
+    latex : bool, optional
+        If False (default), write in the Astropy 'ascii.fixed_width_two_line' format. If True, write in the Astropy
+        'ascii.aastex' format and add fancy table headers, etc.
+    latex_title : str, optional
+        Table caption if written in AASTeX format. Default: 'Classification Results'
+    latex_label : str, optional
+        LaTeX label if written in AASTeX format. Default: 'tab:results'
     """
+    test_data = test_data[:max_lines]
     output = test_data[[col for col in test_data.colnames if col in meta_columns]]
     output['MWEBV'].format = '%.4f'
     output['redshift'].format = '%.4f'
     output['confidence'].format = '%.3f'
     for i, classname in enumerate(classes):
-        output[classname] = test_data['probabilities'][:, i]
-        output[classname].format = '%.3f'
-    output.write(filename, format='ascii.fixed_width_two_line', overwrite=True)
+        col = f'$p_\\mathrm{{{classname}}}$' if latex else classname
+        output[col] = test_data['probabilities'][:, i]
+        output[col].format = '%.3f'
+    if latex:
+        # latex formatting for data
+        output['filename'] = [name.replace('_', '\\_') for name in output['filename']]
+        if 'type' in output.colnames:
+            output['type'] = [classname.replace("SNI", "SN~I") for classname in output['type']]
+        output['prediction'] = [classname.replace("SNI", "SN~I") for classname in output['prediction']]
+
+        # AASTeX header and footer
+        latexdict = {'tabletype': 'deluxetable*'}
+        if latex_title:
+            if latex_label:
+                latex_title += f'\\label{{{latex_label}}}'
+            latexdict['caption'] = latex_title
+        if max_lines is not None:
+            latexdict['tablefoot'] = '\\tablecomments{The full table is available in machine-readable form.}'
+
+        # human-readable column headers
+        column_headers = {
+            'filename': 'Transient Name',
+            'redshift': 'Redshift',
+            'MWEBV': '$E(B-V)$',
+            'type': 'Spec. Class.',
+            'prediction': 'Phot. Class.',
+            'confidence': 'Confidence',
+        }
+        for column in output.colnames:
+            output.rename_column(column, column_headers.get(column, column))
+
+        output.write(filename, format='ascii.aastex', overwrite=True, fill_values=[(masked, '\\nodata')],
+                     latexdict=latexdict)
+    else:
+        output.write(filename, format='ascii.fixed_width_two_line', overwrite=True)
     logging.info(f'classification results saved to {filename}')
 
 
@@ -746,3 +790,16 @@ def _validate():
     plot_results_by_number(results_validate, saveto='validation_confidence_photclass.pdf')
     plot_metrics_by_number(results_validate, classes=pipeline.classes_, saveto='threshold.pdf')
     logging.info('finished validation')
+
+
+def _latex():
+    parser = ArgumentParser()
+    parser.add_argument('filename', help='Filename of the results to format into a LaTeX table')
+    parser.add_argument('-m', '--max-lines', type=int, help='Maximum number of table rows to write')
+    parser.add_argument('-t', '--title', default='Classification Results', help='Table caption')
+    parser.add_argument('-l', '--label', default='tab:results', help='LaTeX label')
+    args = parser.parse_args()
+
+    results = load_results(args.filename)
+    write_results(results, results.meta['classes'], args.filename.split('.')[0] + '.tex', max_lines=args.max_lines,
+                  latex=True, latex_title=args.title, latex_label=args.label)
