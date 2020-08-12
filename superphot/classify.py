@@ -557,7 +557,7 @@ def calc_metrics(results, xval='confidence', classes=None):
     results['f1_score'] = 0.
     for i in range(len(results)):
         results_pmin = results[i:]
-        cnf_matrix = confusion_matrix(results_pmin['type'], results_pmin['prediction'], classes)
+        cnf_matrix = confusion_matrix(results_pmin['type'], results_pmin['prediction'], labels=classes)
         correct = np.diag(cnf_matrix)
         n_per_spec_class = cnf_matrix.sum(axis=1)
         n_per_phot_class = cnf_matrix.sum(axis=0)
