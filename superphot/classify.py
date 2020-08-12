@@ -229,6 +229,9 @@ def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
     results : astropy.table.Table
         Astropy table containing the supernova metadata and classification probabilities for each supernova
     """
+    classes, n_per_class = np.unique(train_data['type'], return_counts=True)
+    if np.any(n_per_class <= train_data.meta['ndraws']):
+        raise ValueError('Training data must have at least two samples per class for cross-validation')
     if test_data is None:
         test_data = train_data
     train_classifier(pipeline, train_data)
