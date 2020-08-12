@@ -236,7 +236,7 @@ def validate_classifier(pipeline, train_data, test_data=None, aggregate=True):
         test_data = train_data
     train_classifier(pipeline, train_data)
     test_data['probabilities'] = pipeline.predict_proba(test_data['features'].reshape(len(test_data), -1))
-    for filename in tqdm(train_data['filename'], desc='Cross-validation'):
+    for filename in tqdm(np.unique(train_data['filename']), desc='Cross-validation'):
         train_index = train_data['filename'] != filename
         test_index = test_data['filename'] == filename
         train_classifier(pipeline, train_data[train_index])
