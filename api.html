@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.post50+g4eebdc2 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.post50+g7ffdf29 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.post50+g4eebdc2
+                0.post50+g7ffdf29
               </div>
             
           
@@ -1109,7 +1109,7 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 
 <dl class="py function">
 <dt id="superphot.fit.sample_or_load_trace">
-<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">sample_or_load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">trace_file</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#sample_or_load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.sample_or_load_trace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">superphot.fit.</code><code class="sig-name descname">sample_or_load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">trace_file</span></em>, <em class="sig-param"><span class="n">force</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">walkers</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">tuning</span><span class="o">=</span><span class="default_value">25000</span></em>, <em class="sig-param"><span class="n">cores</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/fit.html#sample_or_load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.fit.sample_or_load_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.</p>
 <p>If the MCMC has already been run, read and return the existing trace (unless <cite>force=True</cite>).</p>
 <dl class="field-list simple">
@@ -1126,6 +1126,8 @@ theano.switch. Parameters.type = TensorType(float64, scalar).</p>
 <dt><strong>walkers</strong><span class="classifier">int, optional</span></dt><dd><p>The number of cores and walkers used.</p>
 </dd>
 <dt><strong>tuning</strong><span class="classifier">int, optional</span></dt><dd><p>The number of iterations used for tuning.</p>
+</dd>
+<dt><strong>cores</strong><span class="classifier">int, optional</span></dt><dd><p>The number of walkers to run in parallel. Default: 1.</p>
 </dd>
 </dl>
 </dd>

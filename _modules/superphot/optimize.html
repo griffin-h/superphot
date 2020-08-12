@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.optimize &mdash; Superphot 0.post50+g4eebdc2 documentation</title>
+  <title>superphot.optimize &mdash; Superphot 0.post50+g7ffdf29 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.post50+g4eebdc2
+                0.post50+g7ffdf29
               </div>
             
           
@@ -161,7 +161,7 @@
 <span class="kn">import</span> <span class="nn">pickle</span>
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">ParameterGrid</span><span class="p">,</span> <span class="n">ParameterSampler</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">f1_score</span>
-<span class="kn">from</span> <span class="nn">.classify</span> <span class="kn">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">validate_classifier</span><span class="p">,</span> <span class="n">aggregate_probabilities</span>
+<span class="kn">from</span> <span class="nn">.classify</span> <span class="kn">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">validate_classifier</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">subplots_layout</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">vstack</span><span class="p">,</span> <span class="n">join</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
@@ -195,8 +195,7 @@
     <span class="n">param_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">param_set</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">pipeline</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">classifier__n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">param_set</span><span class="p">)</span>
     <span class="n">validation_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
-    <span class="n">validation_data</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">aggregate_probabilities</span><span class="p">(</span><span class="n">validation_data</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
     <span class="n">predicted_types</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
     <span class="n">param_set</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">predicted_types</span><span class="p">)</span>
     <span class="n">param_set</span><span class="p">[</span><span class="s1">&#39;f1_score&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f1_score</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">predicted_types</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s1">&#39;macro&#39;</span><span class="p">)</span>
@@ -376,11 +375,11 @@
 
     <span class="n">tfinal</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">):</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Appending results to&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Appending results to </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">tprev</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
         <span class="n">tfinal</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">([</span><span class="n">tprev</span><span class="p">,</span> <span class="n">tfinal</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Writing results to&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Writing results to </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">tfinal</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width_two_line&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">plot_hyperparameters_with_diff</span><span class="p">(</span><span class="n">tfinal</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;.pdf&#39;</span><span class="p">))</span>

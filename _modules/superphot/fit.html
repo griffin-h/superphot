@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.fit &mdash; Superphot 0.post50+g4eebdc2 documentation</title>
+  <title>superphot.fit &mdash; Superphot 0.post50+g7ffdf29 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.post50+g4eebdc2
+                0.post50+g7ffdf29
               </div>
             
           
@@ -461,7 +461,8 @@
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">new_params</span></div>
 
 
-<div class="viewcode-block" id="sample_or_load_trace"><a class="viewcode-back" href="../../api.html#superphot.fit.sample_or_load_trace">[docs]</a><span class="k">def</span> <span class="nf">sample_or_load_trace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">trace_file</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="n">ITERATIONS</span><span class="p">,</span> <span class="n">walkers</span><span class="o">=</span><span class="n">WALKERS</span><span class="p">,</span> <span class="n">tuning</span><span class="o">=</span><span class="n">TUNING</span><span class="p">):</span>
+<div class="viewcode-block" id="sample_or_load_trace"><a class="viewcode-back" href="../../api.html#superphot.fit.sample_or_load_trace">[docs]</a><span class="k">def</span> <span class="nf">sample_or_load_trace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">trace_file</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="n">ITERATIONS</span><span class="p">,</span> <span class="n">walkers</span><span class="o">=</span><span class="n">WALKERS</span><span class="p">,</span> <span class="n">tuning</span><span class="o">=</span><span class="n">TUNING</span><span class="p">,</span>
+                         <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.</span>
 
@@ -481,6 +482,8 @@
 <span class="sd">        The number of cores and walkers used.</span>
 <span class="sd">    tuning : int, optional</span>
 <span class="sd">        The number of iterations used for tuning.</span>
+<span class="sd">    cores : int, optional</span>
+<span class="sd">        The number of walkers to run in parallel. Default: 1.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -491,7 +494,7 @@
     <span class="k">with</span> <span class="n">model</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">trace_file</span><span class="p">)</span> <span class="ow">or</span> <span class="n">force</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Starting fit for </span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="n">tuning</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">walkers</span><span class="p">,</span> <span class="n">chains</span><span class="o">=</span><span class="n">walkers</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">pm</span><span class="o">.</span><span class="n">Metropolis</span><span class="p">())</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="n">tuning</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">cores</span><span class="p">,</span> <span class="n">chains</span><span class="o">=</span><span class="n">walkers</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">pm</span><span class="o">.</span><span class="n">Metropolis</span><span class="p">())</span>
             <span class="n">pm</span><span class="o">.</span><span class="n">save_trace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">trace_file</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">load_trace</span><span class="p">(</span><span class="n">trace_file</span><span class="p">)</span>
@@ -819,6 +822,7 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--iterations&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">ITERATIONS</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Number of steps after burn-in&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--tuning&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">TUNING</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Number of burn-in steps&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--walkers&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">WALKERS</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Number of walkers&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--cores&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Number of walkers to run in parallel&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output-dir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path in which to save the PyMC3 trace data&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--zmin&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Do not fit the transient if redshift &lt;= zmin in the header&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="s1">&#39;--force&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;redo the fit even if the trace is already saved&#39;</span><span class="p">)</span>
@@ -837,7 +841,7 @@
         <span class="n">traces1</span><span class="p">,</span> <span class="n">traces2</span><span class="p">,</span> <span class="n">parameters</span> <span class="o">=</span> <span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">force</span><span class="p">,</span>
                                                           <span class="n">force_second</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">force_second</span><span class="p">,</span> <span class="n">do_diagnostics</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">plots</span><span class="p">,</span>
                                                           <span class="n">iterations</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">iterations</span><span class="p">,</span> <span class="n">walkers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">walkers</span><span class="p">,</span>
-                                                          <span class="n">tuning</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">tuning</span><span class="p">)</span>
+                                                          <span class="n">tuning</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">tuning</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">cores</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">plots</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_final_fits</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">traces1</span><span class="p">,</span> <span class="n">traces2</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">outfile</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;.pdf&#39;</span><span class="p">))</span>
             <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>

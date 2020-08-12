@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; Superphot 0.post50+g4eebdc2 documentation</title>
+  <title>Usage &mdash; Superphot 0.post50+g7ffdf29 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.post50+g4eebdc2
+                0.post50+g7ffdf29
               </div>
             
           
@@ -168,8 +168,8 @@
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
 <p>Superphot runs in five steps:</p>
 <ol class="arabic simple">
-<li><p>For each light curve, <em>fit</em> a model to the observations.</p></li>
-<li><p><em>Compile</em> the parameters from all the model fits into a single table.</p></li>
+<li><p>For each light curve, <em>fit</em> a model to the observations. This is the slowest step, but it can be done in parallel for a sample of light curves.</p></li>
+<li><p><em>Compile</em> the parameters from all the model fits into a single table. This is a separate step in case you did step 1 on a different computer (as we did).</p></li>
 <li><p><em>Extract</em> features from those models to be used for classification.</p></li>
 <li><p>Initialize the classifier and <em>train</em> it on the training set.</p></li>
 <li><p>Use the trained classifier to <em>classify</em> the test set.</p></li>
@@ -179,45 +179,46 @@
 <p>For basic functionality, Superphot can be run from the command line. For example:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-fit light_curves/*.dat --output-dir stored_models/  <span class="c1"># this is parallelizable</span>
 superphot-compile stored_models/ --output params
-superphot-extract train_input.txt params.txt --output train_data
-superphot-extract test_input.txt params.txt --output test_data --pcas pca.pickle  <span class="c1"># use the same PCA</span>
+superphot-extract train_input.txt params.npz --output train_data
+superphot-extract test_input.txt params.npz --output test_data --pcas pca.pickle  <span class="c1"># use the same PCA</span>
 superphot-train train_data.txt --output pipeline.pickle
 superphot-classify pipeline.pickle test_data.txt
 superphot-validate pipeline.pickle train_data.txt
+superphot-optimize param_dist.json pipeline.pickle train_data.txt
 </pre></div>
 </div>
 <p>For more advanced use cases, you can import the module and use some version of the following workflow:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">superphot</span> <span class="kn">import</span> <span class="n">fit</span><span class="p">,</span> <span class="n">extract</span><span class="p">,</span> <span class="n">classify</span>
-<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">join</span>
 <span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
-<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="c1"># Fit the model to the data. Do this for each file.</span>
 <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;light_curves/*.dat&#39;</span><span class="p">):</span>
-    <span class="n">outfile</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;stored_models/&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">outfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">basename</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">light_curve</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">read_light_curve</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>  <span class="c1"># may need to write your own parser</span>
-    <span class="n">fit</span><span class="o">.</span><span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+    <span class="n">traces1</span><span class="p">,</span> <span class="n">traces2</span><span class="p">,</span> <span class="n">parameters</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
 
 <span class="c1"># Compile parameters</span>
-<span class="n">param_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_parameters</span><span class="p">(</span><span class="s1">&#39;stored_models/&#39;</span><span class="p">)</span>
+<span class="n">param_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_parameters</span><span class="p">(</span><span class="s1">&#39;stored_models/&#39;</span><span class="p">,</span> <span class="s1">&#39;griz&#39;</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="s1">&#39;params.npz&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">param_table</span><span class="p">,</span> <span class="o">**</span><span class="n">param_table</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
 
 <span class="c1"># Extract training features</span>
-<span class="n">train_input</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;train_input.txt&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
-<span class="n">train_params</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">train_input</span><span class="p">,</span> <span class="n">param_table</span><span class="p">)</span>
+<span class="n">train_params</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="s1">&#39;train_input.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;params.npz&#39;</span><span class="p">)</span>
 <span class="n">train_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">train_params</span><span class="p">)</span>
 
 <span class="c1"># Extract test features</span>
-<span class="n">test_input</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;test_input.txt&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
-<span class="n">test_params</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">test_input</span><span class="p">,</span> <span class="n">param_table</span><span class="p">)</span>
+<span class="n">test_params</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="s1">&#39;test_input.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;params.npz&#39;</span><span class="p">)</span>
 <span class="n">test_data</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">test_params</span><span class="p">,</span> <span class="n">stored_pcas</span><span class="o">=</span><span class="s1">&#39;pca.pickle&#39;</span><span class="p">)</span>
 
 <span class="c1"># Initialize and train the pipeline (can adjust hyperparameters here)</span>
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">make_pipeline</span><span class="p">(</span>
-    <span class="n">classify</span><span class="o">.</span><span class="n">StandardScaler</span><span class="p">(),</span>
-    <span class="n">classify</span><span class="o">.</span><span class="n">MultivariateGaussian</span><span class="p">(</span><span class="n">sampling_strategy</span><span class="o">=</span><span class="mi">1000</span><span class="p">),</span>
-    <span class="n">classify</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;entropy&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="p">)</span>
-<span class="n">train_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">)</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">([</span>
+    <span class="p">(</span><span class="s1">&#39;scaler&#39;</span><span class="p">,</span> <span class="n">classify</span><span class="o">.</span><span class="n">StandardScaler</span><span class="p">()),</span>
+    <span class="p">(</span><span class="s1">&#39;sampler&#39;</span><span class="p">,</span> <span class="n">classify</span><span class="o">.</span><span class="n">MultivariateGaussian</span><span class="p">(</span><span class="n">sampling_strategy</span><span class="o">=</span><span class="mi">1000</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s1">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">classify</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;entropy&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">5</span><span class="p">)),</span>
+<span class="p">])</span>
+<span class="n">classify</span><span class="o">.</span><span class="n">train_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">)</span>
 
 <span class="c1"># Do the classification</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">classify</span><span class="o">.</span><span class="n">classify</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">test_data</span><span class="p">)</span>
