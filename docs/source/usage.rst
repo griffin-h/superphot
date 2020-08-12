@@ -4,8 +4,8 @@ Usage
 
 Superphot runs in five steps:
 
-1. For each light curve, *fit* a model to the observations.
-2. *Compile* the parameters from all the model fits into a single table.
+1. For each light curve, *fit* a model to the observations. This is the slowest step, but it can be done in parallel for a sample of light curves.
+2. *Compile* the parameters from all the model fits into a single table. This is a separate step in case you did step 1 on a different computer (as we did).
 3. *Extract* features from those models to be used for classification.
 4. Initialize the classifier and *train* it on the training set.
 5. Use the trained classifier to *classify* the test set.
@@ -18,47 +18,48 @@ For basic functionality, Superphot can be run from the command line. For example
 
     superphot-fit light_curves/*.dat --output-dir stored_models/  # this is parallelizable
     superphot-compile stored_models/ --output params
-    superphot-extract train_input.txt params.txt --output train_data
-    superphot-extract test_input.txt params.txt --output test_data --pcas pca.pickle  # use the same PCA
+    superphot-extract train_input.txt params.npz --output train_data
+    superphot-extract test_input.txt params.npz --output test_data --pcas pca.pickle  # use the same PCA
     superphot-train train_data.txt --output pipeline.pickle
     superphot-classify pipeline.pickle test_data.txt
     superphot-validate pipeline.pickle train_data.txt
+    superphot-optimize param_dist.json pipeline.pickle train_data.txt
 
 For more advanced use cases, you can import the module and use some version of the following workflow:
 
 .. code-block:: python
 
     from superphot import fit, extract, classify
-    from astropy.table import Table, join
     from glob import glob
-    from os import path
+    import numpy as np
+    import os
 
     # Fit the model to the data. Do this for each file.
     for filename in glob('light_curves/*.dat'):
-        outfile = path.join('stored_models/', path.basename(filename).split('.')[0] + '_{}')
+        basename = os.path.basename(filename).split('.')[0]
+        outfile = os.path.join(args.output_dir, basename + '{}')
         light_curve = fit.read_light_curve(filename)  # may need to write your own parser
-        fit.two_iteration_mcmc(light_curve, outfile)
+        traces1, traces2, parameters = fit.two_iteration_mcmc(light_curve, outfile)
 
     # Compile parameters
-    param_table = extract.compile_parameters('stored_models/')
+    param_table = extract.compile_parameters('stored_models/', 'griz')
+    np.savez_compressed('params.npz', **param_table, **param_table.meta)
 
     # Extract training features
-    train_input = Table.read('train_input.txt', format='ascii')
-    train_params = join(train_input, param_table)
+    train_params = extract.load_data('train_input.txt', 'params.npz')
     train_data = extract.extract_features(train_params)
 
     # Extract test features
-    test_input = Table.read('test_input.txt', format='ascii')
-    test_params = join(test_input, param_table)
+    test_params = extract.load_data('test_input.txt', 'params.npz')
     test_data = extract.extract_features(test_params, stored_pcas='pca.pickle')
 
     # Initialize and train the pipeline (can adjust hyperparameters here)
-    pipeline = classify.make_pipeline(
-        classify.StandardScaler(),
-        classify.MultivariateGaussian(sampling_strategy=1000),
-        classify.RandomForestClassifier(criterion='entropy', max_features=5)
-    )
-    train_classifier(pipeline, train_data)
+    pipeline = classify.Pipeline([
+        ('scaler', classify.StandardScaler()),
+        ('sampler', classify.MultivariateGaussian(sampling_strategy=1000)),
+        ('classifier', classify.RandomForestClassifier(criterion='entropy', max_features=5)),
+    ])
+    classify.train_classifier(pipeline, train_data)
 
     # Do the classification
     results = classify.classify(pipeline, test_data)

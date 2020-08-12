@@ -24,7 +24,7 @@ pip install --upgrade pip
 
 here = path.abspath(path.dirname(__file__))
 
-with open(path.join(here, 'README.md'), encoding='utf-8') as readme_file:
+with open(path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
     long_description = readme_file.read()
 
 with open(path.join(here, 'requirements.txt')) as requirements_file:
@@ -40,14 +40,14 @@ setuptools.setup(
     author_email="griffin.hosseinzadeh@cfa.harvard.edu",
     description="Photometric classification of supernovae",
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="https://griffin-h.github.io/superphot",
     packages=setuptools.find_packages(exclude=['docs', 'tests']),
     include_package_data=True,
     license="GNU General Public License v2 (GPLv2)",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Natural Language :: English",
     ],
     python_requires='>={}'.format('.'.join(str(n) for n in min_version)),
