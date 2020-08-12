@@ -302,7 +302,8 @@ def setup_model2(obs, parameters, x_priors, y_priors):
     return model, new_params
 
 
-def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
+def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING,
+                         cores=1):
     """
     Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.
 
@@ -322,6 +323,8 @@ def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, 
         The number of cores and walkers used.
     tuning : int, optional
         The number of iterations used for tuning.
+    cores : int, optional
+        The number of walkers to run in parallel. Default: 1.
 
     Returns
     -------
@@ -332,7 +335,7 @@ def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, 
     with model:
         if not os.path.exists(trace_file) or force:
             logging.info(f'Starting fit for {basename}')
-            trace = pm.sample(iterations, tune=tuning, cores=walkers, chains=walkers, step=pm.Metropolis())
+            trace = pm.sample(iterations, tune=tuning, cores=cores, chains=walkers, step=pm.Metropolis())
             pm.save_trace(trace, trace_file, overwrite=True)
         else:
             trace = pm.load_trace(trace_file)
@@ -660,6 +663,7 @@ def _main():
     parser.add_argument('--iterations', type=int, default=ITERATIONS, help='Number of steps after burn-in')
     parser.add_argument('--tuning', type=int, default=TUNING, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=WALKERS, help='Number of walkers')
+    parser.add_argument('--cores', type=int, default=1, help='Number of walkers to run in parallel')
     parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
     parser.add_argument('--zmin', type=float, help='Do not fit the transient if redshift <= zmin in the header')
     parser.add_argument('-f', '--force', action='store_true', help='redo the fit even if the trace is already saved')
@@ -678,7 +682,7 @@ def _main():
         traces1, traces2, parameters = two_iteration_mcmc(light_curve, outfile, filters=args.filters, force=args.force,
                                                           force_second=args.force_second, do_diagnostics=args.plots,
                                                           iterations=args.iterations, walkers=args.walkers,
-                                                          tuning=args.tuning)
+                                                          tuning=args.tuning, cores=args.cores)
         if args.plots:
             fig = plot_final_fits(light_curve, traces1, traces2, parameters, outfile.format('.pdf'))
             pdf.savefig(fig)
