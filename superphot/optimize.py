@@ -216,11 +216,11 @@ def _main():
 
     tfinal = Table(rows)
     if os.path.exists(args.saveto):
-        logging.warning('Appending results to', args.saveto)
+        logging.warning(f'Appending results to {args.saveto}')
         tprev = Table.read(args.saveto, format='ascii')
         tfinal = vstack([tprev, tfinal])
     else:
-        logging.info('Writing results to', args.saveto)
+        logging.info(f'Writing results to {args.saveto}')
     tfinal.write(args.saveto, format='ascii.fixed_width_two_line', overwrite=True)
 
     plot_hyperparameters_with_diff(tfinal, saveto=args.saveto.replace('.txt', '.pdf'))
