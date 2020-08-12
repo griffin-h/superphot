@@ -1,10 +1,13 @@
+.. _api_documentation:
+
+=================
 API Documentation
 =================
 
-superphot.classify module
--------------------------
+superphot.fit module
+---------------------------
 
-.. automodule:: superphot.classify
+.. automodule:: superphot.fit
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,10 +20,10 @@ superphot.extract module
    :undoc-members:
    :show-inheritance:
 
-superphot.fit module
----------------------------
+superphot.classify module
+-------------------------
 
-.. automodule:: superphot.fit
+.. automodule:: superphot.classify
    :members:
    :undoc-members:
    :show-inheritance:
