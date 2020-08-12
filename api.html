@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 0.post50+g7ffdf29 documentation</title>
+  <title>API Documentation &mdash; Superphot 0.post50+gf6d320c documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.post50+g7ffdf29
+                0.post50+gf6d320c
               </div>
             
           
@@ -94,9 +94,9 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-superphot.classify">superphot.classify module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-superphot.extract">superphot.extract module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.fit">superphot.fit module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-superphot.extract">superphot.extract module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-superphot.classify">superphot.classify module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.optimize">superphot.optimize module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.util">superphot.util module</a></li>
 </ul>
@@ -168,639 +168,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="api-documentation">
-<h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="module-superphot.classify">
-<span id="superphot-classify-module"></span><h2>superphot.classify module<a class="headerlink" href="#module-superphot.classify" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="superphot.classify.MultivariateGaussian">
-<em class="property">class </em><code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">MultivariateGaussian</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sampling_strategy</span><span class="o">=</span><span class="default_value">'all'</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#MultivariateGaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.MultivariateGaussian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">imblearn.over_sampling.base.BaseOverSampler</span></code></p>
-<p>Class to perform over-sampling using a multivariate Gaussian (<code class="docutils literal notranslate"><span class="pre">numpy.random.multivariate_normal</span></code>).</p>
-<dl class="field-list">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl>
-<dt><strong>sampling_strategy</strong><span class="classifier">float, str, dict, callable or int, default=’auto’</span></dt><dd><p>Sampling information to resample the data set.</p>
-<ul>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">float</span></code>, it corresponds to the desired ratio of the number of
-samples in the minority class over the number of samples in the
-majority class after resampling. Therefore, the ratio is expressed as
-<span class="math notranslate nohighlight">\(\alpha_{os} = N_{rm} / N_{M}\)</span> where <span class="math notranslate nohighlight">\(N_{rm}\)</span> is the
-number of samples in the minority class after resampling and
-<span class="math notranslate nohighlight">\(N_{M}\)</span> is the number of samples in the majority class.</p>
-<blockquote>
-<div><div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><code class="docutils literal notranslate"><span class="pre">float</span></code> is only available for <strong>binary</strong> classification. An
-error is raised for multi-class classification.</p>
-</div>
-</div></blockquote>
-</li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">str</span></code>, specify the class targeted by the resampling. The
-number of samples in the different classes will be equalized.
-Possible choices are:</p>
-<blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">'minority'</span></code>: resample only the minority class;</p>
-<p><code class="docutils literal notranslate"><span class="pre">'not</span> <span class="pre">minority'</span></code>: resample all classes but the minority class;</p>
-<p><code class="docutils literal notranslate"><span class="pre">'not</span> <span class="pre">majority'</span></code>: resample all classes but the majority class;</p>
-<p><code class="docutils literal notranslate"><span class="pre">'all'</span></code>: resample all classes;</p>
-<p><code class="docutils literal notranslate"><span class="pre">'auto'</span></code>: equivalent to <code class="docutils literal notranslate"><span class="pre">'not</span> <span class="pre">majority'</span></code>.</p>
-</div></blockquote>
-</li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">dict</span></code>, the keys correspond to the targeted classes. The
-values correspond to the desired number of samples for each targeted
-class.</p></li>
-<li><p>When callable, function taking <code class="docutils literal notranslate"><span class="pre">y</span></code> and returns a <code class="docutils literal notranslate"><span class="pre">dict</span></code>. The keys
-correspond to the targeted classes. The values correspond to the
-desired number of samples for each class.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">int</span></code>, it corresponds to the total number of samples in each
-class (including the real samples). Can be used to oversample even
-the majority class. If <code class="docutils literal notranslate"><span class="pre">sampling_strategy</span></code> is smaller than the
-existing size of a class, that class will not be oversampled and
-the classes may not be balanced.</p></li>
-</ul>
-</dd>
-<dt><strong>random_state</strong><span class="classifier">int, RandomState instance, default=None</span></dt><dd><p>Control the randomization of the algorithm.</p>
-<ul class="simple">
-<li><p>If int, <code class="docutils literal notranslate"><span class="pre">random_state</span></code> is the seed used by the random number
-generator;</p></li>
-<li><p>If <code class="docutils literal notranslate"><span class="pre">RandomState</span></code> instance, random_state is the random number
-generator;</p></li>
-<li><p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the random number generator is the <code class="docutils literal notranslate"><span class="pre">RandomState</span></code>
-instance used by <code class="docutils literal notranslate"><span class="pre">np.random</span></code>.</p></li>
-</ul>
-</dd>
-</dl>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="superphot.classify.MultivariateGaussian.more_samples">
-<code class="sig-name descname">more_samples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_samples</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#MultivariateGaussian.more_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.MultivariateGaussian.more_samples" title="Permalink to this definition">¶</a></dt>
-<dd><p>Draw more samples from the same distribution of an already fitted sampler.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.aggregate_probabilities">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">aggregate_probabilities</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#aggregate_probabilities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.aggregate_probabilities" title="Permalink to this definition">¶</a></dt>
-<dd><p>Average the classification probabilities for a given supernova across the multiple model light curves.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the metadata for a supernova and the classification probabilities (‘probabilities’)</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and average classification probabilities for each supernova</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.bar_plot">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">bar_plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vresults</span></em>, <em class="sig-param"><span class="n">tresults</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#bar_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.bar_plot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a stacked bar plot showing the class breakdown in the training set compared to the test set.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>vresults</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘type’ column and a ‘prediction’ column.</p>
-</dd>
-<dt><strong>tresults</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘prediction’ column.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.calc_metrics">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">calc_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#calc_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.calc_metrics" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.</p>
-<p>The results are added as columns to the input table.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and <cite>xval</cite>.</p>
-</dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the independent variable. Default: ‘confidence’.</p>
-</dd>
-<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.classify">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">classify</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">aggregate</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#classify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.classify" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use a trained classification pipeline to classify <cite>test_data</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>pipeline</strong><span class="classifier">imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
-</dd>
-<dt><strong>test_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ column.</p>
-</dd>
-<dt><strong>aggregate</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), average the probabilities for a given supernova across the multiple model light curves.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and classification probabilities for each supernova</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.cumhist">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">cumhist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">reverse</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mark</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#cumhist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.cumhist" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a cumulative histogram of <cite>data</cite>, optionally with certain indices marked with an x.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>data</strong><span class="classifier">array-like</span></dt><dd><p>Data to include in the histogram</p>
-</dd>
-<dt><strong>reverse</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), the histogram increases with increasing <cite>data</cite>. If True, it decreases with increasing <cite>data</cite></p>
-</dd>
-<dt><strong>mark</strong><span class="classifier">array-like, optional</span></dt><dd><p>An array of indices to mark with an x</p>
-</dd>
-<dt><strong>ax</strong><span class="classifier">matplotlib.pyplot.axes, optional</span></dt><dd><p>Axis on which to plot the confusion matrix. Default: current axis.</p>
-</dd>
-<dt><strong>kwargs</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments to be passed to <cite>matplotlib.pyplot.step</cite></p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>p</strong><span class="classifier">list</span></dt><dd><p>The list of <cite>matplotlib.lines.Line2D</cite> objects returned by <cite>matplotlib.pyplot.step</cite></p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.load_results">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">load_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#load_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.load_results" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.make_confusion_matrix">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">make_confusion_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">p_min</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">purity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">binary</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#make_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.make_confusion_matrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given a data table with classification probabilities, calculate and plot the confusion matrix.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and classification probabilities (column name = ‘probabilities’)</p>
-</dd>
-<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>Labels corresponding to the ‘probabilities’ column. If None, use the sorted entries in the ‘type’ column.</p>
-</dd>
-<dt><strong>p_min</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum confidence to be included in the confusion matrix. Default: include all samples.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
-</dd>
-<dt><strong>purity</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).</p>
-</dd>
-<dt><strong>binary</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, plot a SNIa vs non-SNIa (CCSN) binary confusion matrix.</p>
-</dd>
-<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>A title for the plot. If the plot is big enough, statistics ($N$, $A$, $F_1$) are appended in parentheses.
-Default: ‘Completeness’ or ‘Purity’ depending on <cite>purity</cite>.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.mean_axis0">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">mean_axis0</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#mean_axis0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.mean_axis0" title="Permalink to this definition">¶</a></dt>
-<dd><p>Equivalent to the numpy.mean function but with axis=0 by default.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.plot_confusion_matrix">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_confusion_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">confusion_matrix</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">'Blues'</span></em>, <em class="sig-param"><span class="n">purity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">xlabel</span><span class="o">=</span><span class="default_value">'Photometric Classification'</span></em>, <em class="sig-param"><span class="n">ylabel</span><span class="o">=</span><span class="default_value">'Spectroscopic Classification'</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_confusion_matrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a confusion matrix with each cell labeled by its fraction and absolute number.</p>
-<p>Based on tutorial: <a class="reference external" href="https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html</a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>confusion_matrix</strong><span class="classifier">array-like</span></dt><dd><p>The confusion matrix as a square array of integers.</p>
-</dd>
-<dt><strong>classes</strong><span class="classifier">list</span></dt><dd><p>List of class labels for the axes of the confusion matrix.</p>
-</dd>
-<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of a Matplotlib colormap to color the matrix.</p>
-</dd>
-<dt><strong>purity</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), aggregate by row (spec. class). If True, aggregate by column (phot. class).</p>
-</dd>
-<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Text to go above the plot. Default: no title.</p>
-</dd>
-<dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x- and y-axes. Default: “Spectroscopic Classification” and “Photometric Classification”.</p>
-</dd>
-<dt><strong>ax</strong><span class="classifier">matplotlib.pyplot.axes, optional</span></dt><dd><p>Axis on which to plot the confusion matrix. Default: new axis.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.plot_feature_importance">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_feature_importance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">width</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">nsamples</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_feature_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_feature_importance" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The trained pipeline for which to plot feature importances. Steps should be named ‘classifier’ and ‘sampler’.</p>
-</dd>
-<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing ‘features’ and ‘type’ for training when calculating permutation importances. Must also
-include ‘featnames’ and ‘filters’ in <cite>train_data.meta</cite>.</p>
-</dd>
-<dt><strong>width</strong><span class="classifier">float, optional</span></dt><dd><p>Total width of the bars in units of the separation between bars. Default: 0.8.</p>
-</dd>
-<dt><strong>nsamples</strong><span class="classifier">int, optional</span></dt><dd><p>Number of samples to draw for the fake validation data set. Default: 1000.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: show instead of saving.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.plot_metrics_by_number">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_metrics_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validation</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_metrics_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_metrics_by_number" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot completeness, purity, accuracy, F1 score, and fractions remaining as a function of confidence threshold.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>validation</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and ‘confidence’.</p>
-</dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the plot. Default: ‘confidence’.</p>
-</dd>
-<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.plot_results_by_number">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_results_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'prediction'</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_results_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_results_by_number" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot cumulative histograms of the results for each class against a specified table column.</p>
-<p>If <cite>results</cite> contains the column ‘correct’, incorrect classifications will be marked with an x.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of classification results. Must contain columns ‘type’/’prediction’ and the column specified by <cite>xval</cite>.</p>
-</dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the histogram. Default: ‘confidence’.</p>
-</dd>
-<dt><strong>class_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the class grouping. Default: ‘prediction’.</p>
-</dd>
-<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Title for the plot. Default: “Training/Test Set, Grouped by {class_kwd}”, where the first word is determined
-by the presence of the column ‘correct’ in <cite>results</cite>.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.train_classifier">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">train_classifier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#train_classifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.train_classifier" title="Permalink to this definition">¶</a></dt>
-<dd><p>Train a classification pipeline on <cite>test_data</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>pipeline</strong><span class="classifier">imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
-</dd>
-<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ and a ‘type’ column.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.validate_classifier">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">validate_classifier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">test_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">aggregate</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#validate_classifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.validate_classifier" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validate the performance of a machine-learning classifier using leave-one-out cross-validation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>pipeline</strong><span class="classifier">imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
-</dd>
-<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘features’ column and a ‘type’ column.</p>
-</dd>
-<dt><strong>test_data</strong><span class="classifier">astropy.table.Table, optional</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ column to which to apply the trained classifier.
-If None, use the training data itself for validation.</p>
-</dd>
-<dt><strong>aggregate</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), average the probabilities for a given supernova across the multiple model light curves.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and classification probabilities for each supernova</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.classify.write_results">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">write_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">max_lines</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">latex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">latex_title</span><span class="o">=</span><span class="default_value">'Classification Results'</span></em>, <em class="sig-param"><span class="n">latex_label</span><span class="o">=</span><span class="default_value">'tab:results'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#write_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.write_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write the classification results to a text file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>test_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and the classification probabilities (‘probabilities’).</p>
-</dd>
-<dt><strong>classes</strong><span class="classifier">list</span></dt><dd><p>The labels that correspond to the columns in ‘probabilities’</p>
-</dd>
-<dt><strong>filename</strong><span class="classifier">str</span></dt><dd><p>Name of the output file</p>
-</dd>
-<dt><strong>max_lines</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum number of table rows to write to the file</p>
-</dd>
-<dt><strong>latex</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), write in the Astropy ‘ascii.fixed_width_two_line’ format. If True, write in the Astropy
-‘ascii.aastex’ format and add fancy table headers, etc.</p>
-</dd>
-<dt><strong>latex_title</strong><span class="classifier">str, optional</span></dt><dd><p>Table caption if written in AASTeX format. Default: ‘Classification Results’</p>
-</dd>
-<dt><strong>latex_label</strong><span class="classifier">str, optional</span></dt><dd><p>LaTeX label if written in AASTeX format. Default: ‘tab:results’</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-superphot.extract">
-<span id="superphot-extract-module"></span><h2>superphot.extract module<a class="headerlink" href="#module-superphot.extract" title="Permalink to this headline">¶</a></h2>
-<dl class="py function">
-<dt id="superphot.extract.compile_data_table">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">compile_data_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#compile_data_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.compile_data_table" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.compile_parameters">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">compile_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#compile_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.compile_parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the saved PyMC3 traces and compile an array of fit parameters for each transient. Save to a Numpy file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>stored_models</strong><span class="classifier">str</span></dt><dd><p>Look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.</p>
-</dd>
-<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to compile parameters. These should be the last characters of the subdirectories in which the
-traces are stored.</p>
-</dd>
-<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10.</p>
-</dd>
-<dt><strong>random_state</strong><span class="classifier">int, optional</span></dt><dd><p>Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.extract_features">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_median</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.extract_features" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
-light curves in each filter.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the ‘params’/’median_params’, ‘redshift’, and ‘MWEBV’ of each transient to be classified.</p>
-</dd>
-<dt><strong>zero_point</strong><span class="classifier">float, optional</span></dt><dd><p>Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.</p>
-</dd>
-<dt><strong>use_median</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the median parameters to produce the light curves instead of the multiple draws from the posterior.</p>
-</dd>
-<dt><strong>use_pca</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the peak absolute magnitudes and principal components of the light curve as the features (default).
-Otherwise, use the model parameters directly.</p>
-</dd>
-<dt><strong>stored_pcas</strong><span class="classifier">str, optional</span></dt><dd><p>Path to pickled PCA objects. Default: create and fit new PCA objects.</p>
-</dd>
-<dt><strong>save_pca_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the principal components to this file. Default: skip this step.</p>
-</dd>
-<dt><strong>save_reconstruction_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the reconstructed light curves to this file (slow). Default: skip this step.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>t_good</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Slice of the input table with a ‘features’ column added. Rows with any bad features are excluded.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.flux_to_luminosity">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">flux_to_luminosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">R_filter</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#flux_to_luminosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.flux_to_luminosity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>row</strong><span class="classifier">astropy.table.row.Row</span></dt><dd><p>Astropy table row for a given transient, containing columns ‘MWEBV’ and ‘redshift’.</p>
-</dd>
-<dt><strong>R_filter</strong><span class="classifier">list</span></dt><dd><p>Ratios of A_filter to <cite>row[‘MWEBV’]</cite> for each of the filters used. This determines the length of the output.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>flux2lum</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of flux-to-luminosity conversion factors for each filter.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.get_principal_components">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">get_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">whiten</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#get_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.get_principal_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a principal component analysis on a set of light curves for each filter.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>An array of model light curves to be used for fitting the PCA.</p>
-</dd>
-<dt><strong>n_components</strong><span class="classifier">int, optional</span></dt><dd><p>The number of principal components to calculate. Default: 6.</p>
-</dd>
-<dt><strong>whiten</strong><span class="classifier">bool, optional</span></dt><dd><p>Whiten the input data before calculating the principal components. Default: True.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>A list of the PCA objects for each filter.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.load_trace">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tracefile</span></em>, <em class="sig-param"><span class="n">filters</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.load_trace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>tracefile</strong><span class="classifier">str</span></dt><dd><p>Directory where the traces are stored. Should contain an asterisk (*) to be replaced by elements of <cite>filters</cite>.</p>
-</dd>
-<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to load traces. If one or more filters are not found, the posteriors of the remaining filters
-will be combined and used in place of the missing ones.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>trace_values</strong><span class="classifier">numpy.array</span></dt><dd><p>PyMC3 trace stored as 3-D array with shape (nsteps, nfilters, nparams).</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.plot_feature_correlation">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_feature_correlation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_feature_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_feature_correlation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a matrix of the Spearman rank correlation coefficients between each pair of features.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing a ‘features’ column. Must also have ‘featnames’ and ‘filters’ in <cite>data_table.meta</cite>.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: show instead of saving.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.plot_pca_reconstruction">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">titles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
-These are saved as a multipage PDF.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>models</strong><span class="classifier">array-like</span></dt><dd><p>A 3-D array of model light curves with shape (ntransients, nfilters, ntimes)</p>
-</dd>
-<dt><strong>reconstructed</strong><span class="classifier">array-like</span></dt><dd><p>A 3-D array of reconstructed light curves with shape (ntransients, nfilters, ntimes)</p>
-</dd>
-<dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 1-D array of times that correspond to the last axis of <cite>models</cite>. Default: x-axis will run from 0 to ntimes.</p>
-</dd>
-<dt><strong>coefficients</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
-the coefficients will be printed at the top right of each plot.</p>
-</dd>
-<dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring the lines.</p>
-</dd>
-<dt><strong>titles</strong><span class="classifier">iterable, optional</span></dt><dd><p>Titles for each plot.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename for the output file. Default: pca_reconstruction.pdf.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.plot_principal_components">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'principal_components.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_principal_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot the principal components being used to extract features from the model light curves.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>List of the PCA objects for each filter, after fitting.</p>
-</dd>
-<dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>Times (x-values) to plot the principal components against.</p>
-</dd>
-<dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.</p>
-</dd>
-<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: principal_components.pdf.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.project_onto_principal_components">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">project_onto_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">pcas</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#project_onto_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.project_onto_principal_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>Project a set of light curves onto their principal components for each filter.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>An array of model light curves to be projected onto the principal components.</p>
-</dd>
-<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>A list of the PCA objects for each filter.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>coefficients</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>An array of the coefficients on the principal components.</p>
-</dd>
-<dt><strong>reconstructed</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>An reconstruction of the light curves from their principal components.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.save_data">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">save_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">basename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#save_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.save_data" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="superphot.extract.select_good_events">
-<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">select_good_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#select_good_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.select_good_events" title="Permalink to this definition">¶</a></dt>
-<dd><p>Select only events with finite data for all draws. Returns the table and data for only these events.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Original data table. Must have <cite>t.meta[‘ndraws’]</cite> to indicate now many draws it contains for each event.</p>
-</dd>
-<dt><strong>data</strong><span class="classifier">array-like, shape=(nfilt, len(t), …)</span></dt><dd><p>Numpy array containing the data upon which finiteness will be judged.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>t_good</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing only the good events.</p>
-</dd>
-<dt><strong>good_data</strong><span class="classifier">array-like</span></dt><dd><p>Numpy array containing only the data for good events.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
+<span id="id1"></span><h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-superphot.fit">
 <span id="superphot-fit-module"></span><h2>superphot.fit module<a class="headerlink" href="#module-superphot.fit" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
@@ -1247,6 +615,638 @@ iteration number and filter name. Diagnostic plots will also be saved according 
 <dt><strong>traces1, traces2</strong><span class="classifier">dict</span></dt><dd><p>Dictionaries of the PyMC3 trace objects for each filter for the first and second fitting iterations.</p>
 </dd>
 <dt><strong>parameters</strong><span class="classifier">list</span></dt><dd><p>List of Theano variables in the PyMC3 model.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-superphot.extract">
+<span id="superphot-extract-module"></span><h2>superphot.extract module<a class="headerlink" href="#module-superphot.extract" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="superphot.extract.compile_data_table">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">compile_data_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#compile_data_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.compile_data_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.compile_parameters">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">compile_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stored_models</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">ndraws</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#compile_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.compile_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the saved PyMC3 traces and compile an array of fit parameters for each transient. Save to a Numpy file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>stored_models</strong><span class="classifier">str</span></dt><dd><p>Look in this directory for PyMC3 trace data and sample the posterior to produce model LCs.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to compile parameters. These should be the last characters of the subdirectories in which the
+traces are stored.</p>
+</dd>
+<dt><strong>ndraws</strong><span class="classifier">int, optional</span></dt><dd><p>Number of random draws from the MCMC posterior. Default: 10.</p>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, optional</span></dt><dd><p>Seed for the random number generator, which is used to sample the posterior. Use for reproducibility.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.extract_features">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">extract_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">zero_point</span><span class="o">=</span><span class="default_value">27.5</span></em>, <em class="sig-param"><span class="n">use_median</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_pca</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stored_pcas</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_pca_to</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save_reconstruction_to</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#extract_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.extract_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract features for a table of model light curves: the peak absolute magnitudes and principal components of the
+light curves in each filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table containing the ‘params’/’median_params’, ‘redshift’, and ‘MWEBV’ of each transient to be classified.</p>
+</dd>
+<dt><strong>zero_point</strong><span class="classifier">float, optional</span></dt><dd><p>Zero point to be used for calculating the peak absolute magnitudes. Default: 27.5 mag.</p>
+</dd>
+<dt><strong>use_median</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the median parameters to produce the light curves instead of the multiple draws from the posterior.</p>
+</dd>
+<dt><strong>use_pca</strong><span class="classifier">bool, optional</span></dt><dd><p>Use the peak absolute magnitudes and principal components of the light curve as the features (default).
+Otherwise, use the model parameters directly.</p>
+</dd>
+<dt><strong>stored_pcas</strong><span class="classifier">str, optional</span></dt><dd><p>Path to pickled PCA objects. Default: create and fit new PCA objects.</p>
+</dd>
+<dt><strong>save_pca_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the principal components to this file. Default: skip this step.</p>
+</dd>
+<dt><strong>save_reconstruction_to</strong><span class="classifier">str, optional</span></dt><dd><p>Plot and save the reconstructed light curves to this file (slow). Default: skip this step.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>t_good</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Slice of the input table with a ‘features’ column added. Rows with any bad features are excluded.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.flux_to_luminosity">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">flux_to_luminosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">R_filter</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#flux_to_luminosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.flux_to_luminosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>row</strong><span class="classifier">astropy.table.row.Row</span></dt><dd><p>Astropy table row for a given transient, containing columns ‘MWEBV’ and ‘redshift’.</p>
+</dd>
+<dt><strong>R_filter</strong><span class="classifier">list</span></dt><dd><p>Ratios of A_filter to <cite>row[‘MWEBV’]</cite> for each of the filters used. This determines the length of the output.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>flux2lum</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of flux-to-luminosity conversion factors for each filter.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.get_principal_components">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">get_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">whiten</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#get_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.get_principal_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a principal component analysis on a set of light curves for each filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>An array of model light curves to be used for fitting the PCA.</p>
+</dd>
+<dt><strong>n_components</strong><span class="classifier">int, optional</span></dt><dd><p>The number of principal components to calculate. Default: 6.</p>
+</dd>
+<dt><strong>whiten</strong><span class="classifier">bool, optional</span></dt><dd><p>Whiten the input data before calculating the principal components. Default: True.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>A list of the PCA objects for each filter.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.load_trace">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">load_trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tracefile</span></em>, <em class="sig-param"><span class="n">filters</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#load_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.load_trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the stored PyMC3 traces into a 3-D array with shape (nsteps, nfilters, nparams).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>tracefile</strong><span class="classifier">str</span></dt><dd><p>Directory where the traces are stored. Should contain an asterisk (*) to be replaced by elements of <cite>filters</cite>.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable</span></dt><dd><p>Filters for which to load traces. If one or more filters are not found, the posteriors of the remaining filters
+will be combined and used in place of the missing ones.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>trace_values</strong><span class="classifier">numpy.array</span></dt><dd><p>PyMC3 trace stored as 3-D array with shape (nsteps, nfilters, nparams).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.plot_feature_correlation">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_feature_correlation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_table</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_feature_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_feature_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a matrix of the Spearman rank correlation coefficients between each pair of features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data_table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing a ‘features’ column. Must also have ‘featnames’ and ‘filters’ in <cite>data_table.meta</cite>.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: show instead of saving.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.plot_pca_reconstruction">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_pca_reconstruction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">reconstructed</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">coefficients</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">titles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'pca_reconstruction.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_pca_reconstruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_pca_reconstruction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot comparisons between the model light curves and the light curves reconstructed from the PCA for each transient.
+These are saved as a multipage PDF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>models</strong><span class="classifier">array-like</span></dt><dd><p>A 3-D array of model light curves with shape (ntransients, nfilters, ntimes)</p>
+</dd>
+<dt><strong>reconstructed</strong><span class="classifier">array-like</span></dt><dd><p>A 3-D array of reconstructed light curves with shape (ntransients, nfilters, ntimes)</p>
+</dd>
+<dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 1-D array of times that correspond to the last axis of <cite>models</cite>. Default: x-axis will run from 0 to ntimes.</p>
+</dd>
+<dt><strong>coefficients</strong><span class="classifier">array-like, optional</span></dt><dd><p>A 3-D array of the principal component coefficients with shape (ntransients, nfilters, ncomponents). If given,
+the coefficients will be printed at the top right of each plot.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring the lines.</p>
+</dd>
+<dt><strong>titles</strong><span class="classifier">iterable, optional</span></dt><dd><p>Titles for each plot.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename for the output file. Default: pca_reconstruction.pdf.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.plot_principal_components">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">plot_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pcas</span></em>, <em class="sig-param"><span class="n">time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">'principal_components.pdf'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#plot_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.plot_principal_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the principal components being used to extract features from the model light curves.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>List of the PCA objects for each filter, after fitting.</p>
+</dd>
+<dt><strong>time</strong><span class="classifier">array-like, optional</span></dt><dd><p>Times (x-values) to plot the principal components against.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">iterable, optional</span></dt><dd><p>Names of the filters corresponding to the PCA objects. Only used for coloring and labeling the lines.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: principal_components.pdf.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.project_onto_principal_components">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">project_onto_principal_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curves</span></em>, <em class="sig-param"><span class="n">pcas</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#project_onto_principal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.project_onto_principal_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project a set of light curves onto their principal components for each filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>light_curves</strong><span class="classifier">array-like</span></dt><dd><p>An array of model light curves to be projected onto the principal components.</p>
+</dd>
+<dt><strong>pcas</strong><span class="classifier">list</span></dt><dd><p>A list of the PCA objects for each filter.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>coefficients</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>An array of the coefficients on the principal components.</p>
+</dd>
+<dt><strong>reconstructed</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>An reconstruction of the light curves from their principal components.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.save_data">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">save_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">basename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#save_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.save_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="superphot.extract.select_good_events">
+<code class="sig-prename descclassname">superphot.extract.</code><code class="sig-name descname">select_good_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/extract.html#select_good_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.extract.select_good_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select only events with finite data for all draws. Returns the table and data for only these events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>t</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Original data table. Must have <cite>t.meta[‘ndraws’]</cite> to indicate now many draws it contains for each event.</p>
+</dd>
+<dt><strong>data</strong><span class="classifier">array-like, shape=(nfilt, len(t), …)</span></dt><dd><p>Numpy array containing the data upon which finiteness will be judged.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>t_good</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing only the good events.</p>
+</dd>
+<dt><strong>good_data</strong><span class="classifier">array-like</span></dt><dd><p>Numpy array containing only the data for good events.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-superphot.classify">
+<span id="superphot-classify-module"></span><h2>superphot.classify module<a class="headerlink" href="#module-superphot.classify" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="superphot.classify.MultivariateGaussian">
+<em class="property">class </em><code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">MultivariateGaussian</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sampling_strategy</span><span class="o">=</span><span class="default_value">'all'</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#MultivariateGaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.MultivariateGaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">imblearn.over_sampling.base.BaseOverSampler</span></code></p>
+<p>Class to perform over-sampling using a multivariate Gaussian (<code class="docutils literal notranslate"><span class="pre">numpy.random.multivariate_normal</span></code>).</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>sampling_strategy</strong><span class="classifier">float, str, dict, callable or int, default=’auto’</span></dt><dd><p>Sampling information to resample the data set.</p>
+<ul>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">float</span></code>, it corresponds to the desired ratio of the number of
+samples in the minority class over the number of samples in the
+majority class after resampling. Therefore, the ratio is expressed as
+<span class="math notranslate nohighlight">\(\alpha_{os} = N_{rm} / N_{M}\)</span> where <span class="math notranslate nohighlight">\(N_{rm}\)</span> is the
+number of samples in the minority class after resampling and
+<span class="math notranslate nohighlight">\(N_{M}\)</span> is the number of samples in the majority class.</p>
+<blockquote>
+<div><div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">float</span></code> is only available for <strong>binary</strong> classification. An
+error is raised for multi-class classification.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">str</span></code>, specify the class targeted by the resampling. The
+number of samples in the different classes will be equalized.
+Possible choices are:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">'minority'</span></code>: resample only the minority class;</p>
+<p><code class="docutils literal notranslate"><span class="pre">'not</span> <span class="pre">minority'</span></code>: resample all classes but the minority class;</p>
+<p><code class="docutils literal notranslate"><span class="pre">'not</span> <span class="pre">majority'</span></code>: resample all classes but the majority class;</p>
+<p><code class="docutils literal notranslate"><span class="pre">'all'</span></code>: resample all classes;</p>
+<p><code class="docutils literal notranslate"><span class="pre">'auto'</span></code>: equivalent to <code class="docutils literal notranslate"><span class="pre">'not</span> <span class="pre">majority'</span></code>.</p>
+</div></blockquote>
+</li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">dict</span></code>, the keys correspond to the targeted classes. The
+values correspond to the desired number of samples for each targeted
+class.</p></li>
+<li><p>When callable, function taking <code class="docutils literal notranslate"><span class="pre">y</span></code> and returns a <code class="docutils literal notranslate"><span class="pre">dict</span></code>. The keys
+correspond to the targeted classes. The values correspond to the
+desired number of samples for each class.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">int</span></code>, it corresponds to the total number of samples in each
+class (including the real samples). Can be used to oversample even
+the majority class. If <code class="docutils literal notranslate"><span class="pre">sampling_strategy</span></code> is smaller than the
+existing size of a class, that class will not be oversampled and
+the classes may not be balanced.</p></li>
+</ul>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, RandomState instance, default=None</span></dt><dd><p>Control the randomization of the algorithm.</p>
+<ul class="simple">
+<li><p>If int, <code class="docutils literal notranslate"><span class="pre">random_state</span></code> is the seed used by the random number
+generator;</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">RandomState</span></code> instance, random_state is the random number
+generator;</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the random number generator is the <code class="docutils literal notranslate"><span class="pre">RandomState</span></code>
+instance used by <code class="docutils literal notranslate"><span class="pre">np.random</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="superphot.classify.MultivariateGaussian.more_samples">
+<code class="sig-name descname">more_samples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_samples</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#MultivariateGaussian.more_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.MultivariateGaussian.more_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw more samples from the same distribution of an already fitted sampler.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.aggregate_probabilities">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">aggregate_probabilities</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#aggregate_probabilities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.aggregate_probabilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Average the classification probabilities for a given supernova across the multiple model light curves.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>table</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the metadata for a supernova and the classification probabilities (‘probabilities’)</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and average classification probabilities for each supernova</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.bar_plot">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">bar_plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vresults</span></em>, <em class="sig-param"><span class="n">tresults</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#bar_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.bar_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a stacked bar plot showing the class breakdown in the training set compared to the test set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>vresults</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘type’ column and a ‘prediction’ column.</p>
+</dd>
+<dt><strong>tresults</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘prediction’ column.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.calc_metrics">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">calc_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#calc_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.calc_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.</p>
+<p>The results are added as columns to the input table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and <cite>xval</cite>.</p>
+</dd>
+<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the independent variable. Default: ‘confidence’.</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.classify">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">classify</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">aggregate</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#classify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.classify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use a trained classification pipeline to classify <cite>test_data</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
+</dd>
+<dt><strong>test_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ column.</p>
+</dd>
+<dt><strong>aggregate</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), average the probabilities for a given supernova across the multiple model light curves.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and classification probabilities for each supernova</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.cumhist">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">cumhist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">reverse</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mark</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#cumhist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.cumhist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a cumulative histogram of <cite>data</cite>, optionally with certain indices marked with an x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">array-like</span></dt><dd><p>Data to include in the histogram</p>
+</dd>
+<dt><strong>reverse</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), the histogram increases with increasing <cite>data</cite>. If True, it decreases with increasing <cite>data</cite></p>
+</dd>
+<dt><strong>mark</strong><span class="classifier">array-like, optional</span></dt><dd><p>An array of indices to mark with an x</p>
+</dd>
+<dt><strong>ax</strong><span class="classifier">matplotlib.pyplot.axes, optional</span></dt><dd><p>Axis on which to plot the confusion matrix. Default: current axis.</p>
+</dd>
+<dt><strong>kwargs</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments to be passed to <cite>matplotlib.pyplot.step</cite></p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>p</strong><span class="classifier">list</span></dt><dd><p>The list of <cite>matplotlib.lines.Line2D</cite> objects returned by <cite>matplotlib.pyplot.step</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.load_results">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">load_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#load_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.load_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.make_confusion_matrix">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">make_confusion_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">p_min</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">purity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">binary</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#make_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.make_confusion_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a data table with classification probabilities, calculate and plot the confusion matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and classification probabilities (column name = ‘probabilities’)</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>Labels corresponding to the ‘probabilities’ column. If None, use the sorted entries in the ‘type’ column.</p>
+</dd>
+<dt><strong>p_min</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum confidence to be included in the confusion matrix. Default: include all samples.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
+</dd>
+<dt><strong>purity</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), aggregate by row (true label). If True, aggregate by column (predicted label).</p>
+</dd>
+<dt><strong>binary</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, plot a SNIa vs non-SNIa (CCSN) binary confusion matrix.</p>
+</dd>
+<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>A title for the plot. If the plot is big enough, statistics ($N$, $A$, $F_1$) are appended in parentheses.
+Default: ‘Completeness’ or ‘Purity’ depending on <cite>purity</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.mean_axis0">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">mean_axis0</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#mean_axis0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.mean_axis0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to the numpy.mean function but with axis=0 by default.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.plot_confusion_matrix">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_confusion_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">confusion_matrix</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">'Blues'</span></em>, <em class="sig-param"><span class="n">purity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">xlabel</span><span class="o">=</span><span class="default_value">'Photometric Classification'</span></em>, <em class="sig-param"><span class="n">ylabel</span><span class="o">=</span><span class="default_value">'Spectroscopic Classification'</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_confusion_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a confusion matrix with each cell labeled by its fraction and absolute number.</p>
+<p>Based on tutorial: <a class="reference external" href="https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>confusion_matrix</strong><span class="classifier">array-like</span></dt><dd><p>The confusion matrix as a square array of integers.</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">list</span></dt><dd><p>List of class labels for the axes of the confusion matrix.</p>
+</dd>
+<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of a Matplotlib colormap to color the matrix.</p>
+</dd>
+<dt><strong>purity</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), aggregate by row (spec. class). If True, aggregate by column (phot. class).</p>
+</dd>
+<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Text to go above the plot. Default: no title.</p>
+</dd>
+<dt><strong>xlabel, ylabel</strong><span class="classifier">str, optional</span></dt><dd><p>Labels for the x- and y-axes. Default: “Spectroscopic Classification” and “Photometric Classification”.</p>
+</dd>
+<dt><strong>ax</strong><span class="classifier">matplotlib.pyplot.axes, optional</span></dt><dd><p>Axis on which to plot the confusion matrix. Default: new axis.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.plot_feature_importance">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_feature_importance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">width</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">nsamples</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_feature_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_feature_importance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The trained pipeline for which to plot feature importances. Steps should be named ‘classifier’ and ‘sampler’.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Data table containing ‘features’ and ‘type’ for training when calculating permutation importances. Must also
+include ‘featnames’ and ‘filters’ in <cite>train_data.meta</cite>.</p>
+</dd>
+<dt><strong>width</strong><span class="classifier">float, optional</span></dt><dd><p>Total width of the bars in units of the separation between bars. Default: 0.8.</p>
+</dd>
+<dt><strong>nsamples</strong><span class="classifier">int, optional</span></dt><dd><p>Number of samples to draw for the fake validation data set. Default: 1000.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Filename to which to save the plot. Default: show instead of saving.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.plot_metrics_by_number">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_metrics_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validation</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_metrics_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_metrics_by_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot completeness, purity, accuracy, F1 score, and fractions remaining as a function of confidence threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>validation</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and ‘confidence’.</p>
+</dd>
+<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the plot. Default: ‘confidence’.</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.plot_results_by_number">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_results_by_number</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">class_kwd</span><span class="o">=</span><span class="default_value">'prediction'</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_results_by_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_results_by_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot cumulative histograms of the results for each class against a specified table column.</p>
+<p>If <cite>results</cite> contains the column ‘correct’, incorrect classifications will be marked with an x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Table of classification results. Must contain columns ‘type’/’prediction’ and the column specified by <cite>xval</cite>.</p>
+</dd>
+<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the horizontal axis of the histogram. Default: ‘confidence’.</p>
+</dd>
+<dt><strong>class_kwd</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the class grouping. Default: ‘prediction’.</p>
+</dd>
+<dt><strong>title</strong><span class="classifier">str, optional</span></dt><dd><p>Title for the plot. Default: “Training/Test Set, Grouped by {class_kwd}”, where the first word is determined
+by the presence of the column ‘correct’ in <cite>results</cite>.</p>
+</dd>
+<dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.train_classifier">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">train_classifier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#train_classifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.train_classifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train a classification pipeline on <cite>test_data</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ and a ‘type’ column.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.validate_classifier">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">validate_classifier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">test_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">aggregate</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#validate_classifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.validate_classifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate the performance of a machine-learning classifier using leave-one-out cross-validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘features’ column and a ‘type’ column.</p>
+</dd>
+<dt><strong>test_data</strong><span class="classifier">astropy.table.Table, optional</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ column to which to apply the trained classifier.
+If None, use the training data itself for validation.</p>
+</dd>
+<dt><strong>aggregate</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), average the probabilities for a given supernova across the multiple model light curves.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and classification probabilities for each supernova</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="superphot.classify.write_results">
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">write_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">max_lines</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">latex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">latex_title</span><span class="o">=</span><span class="default_value">'Classification Results'</span></em>, <em class="sig-param"><span class="n">latex_label</span><span class="o">=</span><span class="default_value">'tab:results'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#write_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.write_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the classification results to a text file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>test_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the supernova metadata and the classification probabilities (‘probabilities’).</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">list</span></dt><dd><p>The labels that correspond to the columns in ‘probabilities’</p>
+</dd>
+<dt><strong>filename</strong><span class="classifier">str</span></dt><dd><p>Name of the output file</p>
+</dd>
+<dt><strong>max_lines</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum number of table rows to write to the file</p>
+</dd>
+<dt><strong>latex</strong><span class="classifier">bool, optional</span></dt><dd><p>If False (default), write in the Astropy ‘ascii.fixed_width_two_line’ format. If True, write in the Astropy
+‘ascii.aastex’ format and add fancy table headers, etc.</p>
+</dd>
+<dt><strong>latex_title</strong><span class="classifier">str, optional</span></dt><dd><p>Table caption if written in AASTeX format. Default: ‘Classification Results’</p>
+</dd>
+<dt><strong>latex_label</strong><span class="classifier">str, optional</span></dt><dd><p>LaTeX label if written in AASTeX format. Default: ‘tab:results’</p>
 </dd>
 </dl>
 </dd>

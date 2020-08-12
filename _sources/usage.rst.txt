@@ -12,6 +12,10 @@ Superphot runs in five steps:
 6. (Optional) Cross-*validate* the classifier on the training set.
 7. (Optional) *Optimize* the hyperparameters of the classifier.
 
+-----------------------------
+Running from the Command Line
+-----------------------------
+
 For basic functionality, Superphot can be run from the command line. For example:
 
 .. code-block:: bash
@@ -25,21 +29,22 @@ For basic functionality, Superphot can be run from the command line. For example
     superphot-validate pipeline.pickle train_data.txt
     superphot-optimize param_dist.json pipeline.pickle train_data.txt
 
+To see additional command-line arguments for any of these scripts, give the ``-h`` argument (e.g., ``superphot-fit -h``).
+
+---------------------
+Scripting with Python
+---------------------
+
 For more advanced use cases, you can import the module and use some version of the following workflow:
 
 .. code-block:: python
 
     from superphot import fit, extract, classify
-    from glob import glob
     import numpy as np
-    import os
 
     # Fit the model to the data. Do this for each file.
-    for filename in glob('light_curves/*.dat'):
-        basename = os.path.basename(filename).split('.')[0]
-        outfile = os.path.join(args.output_dir, basename + '{}')
-        light_curve = fit.read_light_curve(filename)  # may need to write your own parser
-        traces1, traces2, parameters = fit.two_iteration_mcmc(light_curve, outfile)
+    light_curve = fit.read_light_curve('light_curves/PSc000001.dat')  # may need custom parser
+    fit.two_iteration_mcmc(light_curve, 'stored_models/PSc000001{}')
 
     # Compile parameters
     param_table = extract.compile_parameters('stored_models/', 'griz')
@@ -68,11 +73,13 @@ For more advanced use cases, you can import the module and use some version of t
     results_validate = classify.validate_classifier(pipeline, train_data)
     classify.make_confusion_matrix(results_validate, pipeline.classes_)
 
+Most of these functions have optional inputs that are not shown here. See the :ref:`api_documentation`.
+
 ------------------------
 Light Curve Data Formats
 ------------------------
 
-The light curve data we used in developing this package were stored in `SNANA <https://github.com/RickKessler/SNANA>`_ text format.
+The `light curve data <https://zenodo.org/record/3974950>`_ we used in developing this package were stored in `SNANA <https://github.com/RickKessler/SNANA>`_ text format.
 Here is an example::
 
     SURVEY: PS1MD
@@ -107,8 +114,6 @@ Here is an example::
 Superphot includes a function that can parse data in this format (:func:`superphot.fit.read_light_curve`).
 It should also be able to recognize a simple text format like this::
 
-    # MWEBV: 0.0075
-    # REDSHIFT: 0.1260
     PHASE FLT FLUXCAL FLUXCALERR
     -120.4 g -243.44 231.478
     -117.4 g -62.931 13.48
@@ -128,10 +133,6 @@ The data need to end up as an Astropy table with (at least) the following column
 * ``PHASE`` is the date of the observation in days relative to discovery (``SEARCH_PEAKMJD`` in our case)
 * ``FLT`` is the filter
 * ``FLUXCAL`` and ``FLUXCALERR`` are the flux and its uncertainty
-* ``MWEBV`` is the Milky Way selective extinction :math:`E(B-V)` (used to correct the fluxes)
-* ``REDSHIFT`` is the redshift (used to calculate the luminosity distance and cosmological :math:`K`-correction)
-
-Alternatively, if your light curve files include no metadata, you can give the metadata in the input table (see below).
 
 --------------------------
 Input/Output Table Formats
@@ -139,16 +140,28 @@ Input/Output Table Formats
 
 Superphot writes all its outputs in Astropy's ``ascii.fixed_width_two_line`` format, but it can read any plain text format guessable by Astropy.
 
-The file called ``input_table.txt`` above must have at least two columns: ``filename`` (referring to the light curve data file) and ``type`` (referring to the supernova classification).
-The ``filename`` column is used as the supernova identifier, so each filename must be unique (even if they are in different directories).
-The ``type`` column is used to train the classifier and can be left blank for supernovae not in the training set.
-If the required metadata are not in the light curve files, you must also include the columns ``MWEBV`` and ``redshift``.
+The files called ``train_input.txt`` and ``test_input.txt`` should have the following columns:
 
-Superphot's feature extraction step saves the features in two separate files with the same base name (``test_data`` above) but different extensions.
-The ``test_data.txt`` file includes all the supernova metadata, which will be identical to ``input_table.txt`` unless stored model parameters are missing for any input supernovae.
+* ``filename``: the name of the light curve data file, without the extension;
+* ``redshift``: the redshift of the transient, used to calculate the luminosity distance and cosmological :math:`K`-correction;
+* ``MWEBV``: the Milky Way selective extinction :math:`E(B-V)`, used to correct the fluxes; and
+* ``type`` (optional): the supernova spectroscopic classification, used to train the classifier.
+
+The ``filename`` column is used as the supernova identifier, so each filename must be unique (even if they are in different directories).
+
+Superphot's feature extraction step saves the features in two separate files with the same base name (e.g., ``test_data`` above) but different extensions.
+The ``test_data.txt`` file includes all the supernova metadata, which will be identical to ``test_input.txt`` unless stored model parameters are missing for any input supernovae.
 The ``test_data.npz`` file includes the features themselves, stored as a compressed multidimensional binary array.
 
 The classification and validation results are also written to text files by :func:`superphot.classify.write_results`.
-The tables include the same metadata as the feature extraction step plus columns of probabilities for each possible classification.
-In addition, the validation results can be used to create and plot a confusion matrix using :func:`superphot.classify.make_confusion_matrix`.
-You can also plot a confusion matrix from stored validation data on the command line with ``superphot-confuse validation.txt``.
+The tables include the same metadata as the feature extraction step plus the photometric classification, the classification confidence, and probabilities for each possible classification.
+
+----------------------------
+Other Command Line Utilities
+----------------------------
+In addition to the main commands listed above, Superphot includes four utilities to help produce tables and figures for publications:
+
+* ``superphot-confuse validation_results.txt`` plots a confusion matrix from saved cross-validation results.
+* ``superphot-bar validation_results.txt test_results.txt`` plots stacked bar plots showing the class fractions of the training and test sets.
+* ``superphot-latex test_results.txt`` converts the plain text results table into a nicely formatted AASTeX deluxetable.
+* ``superphot-hyperparameters hyperparameters.txt`` plots 3D scatter plots of various performance metrics vs. the classifier hyperparameters.

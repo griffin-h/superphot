@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; Superphot 0.post50+g7ffdf29 documentation</title>
+  <title>Usage &mdash; Superphot 0.post50+gf6d320c documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.post50+g7ffdf29
+                0.post50+gf6d320c
               </div>
             
           
@@ -93,8 +93,11 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#running-from-the-command-line">Running from the Command Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scripting-with-python">Scripting with Python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#light-curve-data-formats">Light Curve Data Formats</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#input-output-table-formats">Input/Output Table Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#other-command-line-utilities">Other Command Line Utilities</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
@@ -176,6 +179,8 @@
 <li><p>(Optional) Cross-<em>validate</em> the classifier on the training set.</p></li>
 <li><p>(Optional) <em>Optimize</em> the hyperparameters of the classifier.</p></li>
 </ol>
+<div class="section" id="running-from-the-command-line">
+<h2>Running from the Command Line<a class="headerlink" href="#running-from-the-command-line" title="Permalink to this headline">¶</a></h2>
 <p>For basic functionality, Superphot can be run from the command line. For example:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-fit light_curves/*.dat --output-dir stored_models/  <span class="c1"># this is parallelizable</span>
 superphot-compile stored_models/ --output params
@@ -187,18 +192,17 @@ superphot-validate pipeline.pickle train_data.txt
 superphot-optimize param_dist.json pipeline.pickle train_data.txt
 </pre></div>
 </div>
+<p>To see additional command-line arguments for any of these scripts, give the <code class="docutils literal notranslate"><span class="pre">-h</span></code> argument (e.g., <code class="docutils literal notranslate"><span class="pre">superphot-fit</span> <span class="pre">-h</span></code>).</p>
+</div>
+<div class="section" id="scripting-with-python">
+<h2>Scripting with Python<a class="headerlink" href="#scripting-with-python" title="Permalink to this headline">¶</a></h2>
 <p>For more advanced use cases, you can import the module and use some version of the following workflow:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">superphot</span> <span class="kn">import</span> <span class="n">fit</span><span class="p">,</span> <span class="n">extract</span><span class="p">,</span> <span class="n">classify</span>
-<span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="c1"># Fit the model to the data. Do this for each file.</span>
-<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;light_curves/*.dat&#39;</span><span class="p">):</span>
-    <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">outfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">basename</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
-    <span class="n">light_curve</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">read_light_curve</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>  <span class="c1"># may need to write your own parser</span>
-    <span class="n">traces1</span><span class="p">,</span> <span class="n">traces2</span><span class="p">,</span> <span class="n">parameters</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+<span class="n">light_curve</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">read_light_curve</span><span class="p">(</span><span class="s1">&#39;light_curves/PSc000001.dat&#39;</span><span class="p">)</span>  <span class="c1"># may need custom parser</span>
+<span class="n">fit</span><span class="o">.</span><span class="n">two_iteration_mcmc</span><span class="p">(</span><span class="n">light_curve</span><span class="p">,</span> <span class="s1">&#39;stored_models/PSc000001</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
 
 <span class="c1"># Compile parameters</span>
 <span class="n">param_table</span> <span class="o">=</span> <span class="n">extract</span><span class="o">.</span><span class="n">compile_parameters</span><span class="p">(</span><span class="s1">&#39;stored_models/&#39;</span><span class="p">,</span> <span class="s1">&#39;griz&#39;</span><span class="p">)</span>
@@ -228,9 +232,11 @@ superphot-optimize param_dist.json pipeline.pickle train_data.txt
 <span class="n">classify</span><span class="o">.</span><span class="n">make_confusion_matrix</span><span class="p">(</span><span class="n">results_validate</span><span class="p">,</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Most of these functions have optional inputs that are not shown here. See the <a class="reference internal" href="api.html#api-documentation"><span class="std std-ref">API Documentation</span></a>.</p>
+</div>
 <div class="section" id="light-curve-data-formats">
 <h2>Light Curve Data Formats<a class="headerlink" href="#light-curve-data-formats" title="Permalink to this headline">¶</a></h2>
-<p>The light curve data we used in developing this package were stored in <a class="reference external" href="https://github.com/RickKessler/SNANA">SNANA</a> text format.
+<p>The <a class="reference external" href="https://zenodo.org/record/3974950">light curve data</a> we used in developing this package were stored in <a class="reference external" href="https://github.com/RickKessler/SNANA">SNANA</a> text format.
 Here is an example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SURVEY</span><span class="p">:</span> <span class="n">PS1MD</span>
 <span class="n">SNID</span><span class="p">:</span>  <span class="n">PSc000001</span>
@@ -264,9 +270,7 @@ Here is an example:</p>
 </div>
 <p>Superphot includes a function that can parse data in this format (<a class="reference internal" href="api.html#superphot.fit.read_light_curve" title="superphot.fit.read_light_curve"><code class="xref py py-func docutils literal notranslate"><span class="pre">superphot.fit.read_light_curve()</span></code></a>).
 It should also be able to recognize a simple text format like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># MWEBV: 0.0075</span>
-<span class="c1"># REDSHIFT: 0.1260</span>
-<span class="n">PHASE</span> <span class="n">FLT</span> <span class="n">FLUXCAL</span> <span class="n">FLUXCALERR</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PHASE</span> <span class="n">FLT</span> <span class="n">FLUXCAL</span> <span class="n">FLUXCALERR</span>
 <span class="o">-</span><span class="mf">120.4</span> <span class="n">g</span> <span class="o">-</span><span class="mf">243.44</span> <span class="mf">231.478</span>
 <span class="o">-</span><span class="mf">117.4</span> <span class="n">g</span> <span class="o">-</span><span class="mf">62.931</span> <span class="mf">13.48</span>
 <span class="o">-</span><span class="mf">111.4</span> <span class="n">g</span> <span class="o">-</span><span class="mf">15.102</span> <span class="mf">16.238</span>
@@ -286,25 +290,34 @@ The data need to end up as an Astropy table with (at least) the following column
 <li><p><code class="docutils literal notranslate"><span class="pre">PHASE</span></code> is the date of the observation in days relative to discovery (<code class="docutils literal notranslate"><span class="pre">SEARCH_PEAKMJD</span></code> in our case)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">FLT</span></code> is the filter</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">FLUXCAL</span></code> and <code class="docutils literal notranslate"><span class="pre">FLUXCALERR</span></code> are the flux and its uncertainty</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">MWEBV</span></code> is the Milky Way selective extinction <span class="math notranslate nohighlight">\(E(B-V)\)</span> (used to correct the fluxes)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">REDSHIFT</span></code> is the redshift (used to calculate the luminosity distance and cosmological <span class="math notranslate nohighlight">\(K\)</span>-correction)</p></li>
 </ul>
-<p>Alternatively, if your light curve files include no metadata, you can give the metadata in the input table (see below).</p>
 </div>
 <div class="section" id="input-output-table-formats">
 <h2>Input/Output Table Formats<a class="headerlink" href="#input-output-table-formats" title="Permalink to this headline">¶</a></h2>
 <p>Superphot writes all its outputs in Astropy’s <code class="docutils literal notranslate"><span class="pre">ascii.fixed_width_two_line</span></code> format, but it can read any plain text format guessable by Astropy.</p>
-<p>The file called <code class="docutils literal notranslate"><span class="pre">input_table.txt</span></code> above must have at least two columns: <code class="docutils literal notranslate"><span class="pre">filename</span></code> (referring to the light curve data file) and <code class="docutils literal notranslate"><span class="pre">type</span></code> (referring to the supernova classification).
-The <code class="docutils literal notranslate"><span class="pre">filename</span></code> column is used as the supernova identifier, so each filename must be unique (even if they are in different directories).
-The <code class="docutils literal notranslate"><span class="pre">type</span></code> column is used to train the classifier and can be left blank for supernovae not in the training set.
-If the required metadata are not in the light curve files, you must also include the columns <code class="docutils literal notranslate"><span class="pre">MWEBV</span></code> and <code class="docutils literal notranslate"><span class="pre">redshift</span></code>.</p>
-<p>Superphot’s feature extraction step saves the features in two separate files with the same base name (<code class="docutils literal notranslate"><span class="pre">test_data</span></code> above) but different extensions.
-The <code class="docutils literal notranslate"><span class="pre">test_data.txt</span></code> file includes all the supernova metadata, which will be identical to <code class="docutils literal notranslate"><span class="pre">input_table.txt</span></code> unless stored model parameters are missing for any input supernovae.
+<p>The files called <code class="docutils literal notranslate"><span class="pre">train_input.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">test_input.txt</span></code> should have the following columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code>: the name of the light curve data file, without the extension;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">redshift</span></code>: the redshift of the transient, used to calculate the luminosity distance and cosmological <span class="math notranslate nohighlight">\(K\)</span>-correction;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MWEBV</span></code>: the Milky Way selective extinction <span class="math notranslate nohighlight">\(E(B-V)\)</span>, used to correct the fluxes; and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> (optional): the supernova spectroscopic classification, used to train the classifier.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">filename</span></code> column is used as the supernova identifier, so each filename must be unique (even if they are in different directories).</p>
+<p>Superphot’s feature extraction step saves the features in two separate files with the same base name (e.g., <code class="docutils literal notranslate"><span class="pre">test_data</span></code> above) but different extensions.
+The <code class="docutils literal notranslate"><span class="pre">test_data.txt</span></code> file includes all the supernova metadata, which will be identical to <code class="docutils literal notranslate"><span class="pre">test_input.txt</span></code> unless stored model parameters are missing for any input supernovae.
 The <code class="docutils literal notranslate"><span class="pre">test_data.npz</span></code> file includes the features themselves, stored as a compressed multidimensional binary array.</p>
 <p>The classification and validation results are also written to text files by <a class="reference internal" href="api.html#superphot.classify.write_results" title="superphot.classify.write_results"><code class="xref py py-func docutils literal notranslate"><span class="pre">superphot.classify.write_results()</span></code></a>.
-The tables include the same metadata as the feature extraction step plus columns of probabilities for each possible classification.
-In addition, the validation results can be used to create and plot a confusion matrix using <a class="reference internal" href="api.html#superphot.classify.make_confusion_matrix" title="superphot.classify.make_confusion_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">superphot.classify.make_confusion_matrix()</span></code></a>.
-You can also plot a confusion matrix from stored validation data on the command line with <code class="docutils literal notranslate"><span class="pre">superphot-confuse</span> <span class="pre">validation.txt</span></code>.</p>
+The tables include the same metadata as the feature extraction step plus the photometric classification, the classification confidence, and probabilities for each possible classification.</p>
+</div>
+<div class="section" id="other-command-line-utilities">
+<h2>Other Command Line Utilities<a class="headerlink" href="#other-command-line-utilities" title="Permalink to this headline">¶</a></h2>
+<p>In addition to the main commands listed above, Superphot includes four utilities to help produce tables and figures for publications:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">superphot-confuse</span> <span class="pre">validation_results.txt</span></code> plots a confusion matrix from saved cross-validation results.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">superphot-bar</span> <span class="pre">validation_results.txt</span> <span class="pre">test_results.txt</span></code> plots stacked bar plots showing the class fractions of the training and test sets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">superphot-latex</span> <span class="pre">test_results.txt</span></code> converts the plain text results table into a nicely formatted AASTeX deluxetable.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">superphot-hyperparameters</span> <span class="pre">hyperparameters.txt</span></code> plots 3D scatter plots of various performance metrics vs. the classifier hyperparameters.</p></li>
+</ul>
 </div>
 </div>
 
