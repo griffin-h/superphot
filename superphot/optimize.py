@@ -2,7 +2,7 @@ import numpy as np
 import pickle
 from sklearn.model_selection import ParameterGrid, ParameterSampler
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
-from .classify import load_data, validate_classifier, aggregate_probabilities
+from .classify import load_data, validate_classifier
 from .util import subplots_layout
 from astropy.table import Table, vstack, join
 from argparse import ArgumentParser
@@ -36,8 +36,7 @@ def test_hyperparameters(param_set, pipeline, train_data, test_data):
     param_names = sorted(param_set.keys())
     pipeline.set_params(classifier__n_jobs=1, **param_set)
     validation_data = test_data[~test_data['type'].mask]
-    validation_data['probabilities'] = validate_classifier(pipeline, train_data, validation_data)
-    results = aggregate_probabilities(validation_data)
+    results = validate_classifier(pipeline, train_data, validation_data)
     predicted_types = pipeline.classes_[np.argmax(results['probabilities'], axis=1)]
     param_set['accuracy'] = accuracy_score(results['type'], predicted_types)
     param_set['f1_score'] = f1_score(results['type'], predicted_types, average='macro')
