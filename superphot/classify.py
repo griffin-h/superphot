@@ -388,6 +388,9 @@ def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, save
     """
     Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.
 
+    Mean decrease in impurity is assumed to be stored in `pipeline.feature_importances_`. If the classifier does not
+    have this attribute (e.g., SVM, MLP), only permutation importance is calculated.
+
     Parameters
     ----------
     pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline
@@ -411,11 +414,11 @@ def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, save
     xranges = np.arange(featnames.size) + xoff[:, np.newaxis]
     random_feature_train = np.random.random(len(train_data))
     random_feature_validate = np.random.random(nsamples * pipeline.classes_.size)
+    has_mdi = hasattr(pipeline.named_steps['classifier'], 'feature_importances_')
     fig, ax = plt.subplots(1, 1)
     for real_features, xrange, fltr in zip(np.moveaxis(train_data['features'], 1, 0), xranges, filters):
         X = np.hstack([real_features, random_feature_train[:, np.newaxis]])
         pipeline.fit(X, train_data['type'])
-        importance0 = pipeline.named_steps['classifier'].feature_importances_
 
         X_val, y_val = pipeline.named_steps['sampler'].more_samples(nsamples)
         X_val[:, -1] = random_feature_validate
@@ -424,11 +427,14 @@ def plot_feature_importance(pipeline, train_data, width=0.8, nsamples=1000, save
         std = result.importances_std
 
         c = filter_colors.get(fltr)
-        ax.barh(xrange[:-1], importance0[:-1], width / filters.size, color=c)
+        if has_mdi:
+            importance0 = pipeline.named_steps['classifier'].feature_importances_
+            ax.barh(xrange[:-1], importance0[:-1], width / filters.size, color=c)
         ax.errorbar(importance, xrange, xerr=std, fmt='o', color=c, mfc='w')
 
-    proxy_artists = [Patch(color='gray'), ax.errorbar([], [], xerr=[], fmt='o', color='gray', mfc='w')]
-    ax.legend(proxy_artists, ['Mean Decrease in Impurity', 'Permutation Importance'], loc='best')
+    if has_mdi:
+        proxy_artists = [Patch(color='gray'), ax.errorbar([], [], xerr=[], fmt='o', color='gray', mfc='w')]
+        ax.legend(proxy_artists, ['Mean Decrease in Impurity', 'Permutation Importance'], loc='best')
     for i, featname in enumerate(featnames):
         ax.text(-0.03, i, featname, ha='right', va='center', transform=ax.get_yaxis_transform())
     ax.set_yticks([])
