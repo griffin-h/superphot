@@ -38,6 +38,8 @@ def plot_hyperparameters_3d(t, ccols, xcol, ycol, zcol, cmap=None, cmin=None, cm
         Name of the colormap to use to color the values in `ccols`.
     cmin, cmax : float, optional
         Data limits corresponding to the minimum and maximum colors in `cmap`.
+    figtitle : str, optional
+        Title text for the entire multipanel figure.
     """
     nrows, ncols = subplots_layout(len(ccols))
     gs = plt.GridSpec(nrows + 1, ncols, height_ratios=(8,) * nrows + (1,))
