@@ -134,30 +134,68 @@ def _plot_hyperparameters_from_file():
     plot_hyperparameters_with_diff(t, dcol, xcol, ycol, zcol, saveto=args.saveto)
 
 
-def _main():
-    parser = ArgumentParser()
-    parser.add_argument('param_dist', help='JSON-encoded parameter grid/distribution to test.')
-    parser.add_argument('pipeline', help='Filename of the pickled pipeline object.')
-    parser.add_argument('test_data', help='Filename of the metadata table for the test set.')
-    parser.add_argument('--train-data', help='Filename of the metadata table for the training set.'
-                                             'By default, use all classified supernovae in the test data.')
-    parser.add_argument('-i', '--n-iter', type=int, help='Number of hyperparameter combinations to try. Default: all.')
-    parser.add_argument('-j', '--n-jobs', type=int, help='Number of parallel processes to use. Default: 1.')
-    parser.add_argument('--saveto', default='hyperparameters.txt', help='Filename to which to write the results.')
-    args = parser.parse_args()
-    pipeline, train_data, validation_data = _validate_args(args)
+class ParameterOptimizer:
+    """
+    Class containing the pipeline and data sets for hyperparameter optimization
 
-    with open(args.param_dist, 'r') as f:
-        param_distributions = json.load(f)
+    Parameters
+    ----------
+    cmd_args : argparse.Namespace
+        Namespace containing the parsed command line arguments. These determine where the pipeline and data are stored.
 
-    def test_hyperparams(param_set):
+    Attributes
+    ----------
+    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline
+        The full classification pipeline, including rescaling, resampling, and classification.
+    validation_data : astropy.table.Table
+        Astropy table containing the validation data. Must have a 'features' column.
+    train_data : astropy.table.Table
+        Astropy table containing the training data. Must have a 'features' column and a 'type' column.
+    """
+    def __init__(self, cmd_args):
+        self.pipeline, self.train_data, self.validation_data = _validate_args(cmd_args)
+
+    def test_hyperparams(self, param_set):
+        """
+        Validates the pipeline for a set of hyperparameters.
+
+        Measures F1 score and accuracy, as well as completeness and purity for each class.
+
+        Parameters
+        ----------
+        param_set : dict
+            A dictionary containing keywords that match the parameters of `pipeline` and values to which to set them.
+
+        Returns
+        -------
+        param_set : dict
+            The input `param_set` with the metrics added to the dictionary. These are also saved to a JSON file.
+        """
         try:
-            pipeline.set_params(classifier__n_jobs=1, **param_set)
-            results = validate_classifier(pipeline, train_data, validation_data)
+            self.pipeline.set_params(classifier__n_jobs=1, **param_set)
+            results = validate_classifier(self.pipeline, self.train_data, self.validation_data)
             param_set = calc_metrics(results, param_set, save=True)
         except Exception as e:
             logging.error(f'Problem testing {param_set}:\n{e}')
         return param_set
+
+
+def _main():
+    parser = ArgumentParser()
+    parser.add_argument('param_dist', help='JSON-encoded parameter grid/distribution to test.')
+    parser.add_argument('pipeline', help='Filename of the pickled pipeline object.')
+    parser.add_argument('validation_data', help='Filename of the metadata table for the validation set.')
+    parser.add_argument('--train-data', help='Filename of the metadata table for the training set, if different than'
+                                             'the validation set.')
+    parser.add_argument('-i', '--n-iter', type=int, help='Number of hyperparameter combinations to try. Default: all.')
+    parser.add_argument('-j', '--n-jobs', type=int, help='Number of parallel processes to use. Default: 1.')
+    parser.add_argument('--saveto', default='hyperparameters.txt', help='Filename to which to write the results.')
+    args = parser.parse_args()
+
+    optimizer = ParameterOptimizer(args)
+
+    with open(args.param_dist, 'r') as f:
+        param_distributions = json.load(f)
 
     if args.n_iter is None:
         ps = ParameterGrid(param_distributions)
@@ -166,10 +204,10 @@ def _main():
     logging.info(f'Testing {len(ps):d} combinations...')
 
     if args.n_jobs is None:
-        rows = [test_hyperparams(param_set) for param_set in ps]
+        rows = [optimizer.test_hyperparams(param_set) for param_set in ps]
     else:
         with Pool(args.n_jobs) as p:
-            rows = p.map(test_hyperparams, ps)
+            rows = p.map(optimizer.test_hyperparams, ps)
 
     tfinal = Table(rows)
     if os.path.exists(args.saveto):
