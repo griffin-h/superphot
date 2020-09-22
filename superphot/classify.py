@@ -20,6 +20,7 @@ from .util import meta_columns, plot_histograms, filter_colors, load_data, CLASS
 import itertools
 from tqdm import tqdm
 from argparse import ArgumentParser
+import json
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
@@ -539,38 +540,43 @@ def plot_results_by_number(results, xval='confidence', class_kwd='prediction', t
         fig.savefig(saveto)
 
 
-def calc_metrics(results, xval='confidence', classes=None):
+def calc_metrics(results, param_set, save=False):
     """
-    Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.
+    Calculate completeness, purity, accuracy, and F1 score for a table of validation results.
 
-    The results are added as columns to the input table.
+    The metrics are returned in a dictionary and saved in a json file.
 
     Parameters
     ----------
     results : astropy.table.Table
-        Astropy table containing the results. Must have columns 'type', 'prediction', 'probabilities', and `xval`.
-    xval : str, optional
-        Table column to use as the independent variable. Default: 'confidence'.
-    classes : array-like, optional
-        The classes for which to calculate completeness and purity. Default: all classes in the 'type' column.
+        Astropy table containing the results. Must have columns 'type' and 'prediction'.
+    param_set : dict
+        A dictionary containing metadata to store along with the metrics.
+    save : bool, optional
+        If True, save the results to a json file in addition to returning the results. Default: False
+
+    Returns
+    -------
+    param_set : dict
+        A dictionary containing the input metadata and the calculated metrics.
     """
-    if classes is None:
-        classes = np.unique(results['type'])
-    results.sort(xval)
-    results['completeness'] = np.zeros_like(results['probabilities'])
-    results['purity'] = np.zeros_like(results['probabilities'])
-    results['accuracy'] = 0.
-    results['f1_score'] = 0.
-    for i in range(len(results)):
-        results_pmin = results[i:]
-        cnf_matrix = confusion_matrix(results_pmin['type'], results_pmin['prediction'], labels=classes)
-        correct = np.diag(cnf_matrix)
-        n_per_spec_class = cnf_matrix.sum(axis=1)
-        n_per_phot_class = cnf_matrix.sum(axis=0)
-        results['completeness'][i] = correct / n_per_spec_class
-        results['purity'][i] = correct / n_per_phot_class
-        results['accuracy'][i] = accuracy_score(results_pmin['type'], results_pmin['prediction'])
-        results['f1_score'][i] = f1_score(results_pmin['type'], results_pmin['prediction'], average='macro')
+    param_names = sorted(param_set.keys())
+    classes = results.meta.get('classes', np.unique(results['prediction']))
+
+    cnf_matrix = confusion_matrix(results['type'], results['prediction'], labels=classes)
+    correct = np.diag(cnf_matrix)
+    n_per_spec_class = cnf_matrix.sum(axis=1)
+    n_per_phot_class = cnf_matrix.sum(axis=0)
+    param_set['completeness'] = list(correct / n_per_spec_class)
+    param_set['purity'] = list(correct / n_per_phot_class)
+    param_set['accuracy'] = accuracy_score(results['type'], results['prediction'])
+    param_set['f1_score'] = f1_score(results['type'], results['prediction'], average='macro', labels=classes)
+
+    if save:
+        filename = '_'.join([str(param_set[key]) for key in param_names]) + '.json'
+        with open(filename, 'w') as f:
+            json.dump(param_set, f)
+    return param_set
 
 
 def plot_metrics_by_number(validation, xval='confidence', classes=None, saveto=None):
@@ -590,15 +596,16 @@ def plot_metrics_by_number(validation, xval='confidence', classes=None, saveto=N
     """
     if classes is None:
         classes = np.unique(validation['type'])
-    calc_metrics(validation, xval, classes)
+    validation.sort(xval)
+    metrics = Table([calc_metrics(validation[i:], {xval: validation[xval][i]}) for i in range(len(validation))])
     ccsne = validation[validation['type'] != 'SNIa']
 
     fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True, figsize=(6., 8.))
-    lines1 = ax1.step(validation[xval], validation['completeness'])
-    ax2.step(validation[xval], validation['purity'])
+    lines1 = ax1.step(metrics[xval], metrics['completeness'])
+    ax2.step(metrics[xval], metrics['purity'])
     for ax in [ax1, ax2]:
-        lines2 = ax.step(validation[xval], validation['accuracy'], 'k-')
-        lines2 += ax.step(validation[xval], validation['f1_score'], 'k--')
+        lines2 = ax.step(metrics[xval], metrics['accuracy'], 'k-')
+        lines2 += ax.step(metrics[xval], metrics['f1_score'], 'k--')
         lines2 += cumhist(validation[xval], reverse=True, ax=ax, color='k', ls='-.')
         lines2 += cumhist(ccsne[xval], reverse=True, ax=ax, color='k', ls=':')
         ax.grid(alpha=0.3)
@@ -764,17 +771,7 @@ def _classify():
     logging.info('finished classification')
 
 
-def _validate():
-    parser = ArgumentParser()
-    parser.add_argument('pipeline', help='Filename of the pickled classification pipeline.')
-    parser.add_argument('validation_data', help='Filename of the metadata table for the validation set.')
-    parser.add_argument('--train-data', help='Filename of the metadata table for the training set, if different than '
-                                             'the validation set.')
-    parser.add_argument('--pmin', type=float, default=0.,
-                        help='Minimum confidence to be included in the confusion matrix.')
-    args = parser.parse_args()
-
-    logging.info('started validation')
+def _validate_args(args):
     with open(args.pipeline, 'rb') as f:
         pipeline = pickle.load(f)
 
@@ -788,7 +785,21 @@ def _validate():
         train_data = load_data(args.train_data)
         if train_data['type'].mask.any():
             raise ValueError('training data is missing values in the "type" column')
+    return pipeline, train_data, validation_data
 
+
+def _validate():
+    parser = ArgumentParser()
+    parser.add_argument('pipeline', help='Filename of the pickled classification pipeline.')
+    parser.add_argument('validation_data', help='Filename of the metadata table for the validation set.')
+    parser.add_argument('--train-data', help='Filename of the metadata table for the training set, if different than '
+                                             'the validation set.')
+    parser.add_argument('--pmin', type=float, default=0.,
+                        help='Minimum confidence to be included in the confusion matrix.')
+    args = parser.parse_args()
+    pipeline, train_data, validation_data = _validate_args(args)
+
+    logging.info('started validation')
     plot_feature_importance(pipeline, train_data, saveto='feature_importance.pdf')
 
     results_validate = validate_classifier(pipeline, train_data, validation_data)

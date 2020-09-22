@@ -1,8 +1,6 @@
 import numpy as np
-import pickle
 from sklearn.model_selection import ParameterGrid, ParameterSampler
-from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
-from .classify import load_data, validate_classifier
+from .classify import _validate_args, validate_classifier, calc_metrics
 from .util import subplots_layout
 from astropy.table import Table, vstack, join
 from argparse import ArgumentParser
@@ -14,42 +12,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 from itertools import product
 import json
 from multiprocessing import Pool
-
-
-def test_hyperparameters(param_set, pipeline, train_data, test_data):
-    """
-    Validates the pipeline for a set of hyperparameters.
-
-    Measures F1 score and accuracy, as well as completeness and purity for each class.
-
-    Parameters
-    ----------
-    param_set : dict
-        A dictionary containing keywords that match the parameters of `pipeline` and values to which to set them.
-    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline
-        The full classification pipeline, including rescaling, resampling, and classification.
-    train_data : astropy.table.Table
-        Astropy table containing the training data. Must have a 'features' column and a 'type' column.
-    test_data : astropy.table.Table
-        Astropy table containing the test data. Must have a 'features' column.
-    """
-    param_names = sorted(param_set.keys())
-    pipeline.set_params(classifier__n_jobs=1, **param_set)
-    validation_data = test_data[~test_data['type'].mask]
-    results = validate_classifier(pipeline, train_data, validation_data)
-    predicted_types = pipeline.classes_[np.argmax(results['probabilities'], axis=1)]
-    param_set['accuracy'] = accuracy_score(results['type'], predicted_types)
-    param_set['f1_score'] = f1_score(results['type'], predicted_types, average='macro')
-    cnf_matrix = confusion_matrix(results['type'], predicted_types)
-    completeness = np.diag(cnf_matrix) / cnf_matrix.sum(axis=1)
-    purity = np.diag(cnf_matrix) / cnf_matrix.sum(axis=0)
-    for sntype, complete, pure in zip(pipeline.classes_, completeness, purity):
-        param_set[sntype + '_completeness'] = complete
-        param_set[sntype + '_purity'] = pure
-    filename = '_'.join([str(param_set[key]) for key in param_names]) + '.json'
-    with open(filename, 'w') as f:
-        json.dump(param_set, f)
-    return param_set
 
 
 def titlecase(x):
@@ -181,23 +143,16 @@ def _main():
     parser.add_argument('-j', '--n-jobs', type=int, help='Number of parallel processes to use. Default: 1.')
     parser.add_argument('--saveto', default='hyperparameters.txt', help='Filename to which to write the results.')
     args = parser.parse_args()
+    pipeline, train_data, validation_data = _validate_args(args)
 
     with open(args.param_dist, 'r') as f:
         param_distributions = json.load(f)
 
-    with open(args.pipeline, 'rb') as f:
-        pipeline = pickle.load(f)
-
-    test_data = load_data(args.test_data)
-    if args.train_data is None:
-        train_data = test_data
-    else:
-        train_data = load_data(args.train_data)
-    train_data = train_data[~train_data['type'].mask]
-
     def test_hyperparams(param_set):
         try:
-            param_set = test_hyperparameters(param_set, pipeline=pipeline, test_data=test_data, train_data=train_data)
+            pipeline.set_params(classifier__n_jobs=1, **param_set)
+            results = validate_classifier(pipeline, train_data, validation_data)
+            param_set = calc_metrics(results, param_set, save=True)
         except Exception as e:
             logging.error(f'Problem testing {param_set}:\n{e}')
         return param_set
