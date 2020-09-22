@@ -377,8 +377,8 @@ def write_results(test_data, classes, filename, max_lines=None, latex=False, lat
         for column in output.colnames:
             output.rename_column(column, column_headers.get(column, column))
 
-        output.write(filename, format='ascii.aastex', overwrite=True, fill_values=[(masked, '\\nodata')],
-                     latexdict=latexdict)
+        output.write(filename, format='ascii.aastex', overwrite=True, latexdict=latexdict,
+                     fill_values=[(masked, '\\nodata'), ('inf', '\\infty')])
     else:
         output.write(filename, format='ascii.fixed_width_two_line', overwrite=True)
     logging.info(f'classification results saved to {filename}')
