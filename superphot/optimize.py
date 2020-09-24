@@ -87,10 +87,14 @@ def plot_hyperparameters_with_diff(t, dcol=None, xcol=None, ycol=None, zcol=None
         starting wtih 'classifier'.
     saveto : str, optional
         Save the plot to this filename. If None, the plot is displayed and not saved.
+    criteria : dict, optional
+        Plot only a subset of the data that matches these keyword-value pairs, and add these criteria to the title.
+        If any keywords do not correspond to table columns, all rows are assumed to match.
     """
     for key, val in criteria.items():
-        t = t[t[key] == val]
-        t.remove_column(key)
+        if key in t.colnames:
+            t = t[t[key] == val]
+            t.remove_column(key)
     kcols = sorted({col for col in t.colnames if col.startswith('classifier')} - {dcol, xcol, ycol, zcol})[::-1]
     if dcol is None:
         dcol = kcols.pop()
@@ -109,9 +113,10 @@ def plot_hyperparameters_with_diff(t, dcol=None, xcol=None, ycol=None, zcol=None
     j = join(t0, t1, keys=[xcol, ycol, zcol])
     for ccol in ccols:
         j[ccol] = j[ccol + '_1'] - j[ccol + '_2']
-    title1 = ', '.join([f'{key} = {val}' for key, val in criteria.items()] + [f'{dcol} = {t.groups.keys[dcol][0]}'])
+    criteria_strings = [f'{key} = {val}' for key, val in criteria.items()]
+    title1 = ', '.join(criteria_strings + [f'{dcol} = {t.groups.keys[dcol][0]}'])
     fig1 = plot_hyperparameters_3d(t0, ccols, xcol, ycol, zcol, figtitle=title1)
-    title2 = f'{dcol} = {t.groups.keys[dcol][0]} → {t.groups.keys[dcol][1]}'
+    title2 = ', '.join(criteria_strings + [f'{dcol} = {t.groups.keys[dcol][0]} → {t.groups.keys[dcol][1]}'])
     fig2 = plot_hyperparameters_3d(j, ccols, xcol, ycol, zcol, cmap='coolwarm_r', cmin=-0.2, cmax=0.2, figtitle=title2)
     if saveto is None:
         plt.show()
@@ -127,11 +132,14 @@ def _plot_hyperparameters_from_file():
     parser = ArgumentParser()
     parser.add_argument('results', help='Table of results from superphot-optimize.')
     parser.add_argument('--saveto', help='Filename to which to save the plot.')
+    parser.add_argument('--criteria', nargs='+', help='Subset of data to plot and/or criteria to add to title.'
+                                                      'Format: kwd1=val1 kwd2=val2 etc.')
     args = parser.parse_args()
 
     t = Table.read(args.results, format='ascii')
     dcol, xcol, ycol, zcol = sorted([col for col in t.colnames if col.startswith('classifier__')])
-    plot_hyperparameters_with_diff(t, dcol, xcol, ycol, zcol, saveto=args.saveto)
+    criteria = {criterion.split('=')[0]: criterion.split('=')[1] for criterion in args.criteria}
+    plot_hyperparameters_with_diff(t, dcol, xcol, ycol, zcol, saveto=args.saveto, **criteria)
 
 
 class ParameterOptimizer:
