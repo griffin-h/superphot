@@ -148,8 +148,12 @@ class ParameterOptimizer:
 
     Parameters
     ----------
-    cmd_args : argparse.Namespace
-        Namespace containing the parsed command line arguments. These determine where the pipeline and data are stored.
+    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline
+        The full classification pipeline, including rescaling, resampling, and classification.
+    validation_data : astropy.table.Table
+        Astropy table containing the validation data. Must have a 'features' column.
+    train_data : astropy.table.Table
+        Astropy table containing the training data. Must have a 'features' column and a 'type' column.
 
     Attributes
     ----------
@@ -160,8 +164,10 @@ class ParameterOptimizer:
     train_data : astropy.table.Table
         Astropy table containing the training data. Must have a 'features' column and a 'type' column.
     """
-    def __init__(self, cmd_args):
-        self.pipeline, self.train_data, self.validation_data = _validate_args(cmd_args)
+    def __init__(self, pipeline, train_data, validation_data):
+        self.pipeline = pipeline
+        self.train_data = train_data
+        self.validation_data = validation_data
 
     def test_hyperparams(self, param_set):
         """
@@ -200,7 +206,8 @@ def _main():
     parser.add_argument('--saveto', default='hyperparameters.txt', help='Filename to which to write the results.')
     args = parser.parse_args()
 
-    optimizer = ParameterOptimizer(args)
+    pipeline, train_data, validation_data = _validate_args(args)
+    optimizer = ParameterOptimizer(pipeline, train_data, validation_data)
 
     with open(args.param_dist, 'r') as f:
         param_distributions = json.load(f)
@@ -218,6 +225,10 @@ def _main():
             rows = p.map(optimizer.test_hyperparams, ps)
 
     tfinal = Table(rows)
+    for i, snclass in enumerate(pipeline.classes_):
+        tfinal[snclass + ' completeness'] = tfinal['completeness'][:, i]
+        tfinal[snclass + ' purity'] = tfinal['purity'][:, i]
+    tfinal.remove_columns(['completeness', 'purity'])
     if os.path.exists(args.saveto):
         logging.warning(f'Appending results to {args.saveto}')
         tprev = Table.read(args.saveto, format='ascii')
