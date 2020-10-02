@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>superphot.optimize &mdash; Superphot 1.0.0 documentation</title>
+  <title>superphot.optimize &mdash; Superphot 1.1.0 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.1.0
               </div>
             
           
@@ -91,6 +91,7 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reproducing.html">Reproducing Our Paper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
 </ul>
@@ -158,10 +159,8 @@
             
   <h1>Source code for superphot.optimize</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pickle</span>
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">ParameterGrid</span><span class="p">,</span> <span class="n">ParameterSampler</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">f1_score</span>
-<span class="kn">from</span> <span class="nn">.classify</span> <span class="kn">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">validate_classifier</span>
+<span class="kn">from</span> <span class="nn">.classify</span> <span class="kn">import</span> <span class="n">_validate_args</span><span class="p">,</span> <span class="n">validate_classifier</span><span class="p">,</span> <span class="n">calc_metrics</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">subplots_layout</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">vstack</span><span class="p">,</span> <span class="n">join</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
@@ -173,42 +172,6 @@
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
-
-
-<div class="viewcode-block" id="test_hyperparameters"><a class="viewcode-back" href="../../api.html#superphot.optimize.test_hyperparameters">[docs]</a><span class="k">def</span> <span class="nf">test_hyperparameters</span><span class="p">(</span><span class="n">param_set</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Validates the pipeline for a set of hyperparameters.</span>
-
-<span class="sd">    Measures F1 score and accuracy, as well as completeness and purity for each class.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    param_set : dict</span>
-<span class="sd">        A dictionary containing keywords that match the parameters of `pipeline` and values to which to set them.</span>
-<span class="sd">    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span>
-<span class="sd">        The full classification pipeline, including rescaling, resampling, and classification.</span>
-<span class="sd">    train_data : astropy.table.Table</span>
-<span class="sd">        Astropy table containing the training data. Must have a &#39;features&#39; column and a &#39;type&#39; column.</span>
-<span class="sd">    test_data : astropy.table.Table</span>
-<span class="sd">        Astropy table containing the test data. Must have a &#39;features&#39; column.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">param_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">param_set</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="n">pipeline</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">classifier__n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">param_set</span><span class="p">)</span>
-    <span class="n">validation_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="o">~</span><span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
-    <span class="n">predicted_types</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;probabilities&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
-    <span class="n">param_set</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">predicted_types</span><span class="p">)</span>
-    <span class="n">param_set</span><span class="p">[</span><span class="s1">&#39;f1_score&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f1_score</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">predicted_types</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s1">&#39;macro&#39;</span><span class="p">)</span>
-    <span class="n">cnf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">predicted_types</span><span class="p">)</span>
-    <span class="n">completeness</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cnf_matrix</span><span class="p">)</span> <span class="o">/</span> <span class="n">cnf_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">purity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cnf_matrix</span><span class="p">)</span> <span class="o">/</span> <span class="n">cnf_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">sntype</span><span class="p">,</span> <span class="n">complete</span><span class="p">,</span> <span class="n">pure</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">,</span> <span class="n">completeness</span><span class="p">,</span> <span class="n">purity</span><span class="p">):</span>
-        <span class="n">param_set</span><span class="p">[</span><span class="n">sntype</span> <span class="o">+</span> <span class="s1">&#39;_completeness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">complete</span>
-        <span class="n">param_set</span><span class="p">[</span><span class="n">sntype</span> <span class="o">+</span> <span class="s1">&#39;_purity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pure</span>
-    <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">param_set</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">param_names</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">param_set</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">param_set</span></div>
 
 
 <div class="viewcode-block" id="titlecase"><a class="viewcode-back" href="../../api.html#superphot.optimize.titlecase">[docs]</a><span class="k">def</span> <span class="nf">titlecase</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
@@ -235,6 +198,8 @@
 <span class="sd">        Name of the colormap to use to color the values in `ccols`.</span>
 <span class="sd">    cmin, cmax : float, optional</span>
 <span class="sd">        Data limits corresponding to the minimum and maximum colors in `cmap`.</span>
+<span class="sd">    figtitle : str, optional</span>
+<span class="sd">        Title text for the entire multipanel figure.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="n">subplots_layout</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccols</span><span class="p">))</span>
     <span class="n">gs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="n">nrows</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">height_ratios</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,)</span> <span class="o">*</span> <span class="n">nrows</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
@@ -282,10 +247,14 @@
 <span class="sd">        starting wtih &#39;classifier&#39;.</span>
 <span class="sd">    saveto : str, optional</span>
 <span class="sd">        Save the plot to this filename. If None, the plot is displayed and not saved.</span>
+<span class="sd">    criteria : dict, optional</span>
+<span class="sd">        Plot only a subset of the data that matches these keyword-value pairs, and add these criteria to the title.</span>
+<span class="sd">        If any keywords do not correspond to table columns, all rows are assumed to match.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">criteria</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">val</span><span class="p">]</span>
-        <span class="n">t</span><span class="o">.</span><span class="n">remove_column</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">val</span><span class="p">]</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">remove_column</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
     <span class="n">kcols</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;classifier&#39;</span><span class="p">)}</span> <span class="o">-</span> <span class="p">{</span><span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">})[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">dcol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dcol</span> <span class="o">=</span> <span class="n">kcols</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
@@ -304,9 +273,10 @@
     <span class="n">j</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">])</span>
     <span class="k">for</span> <span class="n">ccol</span> <span class="ow">in</span> <span class="n">ccols</span><span class="p">:</span>
         <span class="n">j</span><span class="p">[</span><span class="n">ccol</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="n">ccol</span> <span class="o">+</span> <span class="s1">&#39;_1&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">j</span><span class="p">[</span><span class="n">ccol</span> <span class="o">+</span> <span class="s1">&#39;_2&#39;</span><span class="p">]</span>
-    <span class="n">title1</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">criteria</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dcol</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">dcol</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">])</span>
+    <span class="n">criteria_strings</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">criteria</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+    <span class="n">title1</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">criteria_strings</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dcol</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">dcol</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">])</span>
     <span class="n">fig1</span> <span class="o">=</span> <span class="n">plot_hyperparameters_3d</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">ccols</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">,</span> <span class="n">figtitle</span><span class="o">=</span><span class="n">title1</span><span class="p">)</span>
-    <span class="n">title2</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dcol</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">dcol</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> → </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">dcol</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">title2</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">criteria_strings</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dcol</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">dcol</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> → </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">dcol</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">])</span>
     <span class="n">fig2</span> <span class="o">=</span> <span class="n">plot_hyperparameters_3d</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">ccols</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;coolwarm_r&#39;</span><span class="p">,</span> <span class="n">cmin</span><span class="o">=-</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">cmax</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">figtitle</span><span class="o">=</span><span class="n">title2</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">saveto</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
@@ -322,44 +292,85 @@
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;results&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Table of results from superphot-optimize.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--saveto&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename to which to save the plot.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--criteria&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Subset of data to plot and/or criteria to add to title.&#39;</span>
+                                                      <span class="s1">&#39;Format: kwd1=val1 kwd2=val2 etc.&#39;</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">t</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
     <span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;classifier__&#39;</span><span class="p">)])</span>
-    <span class="n">plot_hyperparameters_with_diff</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">)</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="p">{</span><span class="n">criterion</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">criterion</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">criterion</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">criteria</span><span class="p">}</span>
+    <span class="n">plot_hyperparameters_with_diff</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dcol</span><span class="p">,</span> <span class="n">xcol</span><span class="p">,</span> <span class="n">ycol</span><span class="p">,</span> <span class="n">zcol</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">,</span> <span class="o">**</span><span class="n">criteria</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ParameterOptimizer"><a class="viewcode-back" href="../../api.html#superphot.optimize.ParameterOptimizer">[docs]</a><span class="k">class</span> <span class="nc">ParameterOptimizer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class containing the pipeline and data sets for hyperparameter optimization</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span>
+<span class="sd">        The full classification pipeline, including rescaling, resampling, and classification.</span>
+<span class="sd">    validation_data : astropy.table.Table</span>
+<span class="sd">        Astropy table containing the validation data. Must have a &#39;features&#39; column.</span>
+<span class="sd">    train_data : astropy.table.Table</span>
+<span class="sd">        Astropy table containing the training data. Must have a &#39;features&#39; column and a &#39;type&#39; column.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pipeline : sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span>
+<span class="sd">        The full classification pipeline, including rescaling, resampling, and classification.</span>
+<span class="sd">    validation_data : astropy.table.Table</span>
+<span class="sd">        Astropy table containing the validation data. Must have a &#39;features&#39; column.</span>
+<span class="sd">    train_data : astropy.table.Table</span>
+<span class="sd">        Astropy table containing the training data. Must have a &#39;features&#39; column and a &#39;type&#39; column.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">pipeline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_data</span> <span class="o">=</span> <span class="n">train_data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validation_data</span> <span class="o">=</span> <span class="n">validation_data</span>
+
+<div class="viewcode-block" id="ParameterOptimizer.test_hyperparams"><a class="viewcode-back" href="../../api.html#superphot.optimize.ParameterOptimizer.test_hyperparams">[docs]</a>    <span class="k">def</span> <span class="nf">test_hyperparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_set</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validates the pipeline for a set of hyperparameters.</span>
+
+<span class="sd">        Measures F1 score and accuracy, as well as completeness and purity for each class.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param_set : dict</span>
+<span class="sd">            A dictionary containing keywords that match the parameters of `pipeline` and values to which to set them.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        param_set : dict</span>
+<span class="sd">            The input `param_set` with the metrics added to the dictionary. These are also saved to a JSON file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">classifier__n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">param_set</span><span class="p">)</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">validate_classifier</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">validation_data</span><span class="p">)</span>
+            <span class="n">param_set</span> <span class="o">=</span> <span class="n">calc_metrics</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">param_set</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Problem testing </span><span class="si">{</span><span class="n">param_set</span><span class="si">}</span><span class="s1">:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">param_set</span></div></div>
 
 
 <span class="k">def</span> <span class="nf">_main</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;param_dist&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;JSON-encoded parameter grid/distribution to test.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;pipeline&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the pickled pipeline object.&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;test_data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the test set.&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--train-data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the training set.&#39;</span>
-                                             <span class="s1">&#39;By default, use all classified supernovae in the test data.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;validation_data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the validation set.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--train-data&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename of the metadata table for the training set, if different than&#39;</span>
+                                             <span class="s1">&#39;the validation set.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="s1">&#39;--n-iter&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Number of hyperparameter combinations to try. Default: all.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-j&#39;</span><span class="p">,</span> <span class="s1">&#39;--n-jobs&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Number of parallel processes to use. Default: 1.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--saveto&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;hyperparameters.txt&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Filename to which to write the results.&#39;</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
+    <span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span> <span class="o">=</span> <span class="n">_validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ParameterOptimizer</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">validation_data</span><span class="p">)</span>
+
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">param_dist</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">param_distributions</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">pipeline</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-    <span class="n">test_data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">test_data</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">train_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">train_data</span> <span class="o">=</span> <span class="n">test_data</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">train_data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">train_data</span><span class="p">)</span>
-    <span class="n">train_data</span> <span class="o">=</span> <span class="n">train_data</span><span class="p">[</span><span class="o">~</span><span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">test_hyperparams</span><span class="p">(</span><span class="n">param_set</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">param_set</span> <span class="o">=</span> <span class="n">test_hyperparameters</span><span class="p">(</span><span class="n">param_set</span><span class="p">,</span> <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">test_data</span><span class="o">=</span><span class="n">test_data</span><span class="p">,</span> <span class="n">train_data</span><span class="o">=</span><span class="n">train_data</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Problem testing </span><span class="si">{</span><span class="n">param_set</span><span class="si">}</span><span class="s1">:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">param_set</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">n_iter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ps</span> <span class="o">=</span> <span class="n">ParameterGrid</span><span class="p">(</span><span class="n">param_distributions</span><span class="p">)</span>
@@ -368,12 +379,16 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Testing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ps</span><span class="p">)</span><span class="si">:</span><span class="s1">d</span><span class="si">}</span><span class="s1"> combinations...&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">n_jobs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">test_hyperparams</span><span class="p">(</span><span class="n">param_set</span><span class="p">)</span> <span class="k">for</span> <span class="n">param_set</span> <span class="ow">in</span> <span class="n">ps</span><span class="p">]</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">optimizer</span><span class="o">.</span><span class="n">test_hyperparams</span><span class="p">(</span><span class="n">param_set</span><span class="p">)</span> <span class="k">for</span> <span class="n">param_set</span> <span class="ow">in</span> <span class="n">ps</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
-            <span class="n">rows</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">test_hyperparams</span><span class="p">,</span> <span class="n">ps</span><span class="p">)</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">optimizer</span><span class="o">.</span><span class="n">test_hyperparams</span><span class="p">,</span> <span class="n">ps</span><span class="p">)</span>
 
     <span class="n">tfinal</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snclass</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">classes_</span><span class="p">):</span>
+        <span class="n">tfinal</span><span class="p">[</span><span class="n">snclass</span> <span class="o">+</span> <span class="s1">&#39; completeness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tfinal</span><span class="p">[</span><span class="s1">&#39;completeness&#39;</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">tfinal</span><span class="p">[</span><span class="n">snclass</span> <span class="o">+</span> <span class="s1">&#39; purity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tfinal</span><span class="p">[</span><span class="s1">&#39;purity&#39;</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]</span>
+    <span class="n">tfinal</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">([</span><span class="s1">&#39;completeness&#39;</span><span class="p">,</span> <span class="s1">&#39;purity&#39;</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">):</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Appending results to </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">tprev</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">saveto</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>

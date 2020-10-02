@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Reproducing Our Paper &mdash; Superphot 1.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Documentation" href="api.html" />
+    <link rel="prev" title="Usage" href="usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Superphot
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Reproducing Our Paper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Superphot</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Reproducing Our Paper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/reproducing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="reproducing-our-paper">
+<span id="id1"></span><h1>Reproducing Our Paper<a class="headerlink" href="#reproducing-our-paper" title="Permalink to this headline">¶</a></h1>
+<p>In Hosseinzadeh et al. (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020arXiv200804912H/abstract">2020</a>), we trained the classifier on a sample of 557 spectroscopically classified supernovae from the <a class="reference external" href="https://panstarrs.stsci.edu">Pan-STARRS1</a> Medium Deep Survey, and then applied it to an additional 2315 transients with host galaxy redshifts.</p>
+<p>To reproduce our work, first download the light curve data from <a class="reference external" href="https://zenodo.org/record/3974950">Zenodo</a>. Unzip the file <code class="docutils literal notranslate"><span class="pre">ps1_sne_zenodo.zip</span></code>.</p>
+<p>For each light curve file, run <code class="docutils literal notranslate"><span class="pre">superphot-fit</span></code>.
+You can either run these in series, by using a glob pattern (<code class="docutils literal notranslate"><span class="pre">*</span></code>) as below, or in parallel, by giving only one filename at a time.
+Decide where you want to store your models. Here I am using a directory called <code class="docutils literal notranslate"><span class="pre">stored_models/</span></code>.
+These will take a while to run.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-fit ps1_sne_zenodo/*.dat --output-dir stored_models/
+</pre></div>
+</div>
+<p>When all the fits are finished, compile the resulting parameters into a single file. (I’m calling this <code class="docutils literal notranslate"><span class="pre">params.npz</span></code>.)
+To reproduce our results exactly, use 0 as the seed for the random number generator.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-compile stored_models/ --output params --random-state <span class="m">0</span>
+</pre></div>
+</div>
+<p>Next, download the machine-readable input tables from our paper.
+The test set is in <a class="reference external" href="https://arxiv.org/src/2008.04912v1/anc/t3.txt">Table 3</a>.
+The training/validation set is in <a class="reference external" href="https://arxiv.org/src/2008.04912v1/anc/t4.txt">Table 4</a>.
+These tables include the results. You can either delete these columns or just ignore them.
+Extract features for each of these sets.
+In our paper, we used the median parameters for training, and 10 draws from the posterior (the default) for validation and testing.
+Make sure to use the same PCA in the test and validation sets as in the training set. (This is saved automatically.)
+These commands will produce six output files (in addition to <code class="docutils literal notranslate"><span class="pre">pca.pickle</span></code>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">train_data.txt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">train_data.npz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">validation_data.txt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">validation_data.npz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_data.txt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_data.npz</span></code></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-extract t4.txt params.npz --use-median --output train_data
+superphot-extract t4.txt params.npz --pcas pca.pickle --output validation_data
+superphot-extract t3.txt params.npz --pcas pca.pickle --output test_data
+</pre></div>
+</div>
+<p>Now that the data are ready, you can initialize and train the classifier.
+Here I’m saving it to a Python pickle file <code class="docutils literal notranslate"><span class="pre">pipeline.pickle</span></code>.
+Again, if you want to reproduce our results exactly, use a random seed of 0.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-train train_data.txt --output pipeline.pickle --random-state <span class="m">0</span>
+</pre></div>
+</div>
+<p>Finally, you can use the pipeline to classify the test set.
+Here the results will be saved to <code class="docutils literal notranslate"><span class="pre">test_data_results.txt</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-classify pipeline.pickle test_data.txt --output test_data
+</pre></div>
+</div>
+<p>Note that in our paper, we also had a third set of “rare transients” in <a class="reference external" href="https://arxiv.org/src/2008.04912v1/anc/t5.txt">Table 5</a>.
+To reproduce our classifications for these, repeat the above procedure using <code class="docutils literal notranslate"><span class="pre">t5.txt</span></code> instead of <code class="docutils literal notranslate"><span class="pre">t3.txt</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-extract t5.txt params.npz --pcas pca.pickle --output other_data
+superphot-classify pipeline.pickle other_data.txt --output other_data
+</pre></div>
+</div>
+<p>To reproduce our confusion matrices, you can run the leave-one-out cross-validation.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-validate pipeline.pickle validation_data.txt --train-data train_data.txt
+</pre></div>
+</div>
+<p>Finally, if you want to reproduce the hyperparameter optimization in Appendix D, copy and paste the following into a JSON file (here I’m calling it <code class="docutils literal notranslate"><span class="pre">param_dist.json</span></code>):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">&quot;classifier__n_estimators&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">500</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+<span class="nt">&quot;classifier__criterion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;gini&quot;</span><span class="p">,</span> <span class="s2">&quot;entropy&quot;</span><span class="p">],</span>
+<span class="nt">&quot;classifier__max_depth&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+<span class="nt">&quot;classifier__max_features&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">]}</span>
+</pre></div>
+</div>
+<p>Then run the optimizer.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>superphot-optimize param_dist.json pipeline.pickle validation_data.txt --train-data train_data.txt
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Griffin Hosseinzadeh &amp; Frederick Dauphin
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

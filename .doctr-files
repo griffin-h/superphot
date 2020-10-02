@@ -9,6 +9,7 @@
 ./_sources/index.rst.txt
 ./_sources/installation.rst.txt
 ./_sources/release-history.rst.txt
+./_sources/reproducing.rst.txt
 ./_sources/usage.rst.txt
 ./_static/basic.css
 ./_static/clipboard.min.js
@@ -109,6 +110,7 @@
 ./objects.inv
 ./py-modindex.html
 ./release-history.html
+./reproducing.html
 ./search.html
 ./searchindex.js
 ./usage.html

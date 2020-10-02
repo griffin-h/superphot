@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; Superphot 1.0.0 documentation</title>
+  <title>API Documentation &mdash; Superphot 1.1.0 documentation</title>
   
 
   
@@ -41,7 +41,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Release History" href="release-history.html" />
-    <link rel="prev" title="Usage" href="usage.html" /> 
+    <link rel="prev" title="Reproducing Our Paper" href="reproducing.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.1.0
               </div>
             
           
@@ -93,6 +93,7 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reproducing.html">Reproducing Our Paper</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.fit">superphot.fit module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-superphot.extract">superphot.extract module</a></li>
@@ -982,17 +983,23 @@ instance used by <code class="docutils literal notranslate"><span class="pre">np
 
 <dl class="py function">
 <dt id="superphot.classify.calc_metrics">
-<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">calc_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">xval</span><span class="o">=</span><span class="default_value">'confidence'</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#calc_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.calc_metrics" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate completeness, purity, accuracy, and F1 score as a function of a specified table column.</p>
-<p>The results are added as columns to the input table.</p>
+<code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">calc_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">param_set</span></em>, <em class="sig-param"><span class="n">save</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#calc_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.calc_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate completeness, purity, accuracy, and F1 score for a table of validation results.</p>
+<p>The metrics are returned in a dictionary and saved in a json file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’, ‘prediction’, ‘probabilities’, and <cite>xval</cite>.</p>
+<dt><strong>results</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the results. Must have columns ‘type’ and ‘prediction’.</p>
 </dd>
-<dt><strong>xval</strong><span class="classifier">str, optional</span></dt><dd><p>Table column to use as the independent variable. Default: ‘confidence’.</p>
+<dt><strong>param_set</strong><span class="classifier">dict</span></dt><dd><p>A dictionary containing metadata to store along with the metrics.</p>
 </dd>
-<dt><strong>classes</strong><span class="classifier">array-like, optional</span></dt><dd><p>The classes for which to calculate completeness and purity. Default: all classes in the ‘type’ column.</p>
+<dt><strong>save</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, save the results to a json file in addition to returning the results. Default: False</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>param_set</strong><span class="classifier">dict</span></dt><dd><p>A dictionary containing the input metadata and the calculated metrics.</p>
 </dd>
 </dl>
 </dd>
@@ -1120,6 +1127,8 @@ Default: ‘Completeness’ or ‘Purity’ depending on <cite>purity</cite>.</p
 <dt id="superphot.classify.plot_feature_importance">
 <code class="sig-prename descclassname">superphot.classify.</code><code class="sig-name descname">plot_feature_importance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">width</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">nsamples</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">saveto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/classify.html#plot_feature_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.classify.plot_feature_importance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a bar chart of feature importance using mean decrease in impurity, with permutation importances overplotted.</p>
+<p>Mean decrease in impurity is assumed to be stored in <cite>pipeline.feature_importances_</cite>. If the classifier does not
+have this attribute (e.g., SVM, MLP), only permutation importance is calculated.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
@@ -1256,6 +1265,56 @@ If None, use the training data itself for validation.</p>
 </div>
 <div class="section" id="module-superphot.optimize">
 <span id="superphot-optimize-module"></span><h2>superphot.optimize module<a class="headerlink" href="#module-superphot.optimize" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="superphot.optimize.ParameterOptimizer">
+<em class="property">class </em><code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">ParameterOptimizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">validation_data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#ParameterOptimizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.ParameterOptimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class containing the pipeline and data sets for hyperparameter optimization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
+</dd>
+<dt><strong>validation_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the validation data. Must have a ‘features’ column.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘features’ column and a ‘type’ column.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
+</dd>
+<dt><strong>validation_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the validation data. Must have a ‘features’ column.</p>
+</dd>
+<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘features’ column and a ‘type’ column.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="superphot.optimize.ParameterOptimizer.test_hyperparams">
+<code class="sig-name descname">test_hyperparams</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_set</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#ParameterOptimizer.test_hyperparams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.ParameterOptimizer.test_hyperparams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates the pipeline for a set of hyperparameters.</p>
+<p>Measures F1 score and accuracy, as well as completeness and purity for each class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>param_set</strong><span class="classifier">dict</span></dt><dd><p>A dictionary containing keywords that match the parameters of <cite>pipeline</cite> and values to which to set them.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>param_set</strong><span class="classifier">dict</span></dt><dd><p>The input <cite>param_set</cite> with the metrics added to the dictionary. These are also saved to a JSON file.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt id="superphot.optimize.plot_hyperparameters_3d">
 <code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">plot_hyperparameters_3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em>, <em class="sig-param"><span class="n">ccols</span></em>, <em class="sig-param"><span class="n">xcol</span></em>, <em class="sig-param"><span class="n">ycol</span></em>, <em class="sig-param"><span class="n">zcol</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmin</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figtitle</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#plot_hyperparameters_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.plot_hyperparameters_3d" title="Permalink to this definition">¶</a></dt>
@@ -1272,6 +1331,8 @@ If None, use the training data itself for validation.</p>
 <dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of the colormap to use to color the values in <cite>ccols</cite>.</p>
 </dd>
 <dt><strong>cmin, cmax</strong><span class="classifier">float, optional</span></dt><dd><p>Data limits corresponding to the minimum and maximum colors in <cite>cmap</cite>.</p>
+</dd>
+<dt><strong>figtitle</strong><span class="classifier">str, optional</span></dt><dd><p>Title text for the entire multipanel figure.</p>
 </dd>
 </dl>
 </dd>
@@ -1294,26 +1355,8 @@ starting wtih ‘classifier’.</p>
 </dd>
 <dt><strong>saveto</strong><span class="classifier">str, optional</span></dt><dd><p>Save the plot to this filename. If None, the plot is displayed and not saved.</p>
 </dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="superphot.optimize.test_hyperparameters">
-<code class="sig-prename descclassname">superphot.optimize.</code><code class="sig-name descname">test_hyperparameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">param_set</span></em>, <em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">test_data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/superphot/optimize.html#test_hyperparameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#superphot.optimize.test_hyperparameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validates the pipeline for a set of hyperparameters.</p>
-<p>Measures F1 score and accuracy, as well as completeness and purity for each class.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>param_set</strong><span class="classifier">dict</span></dt><dd><p>A dictionary containing keywords that match the parameters of <cite>pipeline</cite> and values to which to set them.</p>
-</dd>
-<dt><strong>pipeline</strong><span class="classifier">sklearn.pipeline.Pipeline or imblearn.pipeline.Pipeline</span></dt><dd><p>The full classification pipeline, including rescaling, resampling, and classification.</p>
-</dd>
-<dt><strong>train_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the training data. Must have a ‘features’ column and a ‘type’ column.</p>
-</dd>
-<dt><strong>test_data</strong><span class="classifier">astropy.table.Table</span></dt><dd><p>Astropy table containing the test data. Must have a ‘features’ column.</p>
+<dt><strong>criteria</strong><span class="classifier">dict, optional</span></dt><dd><p>Plot only a subset of the data that matches these keyword-value pairs, and add these criteria to the title.
+If any keywords do not correspond to table columns, all rows are assumed to match.</p>
 </dd>
 </dl>
 </dd>
@@ -1410,7 +1453,7 @@ starting wtih ‘classifier’.</p>
         <a href="release-history.html" class="btn btn-neutral float-right" title="Release History" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="reproducing.html" class="btn btn-neutral float-left" title="Reproducing Our Paper" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
