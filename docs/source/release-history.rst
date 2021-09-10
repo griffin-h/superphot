@@ -5,6 +5,7 @@ Release History
 Unreleased (2021-09-10)
 =======================
 - Fix sign on cosmological K correction
+- Pipe through the ``--cores`` argument correctly
 
 v1.1.0 (2020-10-02)
 ===================

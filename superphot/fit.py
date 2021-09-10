@@ -17,6 +17,7 @@ PHASE_MAX = 180.
 ITERATIONS = 10000
 TUNING = 25000
 WALKERS = 25
+CORES = 1
 PARAMNAMES = ['Amplitude', 'Plateau Slope (d$^{-1}$)', 'Plateau Duration (d)',
               'Reference Epoch (d)', 'Rise Time (d)', 'Fall Time (d)']
 
@@ -303,7 +304,7 @@ def setup_model2(obs, parameters, x_priors, y_priors):
 
 
 def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING,
-                         cores=1):
+                         cores=CORES):
     """
     Run a Metropolis Hastings MCMC for the given model with a certain number iterations, burn in (tuning), and walkers.
 
@@ -324,7 +325,7 @@ def sample_or_load_trace(model, trace_file, force=False, iterations=ITERATIONS, 
     tuning : int, optional
         The number of iterations used for tuning.
     cores : int, optional
-        The number of walkers to run in parallel. Default: 1.
+        The number of walkers to run in parallel.
 
     Returns
     -------
@@ -585,7 +586,7 @@ def select_event_data(t, phase_min=PHASE_MIN, phase_max=PHASE_MAX, nsigma=None):
 
 
 def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_second=False, do_diagnostics=True,
-                       iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING):
+                       iterations=ITERATIONS, walkers=WALKERS, tuning=TUNING, cores=CORES):
     """
     Fit the model to the observed light curve. Then combine the posteriors for each filter and use that as the new prior
     for a second iteration of fitting.
@@ -611,6 +612,8 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
         The number of cores and walkers used.
     tuning : int, optional
         The number of iterations used for tuning.
+    cores : int, optional
+        The number of walkers to run in parallel.
 
     Returns
     -------
@@ -633,7 +636,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
         obs = t[t['FLT'] == fltr]
         model1, parameters1 = setup_model1(obs, t['FLUXCAL'].max())
         outfile1 = outfile.format('_1' + fltr)
-        trace1 = sample_or_load_trace(model1, outfile1, force, iterations, walkers, tuning)
+        trace1 = sample_or_load_trace(model1, outfile1, force, iterations, walkers, tuning, cores)
         traces1[fltr] = trace1
         if do_diagnostics:
             diagnostics(obs, trace1, parameters1, outfile1)
@@ -648,7 +651,7 @@ def two_iteration_mcmc(light_curve, outfile, filters=None, force=False, force_se
         obs = t[t['FLT'] == fltr]
         model2, parameters2 = setup_model2(obs, parameters1, x_priors, y_priors)
         outfile2 = outfile.format('_2' + fltr)
-        trace2 = sample_or_load_trace(model2, outfile2, force or force_second, iterations, walkers, tuning)
+        trace2 = sample_or_load_trace(model2, outfile2, force or force_second, iterations, walkers, tuning, cores)
         traces2[fltr] = trace2
         if do_diagnostics:
             diagnostics(obs, trace2, parameters2, outfile2)
@@ -663,7 +666,7 @@ def _main():
     parser.add_argument('--iterations', type=int, default=ITERATIONS, help='Number of steps after burn-in')
     parser.add_argument('--tuning', type=int, default=TUNING, help='Number of burn-in steps')
     parser.add_argument('--walkers', type=int, default=WALKERS, help='Number of walkers')
-    parser.add_argument('--cores', type=int, default=1, help='Number of walkers to run in parallel')
+    parser.add_argument('--cores', type=int, default=CORES, help='Number of walkers to run in parallel')
     parser.add_argument('--output-dir', type=str, default='.', help='Path in which to save the PyMC3 trace data')
     parser.add_argument('--zmin', type=float, help='Do not fit the transient if redshift <= zmin in the header')
     parser.add_argument('-f', '--force', action='store_true', help='redo the fit even if the trace is already saved')
