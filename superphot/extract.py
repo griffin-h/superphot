@@ -64,6 +64,10 @@ def flux_to_luminosity(row, R_filter):
     """
     Return the flux-to-luminosity conversion factor for the transient in a given row of a data table.
 
+    Luminosities are per steradian (i.e., the factor of 4π is not included) for easy conversion to absolute magnitudes.
+
+    .. math:: \\frac{L_ν}{4π F_ν}  = \\frac{D_L^2 10^{0.4 E(B-V) R}}{1+z}
+
     Parameters
     ----------
     row : astropy.table.row.Row
@@ -78,7 +82,7 @@ def flux_to_luminosity(row, R_filter):
     """
     A_coeffs = row['MWEBV'] * np.array(R_filter)
     dist = cosmo.luminosity_distance(row['redshift']).to('dapc').value
-    flux2lum = 10. ** (A_coeffs / 2.5) * dist ** 2. * (1. + row['redshift'])
+    flux2lum = 10. ** (A_coeffs / 2.5) * dist ** 2. / (1. + row['redshift'])
     return flux2lum
 
 

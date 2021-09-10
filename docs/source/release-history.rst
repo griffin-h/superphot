@@ -2,6 +2,10 @@
 Release History
 ===============
 
+Unreleased (2021-09-10)
+=======================
+- Fix sign on cosmological K correction
+
 v1.1.0 (2020-10-02)
 ===================
 - Refactor hyperparameter optimization to make use of code in superphot.validate
