@@ -37,7 +37,7 @@ setuptools.setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author="Griffin Hosseinzadeh & Frederick Dauphin",
-    author_email="griffin.hosseinzadeh@cfa.harvard.edu",
+    author_email="griffin0@arizona.edu",
     description="Photometric classification of supernovae",
     long_description=long_description,
     long_description_content_type="text/x-rst",

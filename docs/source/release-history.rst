@@ -2,7 +2,7 @@
 Release History
 ===============
 
-Unreleased (2021-09-10)
+v1.2.0 (2021-09-22)
 =======================
 - Fix sign on cosmological K correction
 - Pipe through the ``--cores`` argument correctly
